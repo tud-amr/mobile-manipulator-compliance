@@ -1,0 +1,7 @@
+mujoco
+dearpygui
+dearpygui_ext
+
+pin
+pandas
+scipy
