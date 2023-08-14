@@ -1,11 +1,11 @@
 import subprocess
 from user_interface.launcher import Launcher
 from user_interface.mujoco_viewer import MujocoViewer
-from kinova import utilities
 from kinova.kortex_client import KortexClient
 from kinova.kortex_client_mock import KortexClientMock
 from kinova.kortex_client_simulation import KortexClientSimulation
 from compliant_controller.state import State
+import kinova.utilities as utilities
 
 
 def ip_available() -> bool:

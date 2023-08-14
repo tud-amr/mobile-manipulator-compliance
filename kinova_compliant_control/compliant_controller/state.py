@@ -3,7 +3,7 @@ import importlib.resources as pkg_resources
 import mujoco
 import numpy as np
 import pinocchio
-from kinova import models
+import kinova.models as models
 from user_interface.mujoco_viewer import MujocoViewer
 
 if TYPE_CHECKING:

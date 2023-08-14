@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import importlib.resources as pkg_resources
-import compliant_controller
+import calibration_data
 from scipy.signal import savgol_filter
 from user_interface.logger import Logger
 
@@ -126,7 +126,7 @@ class Calibration(Controller):
 
     def export_data(self) -> None:
         """Export the data."""
-        directory = str(pkg_resources.files(compliant_controller) / "calibration_data")
+        directory = str(pkg_resources.files(calibration_data))
         data = {}
         for n, joint_data in enumerate(self.data):
             if all(joint_data[0]):
