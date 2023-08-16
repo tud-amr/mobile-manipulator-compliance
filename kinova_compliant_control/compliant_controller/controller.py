@@ -71,15 +71,15 @@ class CartesianImpedance(CompensateGravity):
     def __init__(self, client: KortexClient) -> None:
         super().__init__(client)
         if client.mock:
-            self.Kd = np.eye(3) * 100
-            self.Dd = np.eye(3) * 50
+            self.Kd = np.eye(3) * 120
+            self.Dd = np.eye(3) * 5
         else:
             self.Kd = np.eye(3) * 120
             self.Dd = np.eye(3) * 5
 
     def connect_to_LLC(self) -> None:
         """Set target to current position."""
-        self.state.active = [True, False, True, False, True, False]
+        self.state.active = [True, False, False, False, True, False]
         self.state.update_marker("target", self.state.x)
         self.target_mover = TargetMover(self.state, self.client)
         super().connect_to_LLC()
@@ -110,6 +110,10 @@ class CartesianImpedance(CompensateGravity):
         f = lam @ ddx_d + mu @ dx_d + (self.Kd @ x_e + self.Dd @ dx_e)
         tau = self.state.J.T @ f
 
+        for n in range(len(tau)):
+            if tau[n] != 0:
+                tau[n] += tau[n] / abs(tau[n]) * self.state.joint_frictions[n]
+
         for n, joint in enumerate(self.joints):
             self.commands[n] += tau[joint]
 
@@ -119,10 +123,10 @@ class TargetMover:
 
     def __init__(self, state: State, client: KortexClient) -> None:
         self.state = state
-        self.target_rate = 0.1  # m/s
+        self.target_rate = 0.05  # m/s
         self.target_step = self.target_rate / client.frequency
         self.target_rot = 90
-        self.target_rot_rate = 60  # deg / s
+        self.target_rot_rate = 30  # deg / s
         self.target_rot_step = self.target_rot_rate / client.frequency
 
     def move(self) -> None:

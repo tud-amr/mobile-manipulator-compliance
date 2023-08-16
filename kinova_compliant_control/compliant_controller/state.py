@@ -35,6 +35,11 @@ class State:
             if client.mock
             else {0: 0, 1: 0.2911, 2: 1.136, 3: 1.727, 4: 1.448, 5: 0}
         )
+        self.joint_frictions = (
+            {0: 0.9, 1: 0, 2: 0, 3: 0, 4: 0.6, 5: 0}
+            if self.client.mock
+            else {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        )
 
     def update(self) -> None:
         """Update the state of the robot."""

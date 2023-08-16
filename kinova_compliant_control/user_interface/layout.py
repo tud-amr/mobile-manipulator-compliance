@@ -66,6 +66,7 @@ class Layout:
 
         c = self.client
         cal = calibration.Calibration(self.client)
+        fric = calibration.CalibrateFriction(self.client)
         grav = controller.CompensateGravity(self.client)
         imp = controller.Impedance(self.client)
         cart_imp = controller.CartesianImpedance(self.client)
@@ -79,6 +80,7 @@ class Layout:
             dpg.add_text("Low Level:")
             self.button("Stop LLC", c.stop_LLC, c.LLC_available)
             self.button("Calibrate", cal.connect_to_LLC, c.LLC_available)
+            self.button("Friction", fric.connect_to_LLC, c.LLC_available)
             self.button("Gravity", grav.connect_to_LLC, c.LLC_available)
             self.button("Impedance", imp.connect_to_LLC, c.LLC_available)
             self.button("Cartesian Impedance", cart_imp.connect_to_LLC, c.LLC_available)

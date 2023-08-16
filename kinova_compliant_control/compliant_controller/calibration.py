@@ -27,6 +27,57 @@ REACHED_ERROR = 10**-5
 NEARBY_GOAL_DIVIDER = 100
 SKIP_JOINTS = [0, 5]
 
+ZERO_ERROR = 10**-2
+
+
+class CalibrateFriction(Controller):
+    """Calibrate the static friction of the robot."""
+
+    def __init__(self, client: KortexClient) -> None:
+        super().__init__(client)
+        self.joint = 0
+        self.pause_till = time.time()
+        self.zero_velocity_time = time.time()
+        self.velocity_time = time.time()
+
+    def zero_velocity(self) -> None:
+        """Return true if the joint has zero velocity for at least one second."""
+        if abs(self.state.dq[self.joint]) > ZERO_ERROR:
+            self.zero_velocity_time = time.time()
+        return time.time() > self.zero_velocity_time + 1
+
+    def non_zero_velocity(self) -> None:
+        """Return true if the joint has non_zero velocity for at least one second."""
+        if abs(self.state.dq[self.joint]) < ZERO_ERROR:
+            self.velocity_time = time.time()
+        else:
+            self.pause_till = time.time() + 1
+        return time.time() > self.velocity_time + 1
+
+    def command(self) -> None:
+        """Move to calibration position or calibrate joint."""
+        super().command()
+        self.commands[0] = self.torque
+        if time.time() < self.pause_till:
+            return
+        if self.calibrating:
+            if self.non_zero_velocity():
+                Logger.log(f"Moved at {self.torque} torque.")
+                self.client.disconnect_LLC()
+            else:
+                self.torque -= 0.0001
+        else:
+            if self.zero_velocity():
+                self.calibrating = True
+
+    def connect_to_LLC(self) -> None:
+        """Reset before connecting to LLC."""
+        self.state.active = [False] * self.client.actuator_count
+        self.state.active[self.joint] = True
+        self.calibrating = False
+        self.torque = 0
+        super().connect_to_LLC()
+
 
 class Calibration(Controller):
     """Class used to calibrate the robot."""
