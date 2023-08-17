@@ -11,7 +11,7 @@ from kortex_api.autogen.messages import Base_pb2, BaseCyclic_pb2, ActuatorConfig
 from kortex_api.Exceptions.KServerException import KServerException
 
 from user_interface.logger import Logger
-from .specifications import actuator_ids, ranges
+from .specifications import Position, actuator_ids, ranges
 
 if TYPE_CHECKING:
     from compliant_controller.controller import Controller
@@ -143,15 +143,15 @@ class KortexClient:
 
     def home(self) -> bool:
         """Move the arm to the home position."""
-        self._start_control(self._action, ["Home"])
+        self._start_control(self._high_level_move, [Position.home])
 
     def zero(self) -> bool:
         """Move the arm to the zero position."""
-        self._start_control(self._action, ["Zero"])
+        self._start_control(self._high_level_move, [Position.zero])
 
     def retract(self) -> bool:
         """Move the arm to the retract position."""
-        self._start_control(self._action, ["Retract"])
+        self._start_control(self._high_level_move, [Position.retract])
 
     def get_position(self, joint: int, as_percentage: bool) -> float:
         """Get the position of a joint."""
@@ -296,35 +296,32 @@ class KortexClient:
                 joint
             ].current_motor
 
-    def _action(self, name: str) -> bool:
-        """Perform the provided action."""
-        self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
+    def _high_level_move(self, position: Position) -> None:
+        """Perform a high level move."""
+        Logger.log("Starting high level movement...")
+        action = Base_pb2.Action()
+        action.name = position.name
+        action.application_data = ""
 
-        # Move arm to ready position
-        Logger.log(f"Moving the arm to {name} position")
-        action_type = Base_pb2.RequestedActionType()
-        action_type.action_type = Base_pb2.REACH_JOINT_ANGLES
-        action_list = self.base.ReadAllActions(action_type)
-        action_handle = None
-        for action_name in action_list.action_list:
-            if action_name.name == name:
-                action_handle = action_name.handle
+        for n, pos in enumerate(position.position):
+            joint_angle = action.reach_joint_angles.joint_angles.joint_angles.add()
+            joint_angle.joint_identifier = n
+            joint_angle.value = pos
 
-        if action_handle is None:
-            Logger.log("Can't reach safe position. Exiting")
-            return False
+        return self._execute_action(action)
 
+    def _execute_action(self, action: Base_pb2.Action = None) -> bool:
         event = Event()
         notification_handle = self.base.OnNotificationActionTopic(
             self._check_for_end_or_abort(event), Base_pb2.NotificationOptions()
         )
 
-        self.base.ExecuteActionFromReference(action_handle)
+        self.base.ExecuteAction(action)
         finished = event.wait(self.time_out_duration)
         self.base.Unsubscribe(notification_handle)
 
         if finished:
-            Logger.log(f"{name} position reached")
+            Logger.log(f"Position {action.name} reached")
         else:
             Logger.log("Timeout on action notification wait")
             if self.mock:
