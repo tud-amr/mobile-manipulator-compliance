@@ -38,7 +38,7 @@ class State:
         self.joint_frictions = (
             {0: 0.9, 1: 0, 2: 0, 3: 0, 4: 0.6, 5: 0}
             if self.client.mock
-            else {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+            else {0: 0.7, 1: 0, 2: 0, 3: 0, 4: 0.3, 5: 0}
         )
 
     def update(self) -> None:

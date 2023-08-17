@@ -7,27 +7,45 @@ from user_interface.logger import Logger
 
 from compliant_controller.controller import Controller
 from kinova.kortex_client import KortexClient
+from kinova.specifications import Position
 import time
 
 
-JOINT_POSES = [
-    [0, 0, 0, 0, 0, 0],
-    [0, np.pi / 2, np.pi / 2, 0, 0, 0],
-    [0, 0, np.pi / 2, 0, 0, 0],
-    [0, 0, np.pi / 2, 0, np.pi / 2, 0],
-    [0, 0, 0, 0, np.pi / 2, 0],
-    [0, 0, 0, 0, 0, 0],
-]
-
-CALIBRATION_TIME = 2  # s
-MOVING_SPEED = 20  # deg/s
-START = 500
-END = 1500
-REACHED_ERROR = 10**-5
-NEARBY_GOAL_DIVIDER = 100
-SKIP_JOINTS = [0, 5]
-
 ZERO_ERROR = 10**-2
+
+
+class Calibration:
+    """Class used for all calibration."""
+
+    def __init__(self, client: KortexClient) -> None:
+        self.client = client
+        self.friction = CalibrateFriction(client)
+        self.gravity = CalibrateGravity(client)
+
+    def calibrate_friction(self) -> None:
+        """Start the friction calibration."""
+        self.client.calibrating = True
+        self.client._high_level_move(Position("0,3,5", [0, 0, 0, 0, 0, 0]))
+        self.friction.calibrate(0)
+        self.friction.calibrate(3)
+        self.friction.calibrate(5)
+        self.client._high_level_move(Position("4", [0, 0, 90, 0, 0, 0]))
+        self.friction.calibrate(4)
+        self.client.calibrating = False
+
+    def calibrate_gravity(self) -> None:
+        """Start the gravity calibration."""
+        self.client.calibrating = True
+        self.client._high_level_move(Position("1", [0, 90, 90, 0, 0, 0]))
+        self.gravity.calibrate(1)
+        self.client._high_level_move(Position("2", [0, 0, 90, 0, 0, 0]))
+        self.gravity.calibrate(2)
+        self.client._high_level_move(Position("3", [0, 0, 90, 0, 90, 0]))
+        self.gravity.calibrate(3)
+        self.client._high_level_move(Position("4", [0, 0, 0, 0, 90, 0]))
+        self.gravity.calibrate(4)
+        self.gravity.export_data()
+        self.client.calibrating = False
 
 
 class CalibrateFriction(Controller):
@@ -35,98 +53,68 @@ class CalibrateFriction(Controller):
 
     def __init__(self, client: KortexClient) -> None:
         super().__init__(client)
-        self.joint = 0
         self.pause_till = time.time()
         self.zero_velocity_time = time.time()
         self.velocity_time = time.time()
-
-    def zero_velocity(self) -> None:
-        """Return true if the joint has zero velocity for at least one second."""
-        if abs(self.state.dq[self.joint]) > ZERO_ERROR:
-            self.zero_velocity_time = time.time()
-        return time.time() > self.zero_velocity_time + 1
+        self.calibration_step = 0.0001
 
     def non_zero_velocity(self) -> None:
         """Return true if the joint has non_zero velocity for at least one second."""
         if abs(self.state.dq[self.joint]) < ZERO_ERROR:
             self.velocity_time = time.time()
         else:
-            self.pause_till = time.time() + 1
-        return time.time() > self.velocity_time + 1
+            self.pause_till = time.time() + 0.1
+        return time.time() > self.velocity_time + 0.1
 
     def command(self) -> None:
         """Move to calibration position or calibrate joint."""
         super().command()
         self.commands[0] = self.torque
-        if time.time() < self.pause_till:
-            return
         if self.calibrating:
             if self.non_zero_velocity():
                 Logger.log(f"Moved at {self.torque} torque.")
                 self.client.disconnect_LLC()
+                self.calibrating = False
             else:
-                self.torque -= 0.0001
-        else:
-            if self.zero_velocity():
-                self.calibrating = True
+                if time.time() > self.pause_till:
+                    self.torque += self.calibration_step
 
-    def connect_to_LLC(self) -> None:
+    def calibrate(self, joint: int) -> None:
         """Reset before connecting to LLC."""
+        self.joint = joint
         self.state.active = [False] * self.client.actuator_count
         self.state.active[self.joint] = True
-        self.calibrating = False
+        self.joints = [n for n, active in enumerate(self.state.active) if active]
         self.torque = 0
-        super().connect_to_LLC()
+        self.client._start_LLC()
+        self.client._connect_LLC(self, "current")
+        self.calibrating = True
+        while self.calibrating:
+            time.sleep(1)
+        Logger.log(f"Friction calibration of joint {joint} done.")
+        self.client._stop_LLC()
+        return
 
 
-class Calibration(Controller):
-    """Class used to calibrate the robot."""
+class CalibrateGravity(Controller):
+    """Calibrate the gravity of the robot."""
 
     def __init__(self, client: KortexClient) -> None:
         super().__init__(client)
-        self.mode = "position"
-        self.define_step_size()
+        self.client = client
+        self.record_steps = client.frequency * 3
+        self.data = np.zeros((client.actuator_count, 2, self.record_steps))
 
-    def define_step_size(self) -> None:
-        """Define the step size."""
-        step_deg = MOVING_SPEED / self.client.frequency
-        step_rad = np.deg2rad(step_deg)
-        self.step_size = step_rad
-
-    def connect_to_LLC(self) -> None:
+    def calibrate(self, joint: int) -> None:
         """Reset before connecting to LLC."""
-        self.commands = self.state.q.copy()
-        self.state.active = [True] * self.client.actuator_count
-        self.data = np.zeros((len(JOINT_POSES), 2, END - START))
-        self.joint = -1
-        self.record_till = time.time()
-        self.go_to_next_joint()
-        super().connect_to_LLC()
-
-    def command(self) -> None:
-        """Move to calibration position or calibrate joint."""
-        super().command()
-        if time.time() <= self.record_till:
+        self.joint = joint
+        self.n = 0
+        time.sleep(1)
+        while self.n < self.record_steps:
             self.record_data()
-            self.n += 1
-            return
-        if self.ready:
-            self.calibrate_joint()
-        else:
-            self.ready = self.move_to_pose(JOINT_POSES[self.joint])
-
-    def calibrate_joint(self) -> None:
-        """Calibrate the joint."""
-        if self.joint_finished:
-            if self.joint < len(JOINT_POSES) - 1:
-                self.go_to_next_joint()
-            else:
-                self.finish_calibration()
-        else:
-            Logger.log(f"Calibrating joint {self.joint}...")
-            if self.joint not in SKIP_JOINTS:
-                self.record_till = time.time() + CALIBRATION_TIME
-            self.joint_finished = True
+            time.sleep(1 / self.client.frequency)
+        Logger.log(f"Gravity calibration of joint {joint} done.")
+        return
 
     def finish_calibration(self) -> None:
         """Finish the calibration process."""
@@ -135,45 +123,15 @@ class Calibration(Controller):
         self.export_data()
         self.client.disconnect_LLC()
 
-    def go_to_next_joint(self) -> None:
-        """Go to the next joint to calibrate."""
-        self.n = 0
-        self.ready = False
-        self.joint_finished = False
-        self.reached = [False] * self.client.actuator_count
-        Logger.log(f"Calibration of joint {self.joint} finished.")
-        self.joint += 1
-
-    def move_to_pose(self, pose: list) -> bool:
-        """Move to pose."""
-        for n in range(self.client.actuator_count):
-            if self.reached[n]:
-                continue
-            error = abs(pose[n] - self.state.q[n])
-            if error < REACHED_ERROR:
-                self.reached[n] = True
-            else:
-                self.create_command(n, pose, error)
-        return all(self.reached)
-
-    def create_command(self, joint: int, pose: list, error: float) -> float:
-        """Create the command."""
-        step = min(error / NEARBY_GOAL_DIVIDER, self.step_size)
-        if self.state.q[joint] > pose[joint]:
-            self.commands[joint] -= step
-        elif self.state.q[joint] < pose[joint]:
-            self.commands[joint] += step
-
     def record_data(self) -> None:
         """Record the current data."""
-        if START <= self.n < END:
-            n = self.n - START
-            self.data[self.joint][0][n] = self.state.g[self.joint]
-            self.data[self.joint][1][n] = (
-                self.client.get_torque(self.joint, False)
-                if self.client.mock
-                else self.client.get_current(self.joint, False)
-            )
+        self.data[self.joint][0][self.n] = self.state.g[self.joint]
+        self.data[self.joint][1][self.n] = (
+            self.client.get_torque(self.joint, False)
+            if self.client.mock
+            else self.client.get_current(self.joint, False)
+        )
+        self.n += 1
 
     def export_data(self) -> None:
         """Export the data."""

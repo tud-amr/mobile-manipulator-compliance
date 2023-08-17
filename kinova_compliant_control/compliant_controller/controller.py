@@ -26,6 +26,32 @@ class Controller:
 class CompensateGravity(Controller):
     """Compensate gravity."""
 
+    def __init__(self, client: KortexClient) -> None:
+        super().__init__(client)
+        self.friction_compensation = False
+        self.friction_threshold = 0.1
+
+    def toggle_CF(self) -> None:
+        """Toggle compensate friction."""
+        self.friction_compensation = not self.friction_compensation
+
+    def get_CF(self) -> None:
+        """Return the state of friction compensation."""
+        return self.friction_compensation
+
+    def compensate_friction(self, n: int, joint: int) -> None:
+        """Compensate the friction of the joint."""
+        vel = self.state.dq[joint]
+        abs_vel = abs(vel)
+        if abs_vel > 0:
+            comp = vel / abs_vel * self.state.joint_frictions[joint]
+            comp *= (
+                abs_vel / self.friction_threshold
+                if abs_vel < self.friction_threshold
+                else 1
+            )
+            self.commands[n] += comp
+
     def command(self) -> None:
         """Compensate gravity."""
         super().command()
@@ -33,6 +59,8 @@ class CompensateGravity(Controller):
             self.commands[n] += (
                 self.state.g[joint] * self.state.current_torque_ratios[joint]
             )
+            if self.friction_compensation:
+                self.compensate_friction(n, joint)
 
 
 class Impedance(CompensateGravity):

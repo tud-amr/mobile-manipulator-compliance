@@ -45,6 +45,7 @@ class KortexClient:
         self.time_out_duration = 3 if self.mock else 20
         self.actuator_count = self.base.GetActuatorCount().count
         self.active = False
+        self.calibrating = False
         self.changing_servoing_mode = False
         self.controller_connected = False
         self.active_loop = False
@@ -68,7 +69,7 @@ class KortexClient:
 
     def HLC_available(self) -> bool:
         """Return whether mode is HLC and available."""
-        return not self.active and not self.low_level_control
+        return not self.active and not self.calibrating and not self.low_level_control
 
     def LLC_available(self) -> bool:
         """Return whether LLC is available to connect controller."""
@@ -78,7 +79,7 @@ class KortexClient:
 
     def LLC_connected(self) -> bool:
         """Return whether a LLC controller is connected."""
-        return not self.active and self.controller_connected
+        return not self.active and not self.calibrating and self.controller_connected
 
     def get_actuator_state(self, n: int, key: str) -> float:
         """Get the requested state for a given actuator."""
@@ -207,7 +208,9 @@ class KortexClient:
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         Logger.log("Low_level control disabled.")
 
-    def _connect_LLC(self, controller: "Controller", mode: str) -> None:
+    def _connect_LLC(
+        self, controller: "Controller", mode: Literal["position", "velocity", "current"]
+    ) -> None:
         """Connect a controller to the LLC of the robot."""
         self.controller = controller
         for joint in controller.joints:

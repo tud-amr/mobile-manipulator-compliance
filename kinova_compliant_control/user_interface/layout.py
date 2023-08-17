@@ -66,11 +66,14 @@ class Layout:
 
         c = self.client
         cal = calibration.Calibration(self.client)
-        fric = calibration.CalibrateFriction(self.client)
         grav = controller.CompensateGravity(self.client)
         imp = controller.Impedance(self.client)
         cart_imp = controller.CartesianImpedance(self.client)
         with self.create_window("Control", w, h, [x, y]):
+            dpg.add_text("Calibrate:")
+            self.button("Friction", cal.calibrate_friction, c.HLC_available)
+            self.button("Gravity", cal.calibrate_gravity, c.HLC_available)
+
             dpg.add_text("High Level:")
             self.button("Home", c.home, c.HLC_available)
             self.button("Zero", c.zero, c.HLC_available)
@@ -79,12 +82,13 @@ class Layout:
 
             dpg.add_text("Low Level:")
             self.button("Stop LLC", c.stop_LLC, c.LLC_available)
-            self.button("Calibrate", cal.connect_to_LLC, c.LLC_available)
-            self.button("Friction", fric.connect_to_LLC, c.LLC_available)
             self.button("Gravity", grav.connect_to_LLC, c.LLC_available)
             self.button("Impedance", imp.connect_to_LLC, c.LLC_available)
             self.button("Cartesian Impedance", cart_imp.connect_to_LLC, c.LLC_available)
             self.button("Stop LLC task", c.disconnect_LLC, c.LLC_connected)
+
+            dpg.add_text("Compensate:")
+            self.checkbox("Friction", grav.toggle_CF, grav.get_CF)
 
             dpg.add_text("Active joints:")
             for n in range(self.client.actuator_count):
