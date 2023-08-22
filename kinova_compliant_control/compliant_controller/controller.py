@@ -7,6 +7,18 @@ from .state import State
 class Controller:
     """General controller template."""
 
+    friction_compensation = False
+
+    @staticmethod
+    def toggle_CF() -> None:
+        """Toggle compensate friction."""
+        Controller.friction_compensation = not Controller.friction_compensation
+
+    @staticmethod
+    def get_CF() -> bool:
+        """Return the state of friction compensation."""
+        return Controller.friction_compensation
+
     def __init__(self, client: KortexClient) -> None:
         self.state: State = client.state
         self.client = client
@@ -28,29 +40,6 @@ class CompensateGravity(Controller):
 
     def __init__(self, client: KortexClient) -> None:
         super().__init__(client)
-        self.friction_compensation = False
-        self.friction_threshold = 0.1
-
-    def toggle_CF(self) -> None:
-        """Toggle compensate friction."""
-        self.friction_compensation = not self.friction_compensation
-
-    def get_CF(self) -> None:
-        """Return the state of friction compensation."""
-        return self.friction_compensation
-
-    def compensate_friction(self, n: int, joint: int) -> None:
-        """Compensate the friction of the joint."""
-        vel = self.state.dq[joint]
-        abs_vel = abs(vel)
-        if abs_vel > 0:
-            comp = vel / abs_vel * self.state.joint_frictions[joint]
-            comp *= (
-                abs_vel / self.friction_threshold
-                if abs_vel < self.friction_threshold
-                else 1
-            )
-            self.commands[n] += comp
 
     def command(self) -> None:
         """Compensate gravity."""
@@ -59,8 +48,31 @@ class CompensateGravity(Controller):
             self.commands[n] += (
                 self.state.g[joint] * self.state.current_torque_ratios[joint]
             )
-            if self.friction_compensation:
-                self.compensate_friction(n, joint)
+
+
+class CompensateGravityAndFriction(CompensateGravity):
+    """Compensate gravity and friction."""
+
+    def __init__(self, client: KortexClient) -> None:
+        super().__init__(client)
+        self.friction_threshold = 0.1
+
+    def command(self) -> None:
+        """Compensate friction."""
+        super().command()
+        if not Controller.friction_compensation:
+            return
+        for n, joint in enumerate(self.joints):
+            vel = self.state.dq[joint]
+            abs_vel = abs(vel)
+            if abs_vel > 0:
+                comp = vel / abs_vel * self.state.joint_frictions[joint]
+                comp *= (
+                    abs_vel / self.friction_threshold
+                    if abs_vel < self.friction_threshold
+                    else 1
+                )
+                self.commands[n] += comp
 
 
 class Impedance(CompensateGravity):
@@ -68,12 +80,11 @@ class Impedance(CompensateGravity):
 
     def __init__(self, client: KortexClient) -> None:
         super().__init__(client)
-        if self.client.mock:
-            self.S = [8, 8, 8, 2.00, 2.00, 0.0100]
-            self.D = [2, 2, 2, 0.25, 0.25, 0.0025]
-        else:
-            self.S = [4.0, 6, 4.0, 2.00, 2.00, 1]
-            self.D = [0.5, 0, 0.5, 0.25, 0.25, 0]
+        self.S = [4.0, 6, 4.0, 2.00, 2.00, 1]
+        self.D = [0.5, 0.5, 0.5, 0.25, 0.25, 0]
+
+        self.tolerance = 0.01  # m
+        self.thr_dynamic = 0.3  # m/s
 
     def connect_to_LLC(self) -> None:
         """Set current q and dq as desired."""
@@ -88,9 +99,26 @@ class Impedance(CompensateGravity):
         q_e = self.q_d - self.state.q
         dq_e = self.dq_d - self.state.dq
         tau = self.S * q_e + self.D * dq_e
+        current = [tau[n] * self.state.get_ratio(n) for n in range(len(tau))]
+
+        if Controller.friction_compensation:
+            x = self.state.x
+            x_d = self.state.target
+            x_e = x_d - x
+            self.compensate_friction(current, x_e)
 
         for n, joint in enumerate(self.joints):
-            self.commands[n] += tau[joint]
+            self.commands[n] += current[joint]
+
+    def compensate_friction(self, current: np.ndarray, x_e: np.ndarray) -> np.ndarray:
+        """Compensate friction."""
+        for n in range(len(current)):
+            if current[n] != 0 and np.linalg.norm(x_e) > self.tolerance:
+                factor = min(abs(self.state.dq[n]) / self.thr_dynamic, 1)
+                sign = current[n] / abs(current[n])
+                static_part = (1 - factor) * self.state.static_joint_frictions[n]
+                dynamic_part = factor * self.state.joint_frictions[n]
+                current[n] += sign * (static_part + dynamic_part)
 
 
 class CartesianImpedance(CompensateGravity):
@@ -98,16 +126,15 @@ class CartesianImpedance(CompensateGravity):
 
     def __init__(self, client: KortexClient) -> None:
         super().__init__(client)
-        if client.mock:
-            self.Kd = np.eye(3) * 120
-            self.Dd = np.eye(3) * 5
-        else:
-            self.Kd = np.eye(3) * 120
-            self.Dd = np.eye(3) * 5
+        self.Kd = np.eye(3) * 25
+        self.Dd = np.eye(3) * 0.5
+
+        self.tolerance = 0.01  # m
+        self.thr_dynamic = 0.3  # m/s
 
     def connect_to_LLC(self) -> None:
         """Set target to current position."""
-        self.state.active = [True, False, False, False, True, False]
+        self.state.active = [True, False, True, False, True, False]
         self.state.update_marker("target", self.state.x)
         self.target_mover = TargetMover(self.state, self.client)
         super().connect_to_LLC()
@@ -137,13 +164,23 @@ class CartesianImpedance(CompensateGravity):
 
         f = lam @ ddx_d + mu @ dx_d + (self.Kd @ x_e + self.Dd @ dx_e)
         tau = self.state.J.T @ f
+        current = [tau[n] * self.state.get_ratio(n) for n in range(len(tau))]
 
-        for n in range(len(tau)):
-            if tau[n] != 0:
-                tau[n] += tau[n] / abs(tau[n]) * self.state.joint_frictions[n]
+        if Controller.friction_compensation:
+            self.compensate_friction(current, x_e)
 
         for n, joint in enumerate(self.joints):
-            self.commands[n] += tau[joint]
+            self.commands[n] += current[joint]
+
+    def compensate_friction(self, current: np.ndarray, x_e: np.ndarray) -> np.ndarray:
+        """Compensate friction."""
+        for n in range(len(current)):
+            if current[n] != 0 and np.linalg.norm(x_e) > self.tolerance:
+                factor = min(abs(self.state.dq[n]) / self.thr_dynamic, 1)
+                sign = current[n] / abs(current[n])
+                static_part = (1 - factor) * self.state.static_joint_frictions[n]
+                dynamic_part = factor * self.state.joint_frictions[n]
+                current[n] += sign * (static_part + dynamic_part)
 
 
 class TargetMover:

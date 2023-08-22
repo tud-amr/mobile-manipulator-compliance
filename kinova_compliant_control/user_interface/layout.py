@@ -66,7 +66,7 @@ class Layout:
 
         c = self.client
         cal = calibration.Calibration(self.client)
-        grav = controller.CompensateGravity(self.client)
+        grav = controller.CompensateGravityAndFriction(self.client)
         imp = controller.Impedance(self.client)
         cart_imp = controller.CartesianImpedance(self.client)
         with self.create_window("Control", w, h, [x, y]):
@@ -87,7 +87,11 @@ class Layout:
             self.button("Stop LLC task", c.disconnect_LLC, c.LLC_connected)
 
             dpg.add_text("Compensate:")
-            self.checkbox("Friction", grav.toggle_CF, grav.get_CF)
+            self.checkbox(
+                "Friction",
+                controller.Controller.toggle_CF,
+                controller.Controller.get_CF,
+            )
 
             dpg.add_text("Active joints:")
             for n in range(self.client.actuator_count):
