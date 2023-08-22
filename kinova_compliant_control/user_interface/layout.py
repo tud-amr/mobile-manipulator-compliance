@@ -71,8 +71,7 @@ class Layout:
         cart_imp = controller.CartesianImpedance(self.client)
         with self.create_window("Control", w, h, [x, y]):
             dpg.add_text("Calibrate:")
-            self.button("Friction", cal.calibrate_friction, c.HLC_available)
-            self.button("Gravity", cal.calibrate_gravity, c.HLC_available)
+            self.button("Calibrate", cal.calibrate_all_joints, c.HLC_available)
 
             dpg.add_text("High Level:")
             self.button("Home", c.home, c.HLC_available)
