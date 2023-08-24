@@ -65,13 +65,16 @@ class Layout:
         y = self.height - (h + PADDING)
 
         c = self.client
-        cal = calibration.Calibration(self.client)
+        HL_cal = calibration.HighLevelCalibration(self.client)
+        LL_cal = calibration.LowLevelCalibration(self.client)
+
         grav = controller.CompensateGravityAndFriction(self.client)
         imp = controller.Impedance(self.client)
         cart_imp = controller.CartesianImpedance(self.client)
         with self.create_window("Control", w, h, [x, y]):
             dpg.add_text("Calibrate:")
-            self.button("Calibrate", cal.calibrate_all_joints, c.HLC_available)
+            self.button("HL Calibration", HL_cal.calibrate_all_joints, c.HLC_available)
+            self.button("LL Calibration", LL_cal.calibrate_all_joints, c.HLC_available)
 
             dpg.add_text("High Level:")
             self.button("Home", c.home, c.HLC_available)

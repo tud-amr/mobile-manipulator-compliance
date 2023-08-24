@@ -7,12 +7,86 @@ from scipy.optimize import minimize
 
 from kinova.kortex_client import KortexClient
 from kinova.specifications import Position
+from .controller import CompensateGravity
 import time
 from threading import Thread
 
 
-class Calibration:
-    """Class used for all calibration."""
+class LowLevelCalibration(CompensateGravity):
+    """Class used for calibration of static friction."""
+
+    def __init__(self, client: KortexClient) -> None:
+        super().__init__(client)
+        self.client = client
+        self.tolerance = 0.01
+
+    def calibrate_all_joints(self) -> None:
+        """Calibrate all joints."""
+        thread = Thread(target=self._calibrate_all_joints)
+        thread.start()
+
+    def calibrate(self, joint: int, start_pos: list) -> None:
+        """Calibrate the given joint."""
+        self.client.calibrating = True
+        self.joint = joint
+        self.client.state.active = [
+            n == joint for n in range(self.client.actuator_count)
+        ]
+        position = start_pos
+        calibrations = 1 if self.client.mock else 4
+        angles = np.linspace(-90, 90, calibrations)
+
+        measured_frictions = []
+        for angle in angles:
+            self.torque = 0
+            self.moved = False
+            self.started = False
+            self.finished = False
+            position[joint] = angle
+            self.client._high_level_move(Position("", position))
+            self.client._start_LLC()
+            self.connect_to_LLC()
+            time.sleep(1)
+            self.started = True
+            while not self.finished:
+                time.sleep(0.1)
+            measured_frictions.append(self.torque)
+
+        average_friction = np.mean(measured_frictions)
+        measured_frictions = np.around(measured_frictions, 3)
+        print(f"Joint {joint}: {measured_frictions}, {average_friction}")
+        self.client.calibrating = False
+
+    def command(self) -> None:
+        """Increase torque until it moves."""
+        super().command()
+
+        if not self.started:
+            return
+        if self.moved:
+            if abs(self.state.dq[self.joint]) < self.tolerance:
+                self.client._disconnect_LLC()
+                self.client._stop_LLC()
+                self.finished = True
+            return
+        if abs(self.state.dq[self.joint]) < self.tolerance:
+            self.torque += 0.0001
+        else:
+            self.moved = True
+
+        self.commands[0] += self.torque
+
+    def _calibrate_all_joints(self) -> None:
+        self.calibrate(0, [0, 0, 0, 0, 0, 0])
+        self.calibrate(1, [0, 0, 0, 90, 0, 0])
+        self.calibrate(2, [0, 0, 0, 90, 0, 0])
+        self.calibrate(3, [0, 0, 0, 0, 0, 0])
+        self.calibrate(4, [0, 0, 90, 0, 0, 0])
+        self.calibrate(5, [0, 0, 0, 0, 0, 0])
+
+
+class HighLevelCalibration:
+    """Class used for calibration of torque/current ratio and dynamic friction."""
 
     def __init__(self, client: KortexClient) -> None:
         self.client = client
@@ -25,6 +99,7 @@ class Calibration:
     def calibrate(self, joint: int) -> None:
         """Calibrate the given joint."""
         self.client.calibrating = True
+        self.joint = joint
         start = [0 if joint != n else -90 for n in range(self.client.actuator_count)]
         end = [0 if joint != n else 90 for n in range(self.client.actuator_count)]
 
@@ -34,14 +109,13 @@ class Calibration:
             end[2] = 90
 
         self.client._high_level_move(Position("", start))
-        self.start_calibration(joint)
+        self.start_calibration()
         self.client._high_level_move(Position("", end))
         self.stop_calibration()
         self.client.calibrating = False
 
-    def start_calibration(self, joint: int) -> None:
+    def start_calibration(self) -> None:
         """Start the calibration."""
-        self.joint = joint
         self.velocity = []
         self.gravity = []
         self.torque = []
