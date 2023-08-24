@@ -1,6 +1,6 @@
 <mujoco model="KR7108-URDF">
   <compiler angle="radian" meshdir="meshes/" autolimits="true"/>
-  <option integrator="RK4" noslip_iterations="100"/>
+  <option integrator="RK4" noslip_iterations="10"/>
   <default>
     <default class="body">
       <geom material="body"/>
