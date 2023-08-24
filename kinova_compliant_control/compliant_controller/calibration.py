@@ -169,8 +169,8 @@ class HighLevelCalibration:
             "Transformed": ratio * self.torque + friction,
         }
         df = pd.DataFrame(data)
-        pre = "mock" if self.client.mock else "robot"
-        df.to_csv(directory + f"/{pre}_calibration_{self.joint}.csv", index=False)
+        pre = "mock_" if self.client.mock else ""
+        df.to_csv(directory + f"/{pre}calibration_{self.joint}.csv", index=False)
 
     def _f_scale_and_move(self, params: list) -> None:
         a, b = params

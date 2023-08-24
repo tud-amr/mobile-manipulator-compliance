@@ -124,9 +124,17 @@ class Layout:
             self.text("Servoing: ", self.client.get_servoing_mode)
             dpg.add_spacer()
 
-            dpg.add_text("Current/Torque ratios:")
-            for n in range(self.client.actuator_count):
-                self.text(f"Joint {n}: ", self.client.state.get_ratio, [n])
+            dpg.add_text("Parameters:")
+            headers = ["Joint:", "Ratio:", "Dfric:", "Sfric:"]
+            with dpg.table(header_row=True, borders_outerH=True, borders_outerV=True):
+                for header in headers:
+                    dpg.add_table_column(label=header)
+                for n in range(self.client.actuator_count):
+                    with dpg.table_row():
+                        dpg.add_text(f"{n}")
+                        self.text("", self.client.state.get_ratio, [n])
+                        self.text("", self.client.state.get_dynamic_friction, [n])
+                        self.text("", self.client.state.get_static_friction, [n])
             dpg.add_spacer()
 
             self.button("Clear faults", self.client.clear_faults)

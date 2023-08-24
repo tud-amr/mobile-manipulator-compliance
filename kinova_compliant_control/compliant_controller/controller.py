@@ -66,7 +66,7 @@ class CompensateGravityAndFriction(CompensateGravity):
             vel = self.state.dq[joint]
             abs_vel = abs(vel)
             if abs_vel > 0:
-                comp = vel / abs_vel * self.state.joint_frictions[joint]
+                comp = vel / abs_vel * self.state.dynamic_frictions[joint]
                 comp *= (
                     abs_vel / self.friction_threshold
                     if abs_vel < self.friction_threshold
@@ -116,8 +116,8 @@ class Impedance(CompensateGravity):
             if current[n] != 0 and np.linalg.norm(x_e) > self.tolerance:
                 factor = min(abs(self.state.dq[n]) / self.thr_dynamic, 1)
                 sign = current[n] / abs(current[n])
-                static_part = (1 - factor) * self.state.static_joint_frictions[n]
-                dynamic_part = factor * self.state.joint_frictions[n]
+                static_part = (1 - factor) * self.state.static_frictions[n]
+                dynamic_part = factor * self.state.dynamic_frictions[n]
                 current[n] += sign * (static_part + dynamic_part)
 
 
@@ -178,8 +178,8 @@ class CartesianImpedance(CompensateGravity):
             if current[n] != 0 and np.linalg.norm(x_e) > self.tolerance:
                 factor = min(abs(self.state.dq[n]) / self.thr_dynamic, 1)
                 sign = current[n] / abs(current[n])
-                static_part = (1 - factor) * self.state.static_joint_frictions[n]
-                dynamic_part = factor * self.state.joint_frictions[n]
+                static_part = (1 - factor) * self.state.static_frictions[n]
+                dynamic_part = factor * self.state.dynamic_frictions[n]
                 current[n] += sign * (static_part + dynamic_part)
 
 

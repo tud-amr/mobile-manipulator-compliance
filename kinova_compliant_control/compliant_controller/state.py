@@ -35,12 +35,12 @@ class State:
             if client.mock
             else {0: 1, 1: 0.316, 2: 1.02, 3: 2.58, 4: 2.02, 5: 1}
         )
-        self.joint_frictions = (
+        self.dynamic_frictions = (
             {0: 0.2, 1: 0.2, 2: 0.2, 3: 0.2, 4: 0.2, 5: 0.2}
             if self.client.mock
             else {0: 0.52, 1: 1.1, 2: 0.3, 3: 0.11, 4: 0.13, 5: 0.2}
         )
-        self.static_joint_frictions = (
+        self.static_frictions = (
             {0: 0.2, 1: 0.2, 2: 0.2, 3: 0.2, 4: 0.2, 5: 0.2}
             if self.client.mock
             else {0: 0.622, 1: 0.875, 2: 0.747, 3: 0.551, 4: 0.694, 5: 0.565}
@@ -79,6 +79,14 @@ class State:
     def get_ratio(self, joint: int) -> float:
         """Get the current/torque ratio between the model and the real robot for the given joint."""
         return self.current_torque_ratios[joint]
+
+    def get_dynamic_friction(self, joint: int) -> float:
+        """Get the dynamic friction for the given joint."""
+        return self.dynamic_frictions[joint]
+
+    def get_static_friction(self, joint: int) -> float:
+        """Get the static friction for the given joint."""
+        return self.static_frictions[joint]
 
     def load_robot(self) -> None:
         """Load the pinocchio robot."""
