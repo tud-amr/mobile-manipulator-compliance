@@ -1,7 +1,6 @@
 .vscode/
 venv/
 __pycache__/
-*.whl
 imgui.ini
 *.egg-info
 **/calibration_data/**
