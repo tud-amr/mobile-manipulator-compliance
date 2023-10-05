@@ -23,6 +23,14 @@ public:
         driver_manager_.initialize_encoders();
     }
 
+    void canread_loop()
+    {
+        while (true)
+        {
+            driver_manager_.canread();
+        }
+    }
+
     void publish_loop()
     {
         initialize_drivers();
@@ -47,6 +55,7 @@ int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
     DingoDriverNode dingo_driver_node;
+    std::thread canread_thread(&DingoDriverNode::canread_loop, &dingo_driver_node);
     std::thread thread(&DingoDriverNode::publish_loop, &dingo_driver_node);
     rclcpp::Node::SharedPtr pointer(&dingo_driver_node);
     rclcpp::spin(pointer);
