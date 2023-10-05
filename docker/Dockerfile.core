@@ -18,7 +18,7 @@ RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano
 #Copy files to workspace:
 ADD .bashrc /home/dingo
 ADD kortex_api-2.6.0.post3-py3-none-any.whl /home/dingo
-ADD requirements.txt /home/dingo
+ADD requirements_core.txt /home/dingo
 WORKDIR /home/dingo
 
 #Install kortex wheel:
