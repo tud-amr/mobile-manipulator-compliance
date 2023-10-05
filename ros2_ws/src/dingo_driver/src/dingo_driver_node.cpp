@@ -5,6 +5,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "dingo_driver_msg/msg/feedback.hpp"
+#include "dingo_driver_msg/msg/command.hpp"
 #include "dingo_driver_msg/srv/set_gain.hpp"
 #include "dingo_driver.h"
 
@@ -15,6 +16,8 @@ public:
         : Node("minimal_publisher"), driver_manager_("vcan0")
     {
         publisher_ = this->create_publisher<dingo_driver_msg::msg::Feedback>("/dingo_driver/feedback", 10);
+        subscription_ = this->create_subscription<dingo_driver_msg::msg::Command>("/dingo_driver/command", 10, std::bind(&DingoDriverNode::set_gain, this, std::placeholders::_1));
+        service_ = this->create_service<dingo_driver_msg::srv::SetGain>("set_gain", std::bind(&DingoDriverNode::set_gain, this, std::placeholders::_1, std::placeholders::_2));
     }
 
     void initialize_drivers()
@@ -23,6 +26,11 @@ public:
         driver_manager_.add_actuator(5, "rear_right_wheel");
         driver_manager_.set_mode("rear_right_wheel", "Cur");
         driver_manager_.initialize_encoders();
+    }
+
+    void set_command(const dingo_driver_msg::msg::Command command)
+    {
+        command_ = command.value;
     }
 
     void set_gain(const std::shared_ptr<dingo_driver_msg::srv::SetGain::Request> request,
@@ -49,6 +57,8 @@ public:
         int x = 0;
         while (true)
         {
+            driver_manager_.command("rear_right_wheel", "Cur", command_);
+            command_ = 0;
             state = driver_manager_.get_states()[0];
             feedback.set__x(x);
             feedback.set__y_feedback(state.current);
@@ -59,8 +69,10 @@ public:
 
 private:
     rclcpp::Publisher<dingo_driver_msg::msg::Feedback>::SharedPtr publisher_;
+    rclcpp::Subscription<dingo_driver_msg::msg::Command>::SharedPtr subscription_;
+    rclcpp::Service<dingo_driver_msg::srv::SetGain>::SharedPtr service_;
     dingo_driver::DriverManager driver_manager_;
-    rclcpp::Service<dingo_driver_msg::srv::SetGain>::SharedPtr service_ = this->create_service<dingo_driver_msg::srv::SetGain>("set_gain", std::bind(&DingoDriverNode::set_gain, this, std::placeholders::_1, std::placeholders::_2));
+    float command_ = 0;
 };
 
 int main(int argc, char *argv[])

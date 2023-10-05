@@ -11,6 +11,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Feedback.msg"
+  "msg/Command.msg"
   "srv/SetGain.srv"
  )
 

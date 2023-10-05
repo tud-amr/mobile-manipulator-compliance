@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from dingo_driver_msg.msg import Feedback
+from dingo_driver_msg.msg import Feedback, Command
 from dingo_driver_msg.srv import SetGain
 from user_interface.dingo_pid_tuner import Tuner
 from threading import Thread
@@ -10,6 +10,7 @@ import time
 class PID_Tuner_Interface_Node(Node):
     def __init__(self):
         super().__init__("pid_tuner_interface")
+        self.publisher = self.create_publisher(Command, "/dingo_driver/command", 10)
         self.subscription = self.create_subscription(
             Feedback, "/dingo_driver/feedback", self.callback, 10
         )
@@ -18,7 +19,16 @@ class PID_Tuner_Interface_Node(Node):
         self.tuner = Tuner(self.set_gain)
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
+        command_thread = Thread(target=self.start_command_loop)
+        command_thread.start()
         self.tuner.start_render_loop()
+
+    def start_command_loop(self):
+        while self.tuner.active:
+            command = Command()
+            command.value = self.tuner.inputs["target"].value
+            self.publisher.publish(command)
+            time.sleep(0.01)
 
     def set_gain(self, gain: str, value: float):
         request = SetGain.Request()
