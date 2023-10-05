@@ -16,7 +16,7 @@ public:
         : Node("minimal_publisher"), driver_manager_("vcan0")
     {
         publisher_ = this->create_publisher<dingo_driver_msg::msg::Feedback>("/dingo_driver/feedback", 10);
-        subscription_ = this->create_subscription<dingo_driver_msg::msg::Command>("/dingo_driver/command", 10, std::bind(&DingoDriverNode::set_gain, this, std::placeholders::_1));
+        subscription_ = this->create_subscription<dingo_driver_msg::msg::Command>("/dingo_driver/command", 10, std::bind(&DingoDriverNode::set_command, this, std::placeholders::_1));
         service_ = this->create_service<dingo_driver_msg::srv::SetGain>("set_gain", std::bind(&DingoDriverNode::set_gain, this, std::placeholders::_1, std::placeholders::_2));
     }
 
