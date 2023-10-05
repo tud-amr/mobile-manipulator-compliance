@@ -1,5 +1,5 @@
 #Pull the base image and update cache:
-FROM ros:humble-ros-core
+FROM ros:humble
 RUN apt update 
 
 #Add a user:
@@ -16,9 +16,10 @@ Run chown dingo /home/dingo
 RUN apt install -y ffmpeg libsm6 libxext6
 
 #Install project required packages:
-RUN apt install -y python3-pip python3-venv nano xdotool wmctrl iputils-ping
+RUN apt install -y git python3-pip libboost-all-dev xdotool wmctrl iputils-ping nano
 
-#Copy pip files to workspace:
+#Copy files to workspace:
+ADD .bashrc /home/dingo
 ADD kortex_api-2.6.0.post3-py3-none-any.whl /home/dingo
 ADD requirements.txt /home/dingo
 WORKDIR /home/dingo
