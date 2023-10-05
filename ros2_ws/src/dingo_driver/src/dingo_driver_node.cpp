@@ -43,6 +43,7 @@ public:
             feedback.set__x(x);
             feedback.set__y_feedback(state.current);
             publisher_->publish(feedback);
+            x += 1;
         }
     }
 
