@@ -28,7 +28,7 @@ class PID_Tuner_Interface_Node(Node):
         while not future.done():
             time.sleep(0.1)
         if future.result():
-            setattr(self.tuner, gain, value)
+            print("Value changed.")
 
     def callback(self, msg: Feedback):
         self.tuner.update_data(msg.x, msg.y_feedback)

@@ -1,4 +1,13 @@
 import dearpygui.dearpygui as dpg
+from dataclasses import dataclass
+
+
+@dataclass
+class Input:
+    value: float
+    minimum: float
+    maximum: float
+    step: float
 
 
 class Tuner:
@@ -9,14 +18,12 @@ class Tuner:
         self.actuator_name = "rear_right_wheel"
         self.actuator_id = 5
 
-        self.target = 0.6
-        self.P = 20
-        self.I = 0
-        self.D = 0
-
-        self.Pmax = 100
-        self.Imax = 0
-        self.Dmax = 0
+        self.inputs = {
+            "target": Input(0.6, 0, 2, 0.1),
+            "P": Input(0.2, 0, 1, 0.1),
+            "I": Input(4, 0, 10, 1),
+            "D": Input(0, 0, 0, 1),
+        }
 
         self.define_ui_parameters()
         self.create_ui()
@@ -64,42 +71,31 @@ class Tuner:
             no_bring_to_front_on_focus=True,
         ):
             with dpg.group(horizontal=True):
-                dpg.add_text("Target:")
-                dpg.add_input_double(
-                    width=100,
-                    min_value=0,
-                    max_value=1,
-                    min_clamped=True,
-                    max_clamped=True,
-                    default_value=self.target,
-                    callback=self.button_callback,
-                    tag="value_target",
-                )
-                dpg.add_spacer(width=250)
-                for x in ["P", "I", "D"]:
-                    dpg.add_text(x + ":")
-                    dpg.add_input_int(
+                for name_, input_ in self.inputs.items():
+                    dpg.add_text(name_)
+                    dpg.add_input_double(
                         width=100,
-                        min_value=0,
-                        max_value=getattr(self, x + "max"),
+                        default_value=input_.value,
+                        min_value=input_.minimum,
+                        max_value=input_.maximum,
+                        step=input_.step,
                         min_clamped=True,
                         max_clamped=True,
-                        default_value=getattr(self, x),
                         callback=self.button_callback,
-                        tag="value_" + x,
+                        tag="value_" + name_,
                     )
+                    if name_ == "target":
+                        dpg.add_spacer(width=250)
 
     def button_callback(self) -> None:
         """Callback of the buttons."""
-        for tag in ["target", "P", "I", "D"]:
+        for tag in self.inputs.keys():
             value = dpg.get_value("value_" + tag)
-            if getattr(self, tag) == value:
-                continue
-            if tag == "target":
-                self.target = value
-            else:
-                print(f"Set gain {tag} to {value}...")
-                self.set_gain_callback(tag, value)
+            if self.inputs[tag].value != value:
+                self.inputs[tag].value = value
+                if tag != "target":
+                    print(f"Set gain {tag} to {value}...")
+                    self.set_gain_callback(tag, value)
 
     def create_plot(self) -> None:
         """Create a plot."""
@@ -145,7 +141,7 @@ class Tuner:
     def update_data(self, x, feedback_y) -> None:
         """Update the data."""
         self.data_x.append(x)
-        self.target_y.append(self.target)
+        self.target_y.append(self.inputs["target"].value)
         self.feedback_y.append(feedback_y)
 
         dpg.set_value(

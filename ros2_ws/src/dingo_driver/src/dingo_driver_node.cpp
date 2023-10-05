@@ -21,6 +21,7 @@ public:
     {
         driver_manager_.connect_gateway();
         driver_manager_.add_actuator(5, "rear_right_wheel");
+        driver_manager_.set_mode("rear_right_wheel", "Cur");
         driver_manager_.initialize_encoders();
     }
 
