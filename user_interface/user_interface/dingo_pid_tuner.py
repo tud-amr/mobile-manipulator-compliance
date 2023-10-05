@@ -1,5 +1,7 @@
 import dearpygui.dearpygui as dpg
 from dataclasses import dataclass
+import time
+from threading import Thread
 
 
 @dataclass
@@ -27,6 +29,8 @@ class Tuner:
 
         self.define_ui_parameters()
         self.create_ui()
+        thread = Thread(target=self.start_step_response_loop)
+        thread.start()
 
     def define_ui_parameters(self) -> None:
         """Define the UI parameters."""
@@ -159,6 +163,19 @@ class Tuner:
             ],
         )
         dpg.fit_axis_data("x_axis")
+
+    def start_step_response_loop(self) -> None:
+        """Start a step response loop."""
+        last = time.time()
+        while self.active:
+            if time.time() - last < 3:
+                time.sleep(0.1)
+                continue
+            if self.inputs["target"].value == 0.6:
+                self.inputs["target"].value = 1.0
+            elif self.inputs["target"].value == 1.0:
+                self.inputs["target"].value = 0.6
+            last = time.time()
 
     def close(self) -> None:
         """Callback for keyboard input."""

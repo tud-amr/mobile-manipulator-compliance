@@ -26,7 +26,7 @@ class PID_Tuner_Interface_Node(Node):
     def start_command_loop(self):
         while self.tuner.active:
             command = Command()
-            command.value = self.tuner.inputs["target"].value
+            command.value = float(self.tuner.inputs["target"].value)
             self.publisher.publish(command)
             time.sleep(0.01)
 
