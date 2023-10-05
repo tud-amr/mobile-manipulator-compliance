@@ -27,8 +27,9 @@ public:
     void set_gain(const std::shared_ptr<dingo_driver_msg::srv::SetGain::Request> request,
                   std::shared_ptr<dingo_driver_msg::srv::SetGain::Response> response)
     {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Driver: Set gain...");
+        driver_manager_.set_gain("rear_right_wheel", "Cur", request->gain, request->value);
         response->set__success(true);
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service called.");
     }
 
     void canread_loop()

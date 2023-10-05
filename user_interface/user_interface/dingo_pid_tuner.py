@@ -1,13 +1,11 @@
-# from dingo_driver.dingo_driver import DriverManager
 import dearpygui.dearpygui as dpg
-import time
-from threading import Thread
 
 
 class Tuner:
     """Used to tune the PID controller of the Dingo."""
 
-    def __init__(self) -> None:
+    def __init__(self, set_gain_callback: callable) -> None:
+        self.set_gain_callback = set_gain_callback
         self.actuator_name = "rear_right_wheel"
         self.actuator_id = 5
 
@@ -31,7 +29,7 @@ class Tuner:
         self.data_x = []
         self.target_y = []
         self.feedback_y = []
-        self.n_samples = 1000
+        self.n_samples = 300
         self.actuators_ready = False
 
     def create_ui(self) -> None:
@@ -48,39 +46,8 @@ class Tuner:
         dpg.setup_dearpygui()
         dpg.show_viewport()
 
-        # self.connect_with_dingo()
         self.create_buttons()
         self.create_plot()
-        # self.start_command_loop()
-
-    def connect_with_dingo(self) -> None:
-        """Connect with Dingo."""
-        self.driver_manager = DriverManager("vcan0")
-        self.driver_manager.connect_gateway()
-        can_thread = Thread(target=self.driver_manager.start_canread_loop, daemon=True)
-        can_thread.start()
-        initialize_thread = Thread(target=self.initialize_actuators, daemon=True)
-        initialize_thread.start()
-
-    def initialize_actuators(self) -> None:
-        """Initialize the Dingo actuators."""
-        self.actuators_ready = False
-        self.driver_manager.add_actuator(self.actuator_id, self.actuator_name)
-        self.driver_manager.initialize_encoders()
-        self.actuators_ready = True
-
-    def command_loop(self) -> None:
-        """Command loop."""
-        while not self.actuators_ready:
-            time.sleep(1)
-        while self.active:
-            self.driver_manager.command(self.actuator_name, "Cur", self.target)
-            time.sleep(0.1)
-
-    def start_command_loop(self) -> None:
-        """Start the command loop."""
-        command_thread = Thread(target=self.command_loop, daemon=True)
-        command_thread.start()
 
     def create_buttons(self) -> None:
         """Create the buttons."""
@@ -128,12 +95,11 @@ class Tuner:
             value = dpg.get_value("value_" + tag)
             if getattr(self, tag) == value:
                 continue
-            print(tag)
             if tag == "target":
                 self.target = value
             else:
                 print(f"Set gain {tag} to {value}...")
-                # self.driver_manager.set_gain(self.actuator_name, "Cur", tag, value)
+                self.set_gain_callback(tag, value)
 
     def create_plot(self) -> None:
         """Create a plot."""
@@ -178,7 +144,6 @@ class Tuner:
 
     def update_data(self, x, feedback_y) -> None:
         """Update the data."""
-        print(f"Update: x={x} and y={feedback_y}")
         self.data_x.append(x)
         self.target_y.append(self.target)
         self.feedback_y.append(feedback_y)
