@@ -13,7 +13,7 @@ class DingoDriverNode : public rclcpp::Node
 {
 public:
     DingoDriverNode()
-        : Node("minimal_publisher"), driver_manager_("vcan0")
+        : Node("dingo_driver_node"), driver_manager_("vcan0")
     {
         publisher_ = this->create_publisher<dingo_driver_msg::msg::Feedback>("/dingo_driver/feedback", 10);
         subscription_ = this->create_subscription<dingo_driver_msg::msg::Command>("/dingo_driver/command", 10, std::bind(&DingoDriverNode::set_command, this, std::placeholders::_1));
@@ -58,7 +58,7 @@ public:
             if (change_gain_)
                 continue;
             driver_manager_.command("rear_right_wheel", "Cur", command_);
-            command_ = 0;
+            // command_ = 0;
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
