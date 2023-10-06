@@ -9,7 +9,7 @@ import time
 
 class PID_Tuner_Interface_Node(Node):
     def __init__(self):
-        super().__init__("pid_tuner_interface")
+        super().__init__("dingo_pid_tuner_node")
         self.publisher = self.create_publisher(Command, "/dingo_driver/command", 10)
         self.subscription = self.create_subscription(
             Feedback, "/dingo_driver/feedback", self.callback, 10
