@@ -23,8 +23,8 @@ public:
     void initialize_drivers()
     {
         driver_manager_.connect_gateway();
-        driver_manager_.add_actuator(5, "rear_right_wheel");
-        driver_manager_.set_mode("rear_right_wheel", "Cur");
+        driver_manager_.add_actuator(canbus_id_, acutator_);
+        driver_manager_.set_mode(acutator_, "Cur");
         driver_manager_.initialize_encoders();
     }
 
@@ -38,7 +38,7 @@ public:
     {
         change_gain_ = true;
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Driver: Set gain...");
-        driver_manager_.set_gain("rear_right_wheel", "Cur", request->gain, request->value);
+        driver_manager_.set_gain(acutator_, "Cur", request->gain, request->value);
         response->set__success(true);
         change_gain_ = false;
     }
@@ -57,7 +57,7 @@ public:
         {
             if (change_gain_)
                 continue;
-            driver_manager_.command("rear_right_wheel", "Cur", command_);
+            driver_manager_.command(acutator_, "Cur", command_);
             // command_ = 0;
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
@@ -90,6 +90,8 @@ private:
     dingo_driver::DriverManager driver_manager_;
     float command_ = 0;
     bool change_gain_ = false;
+    std::string acutator_ = "rear_right_wheel";
+    int canbus_id_ = 5;
 };
 
 int main(int argc, char *argv[])
