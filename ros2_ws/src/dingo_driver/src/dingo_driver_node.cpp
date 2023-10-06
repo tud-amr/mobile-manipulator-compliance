@@ -74,7 +74,10 @@ public:
                 continue;
             state = driver_manager_.get_states()[0];
             feedback.set__x(x);
-            feedback.set__y_feedback(state.current);
+            feedback.set__position(state.position);
+            feedback.set__speed(state.speed);
+            feedback.set__voltage(state.voltage);
+            feedback.set__current(state.current);
             publisher_->publish(feedback);
             x += 1;
         }
