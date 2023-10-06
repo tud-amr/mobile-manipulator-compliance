@@ -51,7 +51,18 @@ public:
         }
     }
 
-    void publish_loop()
+    void command_loop()
+    {
+        while (true)
+        {
+            if (change_gain_)
+                continue;
+            driver_manager_.command("rear_right_wheel", "Cur", command_);
+            command_ = 0;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+    void feedback_loop()
     {
         initialize_drivers();
         dingo_driver::State state;
@@ -61,8 +72,6 @@ public:
         {
             if (change_gain_)
                 continue;
-            driver_manager_.command("rear_right_wheel", "Cur", command_);
-            command_ = 0;
             state = driver_manager_.get_states()[0];
             feedback.set__x(x);
             feedback.set__y_feedback(state.current);
@@ -85,7 +94,8 @@ int main(int argc, char *argv[])
     rclcpp::init(argc, argv);
     DingoDriverNode dingo_driver_node;
     std::thread canread_thread(&DingoDriverNode::canread_loop, &dingo_driver_node);
-    std::thread thread(&DingoDriverNode::publish_loop, &dingo_driver_node);
+    std::thread feedback_thread(&DingoDriverNode::feedback_loop, &dingo_driver_node);
+    std::thread command_thread(&DingoDriverNode::command_loop, &dingo_driver_node);
     rclcpp::Node::SharedPtr pointer(&dingo_driver_node);
     rclcpp::spin(pointer);
     std::terminate();
