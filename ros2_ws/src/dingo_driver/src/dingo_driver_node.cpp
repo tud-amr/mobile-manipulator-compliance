@@ -36,9 +36,11 @@ public:
     void set_gain(const std::shared_ptr<dingo_driver_msg::srv::SetGain::Request> request,
                   std::shared_ptr<dingo_driver_msg::srv::SetGain::Response> response)
     {
+        change_gain_ = true;
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Driver: Set gain...");
         driver_manager_.set_gain("rear_right_wheel", "Cur", request->gain, request->value);
         response->set__success(true);
+        change_gain_ = false;
     }
 
     void canread_loop()
@@ -57,6 +59,8 @@ public:
         int x = 0;
         while (true)
         {
+            if (change_gain_)
+                continue;
             driver_manager_.command("rear_right_wheel", "Cur", command_);
             command_ = 0;
             state = driver_manager_.get_states()[0];
@@ -73,6 +77,7 @@ private:
     rclcpp::Service<dingo_driver_msg::srv::SetGain>::SharedPtr service_;
     dingo_driver::DriverManager driver_manager_;
     float command_ = 0;
+    bool change_gain_ = false;
 };
 
 int main(int argc, char *argv[])
