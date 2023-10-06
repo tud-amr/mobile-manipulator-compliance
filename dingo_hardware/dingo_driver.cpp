@@ -67,7 +67,7 @@ namespace dingo_driver
             driver->requestFeedbackCurrent();
             while (!driver->lastPositionReceived() || !driver->lastSpeedReceived() || !driver->lastOutVoltageReceived() || !driver->lastCurrentReceived())
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                // std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
             state.position = actuator.get_driver()->lastPosition();
             state.speed = actuator.get_driver()->lastSpeed();
