@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 from dataclasses import dataclass
 import time
 from threading import Thread
+from collections import deque
 
 
 @dataclass
@@ -22,14 +23,14 @@ class Tuner:
 
         self.inputs = {
             "target": Input(0.6, 0, 2, 0.1),
-            "P": Input(0.2, 0, 1, 0.1),
-            "I": Input(4, 0, 10, 1),
-            "D": Input(0, 0, 0, 1),
+            "P": Input(0, 0, 70, 1),
+            "I": Input(0, 0, 20, 1),
+            "D": Input(0, 0, 5, 0.1),
         }
 
         self.define_ui_parameters()
         self.create_ui()
-        thread = Thread(target=self.start_step_response_loop)
+        thread = Thread(target=self.start_continious_response_loop)
         thread.start()
 
     def define_ui_parameters(self) -> None:
@@ -37,10 +38,10 @@ class Tuner:
         self.width = 1200
         self.height = 600
         self.bar_height = 30
-        self.data_x = []
-        self.target_y = []
-        self.feedback_y = []
-        self.n_samples = 300
+        self.data_x = deque()
+        self.target_y = deque()
+        self.feedback_y = deque()
+        self.n_samples = 1000
         self.actuators_ready = False
 
     def create_ui(self) -> None:
@@ -126,17 +127,17 @@ class Tuner:
                 dpg.add_plot_axis(
                     dpg.mvYAxis, label="Amps", tag="y_axis", no_gridlines=True
                 )
-                dpg.set_axis_limits("y_axis", 0, 2)
+                dpg.set_axis_limits("y_axis", 0, 5)
                 dpg.add_line_series(
-                    x=self.data_x,
-                    y=self.target_y,
+                    x=list(self.data_x),
+                    y=list(self.target_y),
                     label="Target",
                     parent="y_axis",
                     tag="control_target",
                 )
                 dpg.add_line_series(
-                    x=self.data_x,
-                    y=self.feedback_y,
+                    x=list(self.data_x),
+                    y=list(self.feedback_y),
                     label="Feedback",
                     parent="y_axis",
                     tag="control_feedback",
@@ -147,20 +148,18 @@ class Tuner:
         self.data_x.append(x)
         self.target_y.append(self.inputs["target"].value)
         self.feedback_y.append(feedback_y)
+        while len(self.data_x) > self.n_samples:
+            self.data_x.popleft()
+            self.target_y.popleft()
+            self.feedback_y.popleft()
 
         dpg.set_value(
             "control_target",
-            [
-                list(self.data_x[-self.n_samples :]),
-                list(self.target_y[-self.n_samples :]),
-            ],
+            [list(self.data_x), list(self.target_y)],
         )
         dpg.set_value(
             "control_feedback",
-            [
-                list(self.data_x[-self.n_samples :]),
-                list(self.feedback_y[-self.n_samples :]),
-            ],
+            [list(self.data_x), list(self.feedback_y)],
         )
         dpg.fit_axis_data("x_axis")
 
@@ -176,6 +175,17 @@ class Tuner:
             elif self.inputs["target"].value == 1.0:
                 self.inputs["target"].value = 0.6
             last = time.time()
+
+    def start_continious_response_loop(self) -> None:
+        """Start a sine response loop."""
+        self.fac = 1
+        while self.active:
+            if self.inputs["target"].value > 4.0:
+                self.fac = -1
+            if self.inputs["target"].value < 0.6:
+                self.fac = 1
+            self.inputs["target"].value += self.fac * 0.01
+            time.sleep(0.01)
 
     def close(self) -> None:
         """Callback for keyboard input."""
