@@ -1,6 +1,6 @@
 import time
 from threading import Thread, Event
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 import numpy as np
 
 from kortex_api.RouterClient import RouterClient
@@ -10,12 +10,12 @@ from kortex_api.autogen.client_stubs.ActuatorConfigClientRpc import ActuatorConf
 from kortex_api.autogen.messages import Base_pb2, BaseCyclic_pb2, ActuatorConfig_pb2
 from kortex_api.Exceptions.KServerException import KServerException
 
-from user_interface.logger import Logger
 from .specifications import Position, actuator_ids, ranges
 
-if TYPE_CHECKING:
-    from compliant_controller.controller import Controller
-    from compliant_controller.state import State
+
+class Logger:
+    def log(message: str):
+        print(message)
 
 
 class KortexClient:
@@ -23,7 +23,6 @@ class KortexClient:
 
     def __init__(
         self,
-        state: "State",
         base: BaseClient = None,
         base_cyclic: BaseCyclicClient = None,
         actuator_config: ActuatorConfigClient = None,
@@ -55,8 +54,6 @@ class KortexClient:
         self.n = self.frequency
         self.sleep_time = 1 / self.frequency
 
-        self.state = state
-        self.state.connect_client(self)
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         self._refresh()
         self._initialize_command()
@@ -239,7 +236,7 @@ class KortexClient:
     def _refresh_loop(self) -> bool:
         while self.active_loop:
             self._refresh()
-            self.state.update()
+            # self.state.update()
             self.n += 1
             time.sleep(self.sleep_time)
 

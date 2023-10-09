@@ -2,24 +2,48 @@ import rclpy
 from rclpy.node import Node
 from kinova_driver_msg.msg import Feedback, Command
 from kinova_driver_msg.srv import HighLevelMove
-from threading import Thread
 import subprocess
 from kinova import utilities
+from kinova.kortex_client import KortexClient
 
 
 class KinovaDriverNode(Node):
     def __init__(self):
         super().__init__("kinova_driver_node")
-        self.publisher = self.create_publisher(Command, "/kinova_driver_node/command", 10)
+        self.publisher = self.create_publisher(
+            Command, "/kinova_driver_node/command", 10
+        )
         self.subscription = self.create_subscription(
             Feedback, "/kinova_driver/feedback", self.callback, 10
         )
-        self.client = self.create_client(HighLevelMove, "set_gain")
+        self.service = self.create_service(
+            HighLevelMove, "/kinova/high_level_move", self.high_level_move
+        )
 
-        print(f"IP availabe: {str(self.ip_available())}")
+        if not self.ip_available():
+            print("Kinova arm not found, exiting...")
+            return
 
-        spin_thread = Thread(target=self.start_spin_loop)
-        spin_thread.start()
+        with utilities.DeviceConnection.createTcpConnection() as router, utilities.DeviceConnection.createUdpConnection() as real_time_router:
+            self.kortex_client = KortexClient(
+                router=router, real_time_router=real_time_router
+            )
+            self.start_spin_loop()
+
+    def high_level_move(
+        self, request: HighLevelMove.Request, response: HighLevelMove.Response
+    ):
+        match request.position:
+            case "home":
+                self.kortex_client.home()
+            case "zero":
+                self.kortex_client.zero()
+            case "retract":
+                self.kortex_client.retract()
+            case _:
+                print("High level movement is unknown.")
+
+        return response
 
     def callback(self, msg: Feedback):
         pass
