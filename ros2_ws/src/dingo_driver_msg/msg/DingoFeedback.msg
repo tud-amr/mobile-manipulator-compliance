@@ -1,0 +1,5 @@
+float32 time
+dingo_driver_msg/WheelFeedback front_left_wheel
+dingo_driver_msg/WheelFeedback front_right_wheel
+dingo_driver_msg/WheelFeedback rear_left_wheel
+dingo_driver_msg/WheelFeedback rear_right_wheel
