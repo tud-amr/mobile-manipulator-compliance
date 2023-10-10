@@ -41,7 +41,7 @@ class PID_Tuner_Interface_Node(Node):
             print("Value changed.")
 
     def callback(self, msg: Feedback):
-        self.tuner.update_data(msg.x, msg.current)
+        self.tuner.update_data(msg.x, msg.voltage, msg.current)
 
     def start_spin_loop(self):
         rclpy.spin(self)

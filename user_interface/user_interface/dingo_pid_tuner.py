@@ -22,7 +22,7 @@ class Tuner:
         self.actuator_id = 5
 
         self.inputs = {
-            "target": Input(0.6, 0, 2, 0.1),
+            "target": Input(0, 0, 2, 0.1),
             "P": Input(0, 0, 70, 1),
             "I": Input(0, 0, 20, 1),
             "D": Input(0, 0, 5, 0.1),
@@ -30,7 +30,7 @@ class Tuner:
 
         self.define_ui_parameters()
         self.create_ui()
-        thread = Thread(target=self.start_continious_response_loop)
+        thread = Thread(target=self.start_step_response_loop)
         thread.start()
 
     def define_ui_parameters(self) -> None:
@@ -38,9 +38,10 @@ class Tuner:
         self.width = 1200
         self.height = 600
         self.bar_height = 30
-        self.data_x = deque()
-        self.target_y = deque()
-        self.feedback_y = deque()
+        self.x = deque()
+        self.target = deque()
+        self.voltage = deque()
+        self.current = deque()
         self.n_samples = 1000
         self.actuators_ready = False
 
@@ -125,41 +126,54 @@ class Tuner:
                     no_tick_labels=True,
                 )
                 dpg.add_plot_axis(
-                    dpg.mvYAxis, label="Amps", tag="y_axis", no_gridlines=True
+                    dpg.mvYAxis, label="Amps/Volt", tag="y_axis", no_gridlines=True
                 )
-                dpg.set_axis_limits("y_axis", 0, 5)
+                dpg.set_axis_limits("y_axis", -0.5, 5)
                 dpg.add_line_series(
-                    x=list(self.data_x),
-                    y=list(self.target_y),
+                    x=list(self.x),
+                    y=list(self.target),
                     label="Target",
                     parent="y_axis",
                     tag="control_target",
                 )
                 dpg.add_line_series(
-                    x=list(self.data_x),
-                    y=list(self.feedback_y),
-                    label="Feedback",
+                    x=list(self.x),
+                    y=list(self.voltage),
+                    label="Voltage",
                     parent="y_axis",
-                    tag="control_feedback",
+                    tag="control_voltage",
+                )
+                dpg.add_line_series(
+                    x=list(self.x),
+                    y=list(self.current),
+                    label="Curent",
+                    parent="y_axis",
+                    tag="control_current",
                 )
 
-    def update_data(self, x, feedback_y) -> None:
+    def update_data(self, x, voltage, current) -> None:
         """Update the data."""
-        self.data_x.append(x)
-        self.target_y.append(self.inputs["target"].value)
-        self.feedback_y.append(feedback_y)
-        while len(self.data_x) > self.n_samples:
-            self.data_x.popleft()
-            self.target_y.popleft()
-            self.feedback_y.popleft()
+        self.x.append(x)
+        self.target.append(self.inputs["target"].value)
+        self.voltage.append(voltage)
+        self.current.append(current)
+        while len(self.x) > self.n_samples:
+            self.x.popleft()
+            self.target.popleft()
+            self.voltage.popleft()
+            self.current.popleft()
 
         dpg.set_value(
             "control_target",
-            [list(self.data_x), list(self.target_y)],
+            [list(self.x), list(self.target)],
         )
         dpg.set_value(
-            "control_feedback",
-            [list(self.data_x), list(self.feedback_y)],
+            "control_voltage",
+            [list(self.x), list(self.voltage)],
+        )
+        dpg.set_value(
+            "control_current",
+            [list(self.x), list(self.current)],
         )
         dpg.fit_axis_data("x_axis")
 
