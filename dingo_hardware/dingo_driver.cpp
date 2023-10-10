@@ -69,6 +69,7 @@ namespace dingo_driver
             {
                 // std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
+            state.name = driver->deviceName();
             state.position = actuator.get_driver()->lastPosition();
             state.speed = actuator.get_driver()->lastSpeed();
             state.voltage = actuator.get_driver()->lastOutVoltage();
