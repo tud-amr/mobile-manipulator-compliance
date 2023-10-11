@@ -31,7 +31,7 @@ public:
     void initialize_drivers()
     {
         driver_manager_.connect_gateway();
-        for (auto wheel : wheels_)
+        for (auto &wheel : wheels_)
         {
             driver_manager_.add_actuator(wheel.canbus_id, wheel.name);
             driver_manager_.set_mode(wheel.name, "Vol");
@@ -41,7 +41,7 @@ public:
 
     void set_command(const dingo_driver_msg::msg::Command command)
     {
-        for (auto wheel : wheels_)
+        for (auto &wheel : wheels_)
         {
             if (wheel.name == "front_left_wheel")
                 wheel.command = command.front_left_wheel;
@@ -57,6 +57,7 @@ public:
             {
                 wheel.command = command.rear_right_wheel;
             }
+            driver_manager_.command(wheel.name, "Vol", wheel.command);
         }
     }
 
@@ -68,17 +69,6 @@ public:
         }
     }
 
-    void command_loop()
-    {
-        while (true)
-        {
-            for (auto wheel : wheels_)
-            {
-                driver_manager_.command(wheel.name, "Vol", wheel.command);
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-    }
     void feedback_loop()
     {
         dingo_driver_msg::msg::DingoFeedback feedback;
@@ -135,7 +125,6 @@ int main(int argc, char *argv[])
     std::thread canread_thread(&DingoDriverNode::canread_loop, &dingo_driver_node);
     dingo_driver_node.initialize_drivers();
     std::thread feedback_thread(&DingoDriverNode::feedback_loop, &dingo_driver_node);
-    // std::thread command_thread(&DingoDriverNode::command_loop, &dingo_driver_node);
     rclcpp::Node::SharedPtr pointer(&dingo_driver_node);
     rclcpp::spin(pointer);
     std::terminate();
