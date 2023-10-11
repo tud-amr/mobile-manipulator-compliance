@@ -122,7 +122,7 @@ namespace dingo_driver
         void canread();
 
     private:
-        std::unique_ptr<puma_motor_driver::Gateway> gateway_;
+        std::unique_ptr<puma_motor_driver::SocketCANGateway> gateway_;
         std::map<std::string, Actuator> actuators_;
         bool canread_loop_;
 

@@ -81,7 +81,6 @@ public:
     }
     void feedback_loop()
     {
-        initialize_drivers();
         dingo_driver_msg::msg::DingoFeedback feedback;
         int x = 0;
         while (true)
@@ -134,8 +133,9 @@ int main(int argc, char *argv[])
     rclcpp::init(argc, argv);
     DingoDriverNode dingo_driver_node;
     std::thread canread_thread(&DingoDriverNode::canread_loop, &dingo_driver_node);
+    dingo_driver_node.initialize_drivers();
     std::thread feedback_thread(&DingoDriverNode::feedback_loop, &dingo_driver_node);
-    std::thread command_thread(&DingoDriverNode::command_loop, &dingo_driver_node);
+    // std::thread command_thread(&DingoDriverNode::command_loop, &dingo_driver_node);
     rclcpp::Node::SharedPtr pointer(&dingo_driver_node);
     rclcpp::spin(pointer);
     std::terminate();

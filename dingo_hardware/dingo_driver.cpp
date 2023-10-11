@@ -42,6 +42,7 @@ namespace dingo_driver
         puma_motor_driver::Driver driver(*gateway_, can_id, name);
         Actuator actuator(name, driver);
         actuators_.insert({name, actuator});
+        gateway_->addDriver(get_actuator_(name)->get_driver());
     }
 
     void DriverManager::initialize_encoders()
@@ -69,10 +70,11 @@ namespace dingo_driver
             {
                 // std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
-            state.position = actuator.get_driver()->lastPosition();
-            state.speed = actuator.get_driver()->lastSpeed();
-            state.voltage = actuator.get_driver()->lastOutVoltage();
-            state.current = actuator.get_driver()->lastCurrent();
+            state.name = driver->deviceName();
+            state.position = driver->lastPosition();
+            state.speed = driver->lastSpeed();
+            state.voltage = driver->lastOutVoltage();
+            state.current = driver->lastCurrent();
             states.push_back(state);
         }
         return states;
@@ -158,11 +160,7 @@ namespace dingo_driver
 
     void DriverManager::canread()
     {
-
-        for (auto &[name, actuator] : actuators_)
-        {
-            actuator.get_driver()->canRead();
-        }
+        gateway_->canRead();
     }
 
     Actuator *DriverManager::get_actuator_(std::string name)

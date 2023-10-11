@@ -31,12 +31,14 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 #include <queue>
 #include <thread>  // NOLINT(build/c++11)
 #include <unistd.h>
+#include <vector>
 
 #include <socketcan_interface/socketcan.h>
 #include <socketcan_interface/threading.h>
 
 #include "puma_motor_driver/gateway.h"
 #include "puma_motor_driver/message.h"
+#include "puma_motor_driver/driver.h"
 
 namespace puma_motor_driver
 {
@@ -49,8 +51,10 @@ public:
 
   bool connect() override;
   bool isConnected() const override;
+  void addDriver(Driver* driver);
 
   void process();
+  void canRead();
   bool recv(Message* msg) override;
   void queue(const Message& msg) override;
 
@@ -60,6 +64,7 @@ public:
 private:
   std::string canbus_dev_;  // CANBUS interface
   bool is_connected_;
+  std::vector<Driver*> drivers_;
 
   std::thread can_msg_process_thread_;
   std::queue<can::Frame> can_receive_queue_, can_send_queue_;

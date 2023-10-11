@@ -72,6 +72,23 @@ bool SocketCANGateway::isConnected() const
   return is_connected_;
 }
 
+void SocketCANGateway::addDriver(Driver *driver)
+  {
+    drivers_.push_back(driver);
+  }
+
+void SocketCANGateway::canRead()
+  {
+    puma_motor_driver::Message recv_msg;
+    while (recv(&recv_msg))
+    {
+      for (auto driver : drivers_)
+      {
+        driver->processMessage(recv_msg);
+      }
+    }
+  }
+
 bool SocketCANGateway::recv(Message* msg)
 {
   std::lock_guard<std::mutex> lock(receive_queue_mutex_);
