@@ -3,7 +3,6 @@ from rclpy.node import Node
 from dingo_driver_msg.msg import DingoFeedback, WheelFeedback, Command
 from user_interface.dingo_controller import Controller
 from threading import Thread
-import time
 
 
 class Controller_Node(Node):
@@ -18,27 +17,25 @@ class Controller_Node(Node):
         self.controller = Controller()
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
-        # command_thread = Thread(target=self.start_command_loop)
-        # command_thread.start()
         self.controller.start_render_loop()
 
-    # def start_command_loop(self):
-    #     while self.controller.active:
-    #         command = Command()
-    #         command.value = float(self.controller.target)
-    #         self.publisher.publish(command)
-    #         time.sleep(0.01)
-
     def callback(self, msg: DingoFeedback):
+        command = Command()
         for wheel in self.controller.wheels:
             wheel_feedback: WheelFeedback = getattr(msg, wheel.name)
             if wheel.start_position is None:
                 wheel.start_position = wheel_feedback.position
-            wheel.position = wheel.start_position - wheel_feedback.position
-            wheel.speed = wheel_feedback.speed
+            new_position = wheel.start_position - wheel_feedback.position
+            if "left" in wheel.name:
+                wheel.speed = new_position - wheel.position
+            else:
+                wheel.speed = wheel.position - new_position
+            wheel.position = new_position
             wheel.voltage = wheel_feedback.voltage
             wheel.current = wheel_feedback.current
-        self.controller.update_data()
+            setattr(command, wheel.name, wheel.command)
+        self.publisher.publish(command)
+        self.controller.update_feedback()
 
     def start_spin_loop(self):
         rclpy.spin(self)
