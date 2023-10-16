@@ -2,13 +2,15 @@ import rclpy
 import os
 from rclpy.node import Node
 from kinova_driver_msg.msg import KinovaFeedback, JointFeedback, Command
-from kinova_driver_msg.srv import HighLevelMove
+from kinova_driver_msg.srv import Service
 from kinova.kortex_client_simulation import KortexClientSimulation
 from threading import Thread
 
 
-class KinovaDriverNode(Node):
-    def __init__(self):
+class KinovaSimulationNode(Node):
+    """A node that starts the simulation of the kinova arm."""
+
+    def __init__(self) -> None:
         super().__init__("kinova_driver_node")
         self.publisher = self.create_publisher(
             KinovaFeedback, "/kinova_driver/feedback", 10
@@ -17,7 +19,7 @@ class KinovaDriverNode(Node):
             Command, "/kinova_driver/command", self.callback, 10
         )
         self.service = self.create_service(
-            HighLevelMove, "/kinova/high_level_move", self.high_level_move
+            Service, "/kinova/service", self.service_call
         )
 
         self.kortex_client = KortexClientSimulation()
@@ -26,22 +28,25 @@ class KinovaDriverNode(Node):
         spin_thread.start()
         self.kortex_client.mujoco_viewer.start_simulation()
 
-    def high_level_move(
-        self, request: HighLevelMove.Request, response: HighLevelMove.Response
-    ):
-        match request.position:
-            case "home":
+    def service_call(
+        self, request: Service.Request, response: Service.Response
+    ) -> Service.Response:
+        """Connect service calls with kortex client."""
+        match request.name:
+            case "Home":
                 self.kortex_client.home()
-            case "zero":
+            case "Zero":
                 self.kortex_client.zero()
-            case "retract":
+            case "Retract":
                 self.kortex_client.retract()
             case _:
                 print("High level movement is unknown.")
 
+        response.mode = "HLC"
         return response
 
     def publish_feedback(self) -> None:
+        """Publish the joint feedback."""
         feedback = KinovaFeedback()
         for n in range(self.kortex_client.actuator_count):
             joint_feedback = JointFeedback()
@@ -51,17 +56,18 @@ class KinovaDriverNode(Node):
             setattr(feedback, f"joint{n}", joint_feedback)
         self.publisher.publish(feedback)
 
-    def callback(self, msg: Command):
-        pass
+    def callback(self, msg: Command) -> None:
+        """Command callback."""
 
-    def start_spin_loop(self):
+    def start_spin_loop(self) -> None:
+        """Start the ros spin loop."""
         rclpy.spin(self)
 
 
-def main(args=None) -> None:
+def main(args: any = None) -> None:
     """Main."""
     rclpy.init(args=args)
-    KinovaDriverNode()
+    KinovaSimulationNode()
     rclpy.shutdown()
     os._exit(0)
 

@@ -13,7 +13,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/JointFeedback.msg"
   "msg/KinovaFeedback.msg"
   "msg/Command.msg"
-  "srv/HighLevelMove.srv"
+  "srv/Service.srv"
  )
  
 if(BUILD_TESTING)

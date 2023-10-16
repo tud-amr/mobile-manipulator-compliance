@@ -143,15 +143,15 @@ class KortexClient:
 
     def home(self) -> bool:
         """Move the arm to the home position."""
-        self._start_control(self._high_level_move, [Position.home])
+        self._high_level_move(Position.home)
 
     def zero(self) -> bool:
         """Move the arm to the zero position."""
-        self._start_control(self._high_level_move, [Position.zero])
+        self._high_level_move(Position.zero)
 
     def retract(self) -> bool:
         """Move the arm to the retract position."""
-        self._start_control(self._high_level_move, [Position.retract])
+        self._high_level_move(Position.retract)
 
     def get_position(self, joint: int, as_percentage: bool) -> float:
         """Get the position of a joint."""
