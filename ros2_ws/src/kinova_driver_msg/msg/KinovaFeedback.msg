@@ -1,0 +1,6 @@
+kinova_driver_msg/JointFeedback joint0
+kinova_driver_msg/JointFeedback joint1
+kinova_driver_msg/JointFeedback joint2
+kinova_driver_msg/JointFeedback joint3
+kinova_driver_msg/JointFeedback joint4
+kinova_driver_msg/JointFeedback joint5

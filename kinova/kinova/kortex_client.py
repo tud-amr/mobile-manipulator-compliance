@@ -54,6 +54,8 @@ class KortexClient:
         self.n = self.frequency
         self.sleep_time = 1 / self.frequency
 
+        self.feedback_callback = lambda: None
+
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         self._refresh()
         self._initialize_command()
@@ -236,7 +238,7 @@ class KortexClient:
     def _refresh_loop(self) -> bool:
         while self.active_loop:
             self._refresh()
-            # self.state.update()
+            self.feedback_callback()
             self.n += 1
             time.sleep(self.sleep_time)
 
