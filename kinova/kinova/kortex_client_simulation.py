@@ -1,28 +1,27 @@
+import time
 import mujoco
 import numpy as np
-from kinova.kortex_client import KortexClient
-from user_interface.mujoco_viewer import MujocoViewer
 from kortex_api.autogen.messages import ActuatorConfig_pb2
-from compliant_controller.state import State
+from kinova.kortex_client import KortexClient
+from kinova.mujoco_viewer import MujocoViewer
 from kinova.messages import Base, BaseCyclic, ActuatorConfig
 from kinova.specifications import Position
-import time
 
 
 class KortexClientSimulation(KortexClient):
     """A mock of the Kortex Client class, to make testing without robot possible."""
 
-    def __init__(self, state: State, mujoco_viewer: MujocoViewer) -> None:
+    def __init__(self) -> None:
+        self.mujoco_viewer = MujocoViewer()
         super().__init__(
-            state,
-            base=BaseClientSimulation(mujoco_viewer),
-            base_cyclic=BaseCyclicClientSimulation(mujoco_viewer),
-            actuator_config=ActuatorConfigClientSimulation(mujoco_viewer),
+            base=BaseClientSimulation(self.mujoco_viewer),
+            base_cyclic=BaseCyclicClientSimulation(self.mujoco_viewer),
+            actuator_config=ActuatorConfigClientSimulation(self.mujoco_viewer),
             mock=True,
             simulate=True,
         )
-        self.model = mujoco_viewer.model
-        self.data = mujoco_viewer.data
+        self.model = self.mujoco_viewer.model
+        self.data = self.mujoco_viewer.data
         for n in range(self.actuator_count):
             self.data.qpos[n] = self.data.ctrl[n] = np.deg2rad(
                 Position.home.position[n]
@@ -44,21 +43,20 @@ class KortexClientSimulation(KortexClient):
         reached = [False] * self.actuator_count
         while not all(reached):
             for joint in [n for n, done in enumerate(reached) if not done]:
-                error = abs(pose[joint] - self.state.q[joint])
-                if error < self.reached_error:
+                position = self.get_position(joint, False)
+                error = pose[joint] - position
+                if abs(error) < self.reached_error:
                     reached[joint] = True
                 else:
-                    self._execute_action(joint, pose, error)
+                    self._execute_action(joint, error)
             time.sleep(1 / self.frequency)
 
-    def _execute_action(
-        self, joint: int, pose: list[float], error: list[float]
-    ) -> bool:
-        step = min(error / self.nearby_goal_divider, self.step_size)
-        if self.state.q[joint] > pose[joint]:
-            self.data.ctrl[joint] -= step
-        elif self.state.q[joint] < pose[joint]:
+    def _execute_action(self, joint: int, error: float) -> bool:
+        step = min(abs(error) / self.nearby_goal_divider, self.step_size)
+        if error > 0:
             self.data.ctrl[joint] += step
+        elif error < 0:
+            self.data.ctrl[joint] -= step
 
 
 class BaseClientSimulation:
