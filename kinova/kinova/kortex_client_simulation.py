@@ -11,8 +11,8 @@ from kinova.specifications import Position
 class KortexClientSimulation(KortexClient):
     """A mock of the Kortex Client class, to make testing without robot possible."""
 
-    def __init__(self) -> None:
-        self.mujoco_viewer = MujocoViewer()
+    def __init__(self, mujoco_viewer: MujocoViewer) -> None:
+        self.mujoco_viewer = mujoco_viewer
         super().__init__(
             base=BaseClientSimulation(self.mujoco_viewer),
             base_cyclic=BaseCyclicClientSimulation(self.mujoco_viewer),

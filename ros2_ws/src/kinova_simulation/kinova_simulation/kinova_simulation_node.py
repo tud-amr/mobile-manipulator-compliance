@@ -10,6 +10,7 @@ from kinova_driver_msg.msg import (
 )
 from kinova_driver_msg.srv import Service
 from kinova.kortex_client_simulation import KortexClientSimulation
+from kinova.mujoco_viewer import MujocoViewer
 from controllers.state import State
 from controllers.controllers import Controllers
 from threading import Thread
@@ -26,7 +27,8 @@ class KinovaSimulationNode(Node):
         self.state_pub = self.create_publisher(KinovaState, "/kinova/state", 10)
         self.create_service(Service, "/kinova/service", self.service_call)
 
-        self.kortex_client = KortexClientSimulation()
+        self.mujoco_viewer = MujocoViewer()
+        self.kortex_client = KortexClientSimulation(self.mujoco_viewer)
         self.state = State(True, self.kortex_client.actuator_count)
         self.controllers = Controllers(self.state)
         self.kortex_client.feedback_callback = self.publish_feedback
@@ -62,9 +64,11 @@ class KinovaSimulationNode(Node):
                 self.kortex_client._connect_LLC(self.controllers.compensate_gravity)
                 self.publish_state()
             case "Impedance":
+                self.mujoco_viewer.update_marker("target", self.state.x)
                 self.kortex_client._connect_LLC(self.controllers.impedance)
                 self.publish_state()
             case "Cartesian Impedance":
+                self.mujoco_viewer.update_marker("target", self.state.x)
                 self.kortex_client._connect_LLC(self.controllers.cartesion_impedance)
                 self.publish_state()
             case _ if "Toggle" in request.name:
@@ -78,7 +82,6 @@ class KinovaSimulationNode(Node):
 
     def publish_feedback(self) -> None:
         """Publish the joint feedback."""
-        self.state.update()
         feedback = KinovaFeedback()
         feedback.update_rate = self.kortex_client.get_update_rate()
         for n in range(self.kortex_client.actuator_count):
@@ -92,6 +95,9 @@ class KinovaSimulationNode(Node):
             joint_feedback.current = self.kortex_client.get_torque(n, False)
             setattr(feedback, f"joint{n}", joint_feedback)
         self.feedback_pub.publish(feedback)
+        self.state.target = self.mujoco_viewer.target
+        self.state.update()
+        self.mujoco_viewer.update_marker("end_effector", self.state.x)
 
     def publish_state(self) -> None:
         """Publish the joint state."""

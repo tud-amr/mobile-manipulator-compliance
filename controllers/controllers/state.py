@@ -1,6 +1,4 @@
-from typing import Literal
 import importlib.resources as pkg_resources
-import mujoco
 import numpy as np
 import pinocchio
 import kinova.models as models
@@ -12,6 +10,7 @@ class State:
     def __init__(self, simulation: bool, actuator_count: int) -> None:
         self.load_robot()
 
+        self.target: np.ndarray
         self.x: np.ndarray
         self.M: np.ndarray
         self.C: np.ndarray
@@ -50,8 +49,6 @@ class State:
         self.update_g()
         self.update_J()
         self.update_dJ()
-        # self.update_target()
-        # self.update_marker("end_effector", self.x)
 
     def toggle_joint(self, joint: int) -> None:
         """Toggle active state of joint."""
@@ -130,15 +127,3 @@ class State:
             frame_id,
             pinocchio.LOCAL_WORLD_ALIGNED,
         )[:3]
-
-    def update_target(self) -> np.ndarray:
-        """Get the position of the target mocap body."""
-        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target") - 1
-        self.target = self.data.mocap_pos[body_id]
-
-    def update_marker(
-        self, marker: Literal["end_effector", "target"], pos: np.ndarray
-    ) -> None:
-        """Update the given marker."""
-        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, marker) - 1
-        self.data.mocap_pos[body_id] = pos

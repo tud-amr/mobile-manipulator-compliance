@@ -1,3 +1,5 @@
+from typing import Literal
+import numpy as np
 import importlib.resources as pkg_resources
 import mujoco
 import mujoco.viewer
@@ -19,6 +21,19 @@ class MujocoViewer:
         self.data = mujoco.MjData(self.model)
         self.name = re.search("b'(.*?)\\\\", str(self.model.names))[1]
         self.active = True
+
+    @property
+    def target(self) -> np.ndarray:
+        """Get the position of the target mocap body."""
+        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target") - 1
+        return self.data.mocap_pos[body_id]
+
+    def update_marker(
+        self, marker: Literal["end_effector", "target"], pos: np.ndarray
+    ) -> None:
+        """Update the given marker."""
+        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, marker) - 1
+        self.data.mocap_pos[body_id] = pos
 
     def key_callback(self, key: int) -> None:
         """Key callback."""
