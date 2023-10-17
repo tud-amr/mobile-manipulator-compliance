@@ -89,8 +89,8 @@ class Controller:
         self.create_plot("voltage", [0, self.h_plt])
         self.create_plot("current", [self.w_plt, self.h_plt])
         self.load_control([0, 2 * self.h_plt])
-        self.load_info([0, int(2.5 * self.h_plt)])
         self.load_state([self.w_plt, 2 * self.h_plt])
+        self.load_info([self.w_plt, int(2.5 * self.h_plt)])
 
         dpg.show_viewport()
 
@@ -150,7 +150,7 @@ class Controller:
     def load_control(self, pos: list) -> None:
         """Load the control window."""
         w = self.w_plt
-        h = int(self.h_plt / 2)
+        h = int(self.h_plt)
 
         with self.window("Control", w, h, pos, tag="window_control"):
             pass
@@ -176,6 +176,10 @@ class Controller:
                 self.button("Gravity", self.LLC)
                 self.button("Impedance", self.LLC)
                 self.button("Cartesian Impedance", self.LLC)
+            dpg.add_text("Calibration:")
+            with dpg.group(horizontal=True):
+                self.button("HL Calibration", self.HLC)
+                self.button("LL Calibration", self.HLC)
 
     def load_state(self, pos: list) -> None:
         """Load joint info window."""

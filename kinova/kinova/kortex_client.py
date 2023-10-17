@@ -58,34 +58,16 @@ class KortexClient:
         self.feedback_callback = lambda: None
 
         self.mode = "HLC"
+        self.calibrating = False
 
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         self._refresh()
         self._initialize_command()
         self.start_refresh_loop()
 
-    @property
-    def low_level_control(self) -> bool:
-        """Returns whether low_level_control is active."""
-        return self.servoing_mode == Base_pb2.LOW_LEVEL_SERVOING
-
-    def HLC_available(self) -> bool:
-        """Return whether mode is HLC and available."""
-        return not self.active and not self.calibrating and not self.low_level_control
-
-    def LLC_available(self) -> bool:
-        """Return whether LLC is available to connect controller."""
-        return (
-            not self.active and self.low_level_control and not self.controller_connected
-        )
-
-    def LLC_connected(self) -> bool:
-        """Return whether a LLC controller is connected."""
-        return not self.active and not self.calibrating and self.controller_connected
-
-    def get_actuator_state(self, n: int, key: str) -> float:
-        """Get the requested state for a given actuator."""
-        return getattr(self.feedback.actuators[n], key)
+    def get_mode(self) -> str:
+        """Get the general mode."""
+        return "calibrating" if self.calibrating else self.mode
 
     def get_control_mode(self, joint: int) -> str:
         """Get the control mode of an actuator."""
