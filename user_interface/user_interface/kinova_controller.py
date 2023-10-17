@@ -44,14 +44,17 @@ class Controller:
         self.define_ui_parameters()
         self.create_ui()
 
+    @property
     def HLC(self) -> bool:
         """Returns whether the current mode is HLC."""
         return self.mode == "HLC"
 
+    @property
     def LLC(self) -> bool:
         """Returns whether the current mode is LLC."""
         return self.mode == "LLC"
 
+    @property
     def LLC_task(self) -> bool:
         """Returns whether a LLC task is active."""
         return self.mode == "LLC_task"
@@ -146,11 +149,19 @@ class Controller:
             time.sleep(0.5)
 
     def load_control(self, pos: list) -> None:
-        """Load control ui."""
+        """Load the control window."""
         w = self.w_plt
         h = int(self.h_plt / 2)
 
-        with self.window("Control", w, h, pos):
+        with self.window("Control", w, h, pos, tag="window_control"):
+            pass
+        self.update_control()
+
+    def update_control(self) -> None:
+        """Update the control window."""
+        if dpg.does_item_exist(item="group_control"):
+            dpg.delete_item(item="group_control")
+        with dpg.group(parent="window_control", tag="group_control"):
             dpg.add_text("High Level:")
             with dpg.group(horizontal=True):
                 self.button("Home", self.HLC)
@@ -210,15 +221,13 @@ class Controller:
                 data[1] = [getattr(joint, data_name)]
                 dpg.set_value(f"{joint.name}_{data_name}", data)
 
-    def update_widgets(self) -> None:
-        """Update the state."""
-        DynamicWidget.update_all()
-
-    def button(self, label: str, state: callable = None) -> None:
+    def button(
+        self, label: str, enabled: bool = False, callback: callable = None
+    ) -> None:
         """Create a dearpygui button."""
-        dpg.add_button(label=label, callback=self.callback, tag=label)
-        if state:
-            DynamicWidget("bool", label, state)
+        if callback is None:
+            callback = self.callback
+        dpg.add_button(label=label, enabled=enabled, callback=callback, tag=label)
 
     def window(
         self,
@@ -271,40 +280,3 @@ class Controller:
             dpg.add_key_press_handler(dpg.mvKey_Escape, callback=self.close)
         while self.active:
             dpg.render_dearpygui_frame()
-
-
-class DynamicWidget:
-    """Contains the dynamic widgets that need to be updated at render."""
-
-    widgets: list["DynamicWidget"] = []
-
-    @staticmethod
-    def update_all() -> None:
-        """Update all dynamic widgets."""
-        for widget in DynamicWidget.widgets:
-            widget.update()
-
-    def __init__(
-        self,
-        update_type: Literal["value", "bool"],
-        tag: str,
-        call: callable = lambda: None,
-        args: list = None,
-    ) -> None:
-        self.update_type = update_type
-        self.tag = tag
-        self.call = call
-        self.args = args if args else []
-        DynamicWidget.widgets.append(self)
-
-    @property
-    def value(self) -> any:
-        """Get the dynamic value."""
-        return self.call(*self.args)
-
-    def update(self) -> None:
-        """Update dynamic widget."""
-        if self.update_type == "value":
-            dpg.set_value(self.tag, self.value)
-        elif self.update_type == "bool":
-            dpg.configure_item(self.tag, enabled=self.value)

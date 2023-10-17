@@ -37,14 +37,14 @@ class ControlInterfaceNode(Node):
     def callback(self, name: str) -> None:
         """Connect the interface with service calls."""
         self.controller.mode = "waiting"
-        self.controller.update_widgets()
+        self.controller.update_control()
         request = Service.Request()
         request.name = name
         future = self.client.call_async(request)
         while not future.done():
             time.sleep(0.1)
         self.controller.mode = future.result().mode
-        self.controller.update_widgets()
+        self.controller.update_control()
 
     def update_feedback(self, msg: KinovaFeedback) -> None:
         """Update the feedback."""
@@ -68,7 +68,7 @@ class ControlInterfaceNode(Node):
             joint.fric_s = joint_state.fric_s
         self.controller.mode = msg.mode
         self.controller.servoing = msg.servoing
-        self.controller.update_widgets()
+        self.controller.update_control()
         self.controller.update_state()
 
     def start_spin_loop(self) -> None:
