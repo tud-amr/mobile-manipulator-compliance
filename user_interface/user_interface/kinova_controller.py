@@ -33,8 +33,16 @@ class Controller:
         self.window_commands.start_in_new_thread()
 
     def HLC(self) -> bool:
-        """Returns wether the current mode is HLC."""
+        """Returns whether the current mode is HLC."""
         return self.mode == "HLC"
+
+    def LLC(self) -> bool:
+        """Returns whether the current mode is LLC."""
+        return self.mode == "LLC"
+
+    def LLC_task(self) -> bool:
+        """Returns whether a LLC task is active."""
+        return self.mode == "LLC_task"
 
     def define_ui_parameters(self) -> None:
         """Define the UI parameters."""
@@ -105,9 +113,18 @@ class Controller:
 
         with self.window("Control", w, h, pos):
             dpg.add_text("High Level:")
-            self.button("Home", self.HLC)
-            self.button("Zero", self.HLC)
-            self.button("Retract", self.HLC)
+            with dpg.group(horizontal=True):
+                self.button("Home", self.HLC)
+                self.button("Zero", self.HLC)
+                self.button("Retract", self.HLC)
+            dpg.add_text("Switch:")
+            with dpg.group(horizontal=True):
+                self.button("Start LLC", self.HLC)
+                self.button("Stop LLC", self.LLC)
+                self.button("Stop LLC Task", self.LLC_task)
+            dpg.add_text("Low Level:")
+            with dpg.group(horizontal=True):
+                self.button("Gravity", self.LLC)
 
     def update_feedback(self) -> None:
         """Update the feedback."""
