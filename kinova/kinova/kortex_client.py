@@ -57,6 +57,8 @@ class KortexClient:
 
         self.feedback_callback = lambda: None
 
+        self.mode = "HLC"
+
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         self._refresh()
         self._initialize_command()
@@ -136,6 +138,7 @@ class KortexClient:
         self, controller: "Controller", mode: Literal["position", "velocity", "current"]
     ) -> None:
         """Connect a controller to the LLC of the robot."""
+        self.mode = "LLC_task"
         self._start_control(self._connect_LLC, [controller, mode])
 
     def disconnect_LLC(self) -> None:
@@ -201,11 +204,13 @@ class KortexClient:
             self._copy_feedback_to_command_message(n)
             self.set_control_mode(n, "position")
         self._set_servoing_mode(Base_pb2.LOW_LEVEL_SERVOING)
+        self.mode = "LLC"
         Logger.log("Low_level control enabled.")
 
     def _stop_LLC(self) -> None:
         """Stop low_level control."""
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
+        self.mode = "HLC"
         Logger.log("Low_level control disabled.")
 
     def _connect_LLC(
@@ -218,6 +223,7 @@ class KortexClient:
             self.base_cyclic.Refresh(self.command)
             self.set_control_mode(joint, mode)
         self.controller_connected = True
+        self.mode = "LLC_task"
         Logger.log("Controller connected.")
 
     def _disconnect_LLC(self) -> None:
@@ -225,6 +231,7 @@ class KortexClient:
         self.controller_connected = False
         for joint in range(self.actuator_count):
             self.set_control_mode(joint, "position")
+        self.mode = "LLC"
         Logger.log("Controller disconnected.")
 
     def _copy_commands_to_command_message(self) -> None:

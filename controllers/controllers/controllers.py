@@ -18,10 +18,13 @@ class Controller:
         """Return the state of friction compensation."""
         return Controller.friction_compensation
 
+    @property
+    def joints(self) -> list:
+        return [n for n, active in enumerate(self.state.active) if active]
+
     def __init__(self, state: State) -> None:
         self.state = state
         self.mode: Literal["position", "velocity", "current"] = "current"
-        self.joints = [n for n, active in enumerate(self.state.active) if active]
 
     def command(self) -> None:
         """Update the command of the robot."""

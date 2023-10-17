@@ -9,19 +9,32 @@ from dataclasses import dataclass
 class Joint:
     """Data of a joint."""
 
-    name: str
+    index: int
+
+    @property
+    def name(self) -> str:
+        return f"joint{self.index}"
+
+    # continious feedback:
     position: float = 0
     speed: float = 0
     current: float = 0
     voltage: float = 0
+
+    # state:
+    active: bool = True
+    mode: Literal["POS", "VEL", "CUR"] = "?"
+    ratio: float = 0
+    fric_d: float = 0
+    fric_s: float = 0
 
 
 class Controller:
     """Used to tune the PID controller of the Dingo."""
 
     def __init__(self, callback: callable = lambda: None) -> None:
-        self.joints = [Joint(f"joint{n}") for n in range(6)]
-        self.mode = "HLC"
+        self.joints = [Joint(n) for n in range(6)]
+        self.mode = "waiting"
         self.data_names = ["position", "speed", "current", "voltage"]
         self.start_position = None
         self.callback = callback
@@ -69,6 +82,7 @@ class Controller:
         self.create_plot("voltage", [0, self.h_plt])
         self.create_plot("current", [self.w_plt, self.h_plt])
         self.load_control([0, 2 * self.h_plt])
+        self.load_state([self.w_plt, 2 * self.h_plt])
 
         dpg.show_viewport()
 
@@ -126,6 +140,43 @@ class Controller:
             with dpg.group(horizontal=True):
                 self.button("Gravity", self.LLC)
 
+    def load_state(self, pos: list) -> None:
+        """Load joint info window."""
+        w = self.w_plt
+        h = self.h_plt
+
+        with self.window("State", w, h, pos, tag="window_state"):
+            pass
+        self.update_state()
+
+    def update_state(self):
+        """Update joint info."""
+        if dpg.does_item_exist(item="table"):
+            dpg.delete_item(item="table")
+        with dpg.table(
+            header_row=True,
+            borders_outerH=True,
+            borders_outerV=True,
+            tag="table",
+            parent="window_state",
+        ):
+            headers = ["#", "Mode:", "Ratio:", "Dfric:", "Sfric:"]
+            for header in headers:
+                dpg.add_table_column(label=header)
+            for joint in self.joints:
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(
+                            default_value=joint.active,
+                            callback=self.callback,
+                            tag=f"Toggle_{joint.index}",
+                        )
+                        dpg.add_text(joint.index)
+                    dpg.add_text(joint.mode)
+                    dpg.add_text(joint.ratio)
+                    dpg.add_text(round(joint.fric_d, 3))
+                    dpg.add_text(round(joint.fric_s, 3))
+
     def update_feedback(self) -> None:
         """Update the feedback."""
         for joint in self.joints:
@@ -133,6 +184,10 @@ class Controller:
                 data = dpg.get_value(f"{joint.name}_{data_name}")
                 data[1] = [getattr(joint, data_name)]
                 dpg.set_value(f"{joint.name}_{data_name}", data)
+
+    def update_widgets(self) -> None:
+        """Update the state."""
+        DynamicWidget.update_all()
 
     def button(self, label: str, state: callable = None) -> None:
         """Create a dearpygui button."""
@@ -187,7 +242,6 @@ class Controller:
         with dpg.handler_registry():
             dpg.add_key_press_handler(dpg.mvKey_Escape, callback=self.close)
         while self.active:
-            DynamicWidget.update_all()
             dpg.render_dearpygui_frame()
 
 

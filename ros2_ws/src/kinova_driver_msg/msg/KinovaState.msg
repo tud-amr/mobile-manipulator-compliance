@@ -1,0 +1,7 @@
+kinova_driver_msg/JointState joint0
+kinova_driver_msg/JointState joint1
+kinova_driver_msg/JointState joint2
+kinova_driver_msg/JointState joint3
+kinova_driver_msg/JointState joint4
+kinova_driver_msg/JointState joint5
+string mode

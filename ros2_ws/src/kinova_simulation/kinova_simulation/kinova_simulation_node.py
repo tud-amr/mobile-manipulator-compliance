@@ -1,7 +1,13 @@
 import rclpy
 import os
 from rclpy.node import Node
-from kinova_driver_msg.msg import KinovaFeedback, JointFeedback, Command
+from kinova_driver_msg.msg import (
+    KinovaFeedback,
+    JointFeedback,
+    KinovaState,
+    JointState,
+    Command,
+)
 from kinova_driver_msg.srv import Service
 from kinova.kortex_client_simulation import KortexClientSimulation
 from controllers.state import State
@@ -14,15 +20,11 @@ class KinovaSimulationNode(Node):
 
     def __init__(self) -> None:
         super().__init__("kinova_driver_node")
-        self.publisher = self.create_publisher(
-            KinovaFeedback, "/kinova_driver/feedback", 10
+        self.feedback_pub = self.create_publisher(
+            KinovaFeedback, "/kinova/feedback", 10
         )
-        self.subscription = self.create_subscription(
-            Command, "/kinova_driver/command", self.callback, 10
-        )
-        self.service = self.create_service(
-            Service, "/kinova/service", self.service_call
-        )
+        self.state_pub = self.create_publisher(KinovaState, "/kinova/state", 10)
+        self.create_service(Service, "/kinova/service", self.service_call)
 
         self.kortex_client = KortexClientSimulation()
         self.state = State(True, self.kortex_client.actuator_count)
@@ -31,6 +33,7 @@ class KinovaSimulationNode(Node):
 
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
+        self.publish_state()
         self.kortex_client.mujoco_viewer.start_simulation()
 
     def service_call(
@@ -38,43 +41,62 @@ class KinovaSimulationNode(Node):
     ) -> Service.Response:
         """Connect service calls with kortex client."""
         match request.name:
+            case "Initialize":
+                self.publish_state()
             case "Home":
                 self.kortex_client.home()
-                response.mode = "HLC"
             case "Zero":
                 self.kortex_client.zero()
-                response.mode = "HLC"
             case "Retract":
                 self.kortex_client.retract()
-                response.mode = "HLC"
             case "Start LLC":
                 self.kortex_client._start_LLC()
-                response.mode = "LLC"
             case "Stop LLC":
                 self.kortex_client._stop_LLC()
-                response.mode = "HLC"
             case "Stop LLC Task":
                 self.kortex_client._disconnect_LLC()
-                response.mode = "LLC"
+                self.publish_state()
             case "Gravity":
-                self.kortex_client.connect_LLC(self.controller, "current")
-                response.mode = "LLC_task"
+                self.kortex_client._connect_LLC(self.controller, "current")
+                self.publish_state()
+            case _ if "Toggle" in request.name:
+                self.state.toggle_joint(int(request.name[-1]))
+                self.publish_state()
             case _:
-                print("Service call is unknown.")
+                print(f"Service call {request.name} is unknown.")
 
+        response.mode = self.kortex_client.mode
         return response
 
     def publish_feedback(self) -> None:
         """Publish the joint feedback."""
+        self.state.update()
         feedback = KinovaFeedback()
         for n in range(self.kortex_client.actuator_count):
             joint_feedback = JointFeedback()
-            joint_feedback.position = self.state.q[n] = self.kortex_client.get_position(n, False)
-            joint_feedback.speed = self.state.dq[n] = self.kortex_client.get_velocity(n, False)
+            joint_feedback.position = self.state.q[n] = self.kortex_client.get_position(
+                n, False
+            )
+            joint_feedback.speed = self.state.dq[n] = self.kortex_client.get_velocity(
+                n, False
+            )
             joint_feedback.current = self.kortex_client.get_torque(n, False)
             setattr(feedback, f"joint{n}", joint_feedback)
-        self.state.update()
-        self.publisher.publish(feedback)
+        self.feedback_pub.publish(feedback)
+
+    def publish_state(self) -> None:
+        """Publish the joint state."""
+        state = KinovaState()
+        for n in range(self.kortex_client.actuator_count):
+            joint_state = JointState()
+            joint_state.active = self.state.active[n]
+            joint_state.mode = self.kortex_client.get_control_mode(n)
+            joint_state.ratio = float(self.state.get_ratio(n))
+            joint_state.fric_d = self.state.dynamic_frictions[n]
+            joint_state.fric_s = self.state.static_frictions[n]
+            setattr(state, f"joint{n}", joint_state)
+        state.mode = self.kortex_client.mode
+        self.state_pub.publish(state)
 
     def callback(self, msg: Command) -> None:
         """Command callback."""
