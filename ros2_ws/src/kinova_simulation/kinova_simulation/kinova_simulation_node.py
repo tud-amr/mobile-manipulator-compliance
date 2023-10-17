@@ -51,8 +51,10 @@ class KinovaSimulationNode(Node):
                 self.kortex_client.retract()
             case "Start LLC":
                 self.kortex_client._start_LLC()
+                self.publish_state()
             case "Stop LLC":
                 self.kortex_client._stop_LLC()
+                self.publish_state()
             case "Stop LLC Task":
                 self.kortex_client._disconnect_LLC()
                 self.publish_state()
@@ -72,6 +74,7 @@ class KinovaSimulationNode(Node):
         """Publish the joint feedback."""
         self.state.update()
         feedback = KinovaFeedback()
+        feedback.update_rate = self.kortex_client.get_update_rate()
         for n in range(self.kortex_client.actuator_count):
             joint_feedback = JointFeedback()
             joint_feedback.position = self.state.q[n] = self.kortex_client.get_position(
@@ -96,6 +99,7 @@ class KinovaSimulationNode(Node):
             joint_state.fric_s = self.state.static_frictions[n]
             setattr(state, f"joint{n}", joint_state)
         state.mode = self.kortex_client.mode
+        state.servoing = self.kortex_client.get_servoing_mode()
         self.state_pub.publish(state)
 
     def callback(self, msg: Command) -> None:

@@ -5,3 +5,4 @@ kinova_driver_msg/JointState joint3
 kinova_driver_msg/JointState joint4
 kinova_driver_msg/JointState joint5
 string mode
+string servoing

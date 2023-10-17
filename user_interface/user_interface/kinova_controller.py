@@ -1,8 +1,9 @@
 import glfw
 import dearpygui.dearpygui as dpg
 from typing import Literal
-from user_interface.window_commands import WindowCommands
+from threading import Thread
 from dataclasses import dataclass
+import time
 
 
 @dataclass
@@ -23,7 +24,7 @@ class Joint:
 
     # state:
     active: bool = True
-    mode: Literal["POS", "VEL", "CUR"] = "?"
+    mode: str = "?"
     ratio: float = 0
     fric_d: float = 0
     fric_s: float = 0
@@ -35,15 +36,13 @@ class Controller:
     def __init__(self, callback: callable = lambda: None) -> None:
         self.joints = [Joint(n) for n in range(6)]
         self.mode = "waiting"
+        self.update_rate = 0
+        self.servoing = "?"
         self.data_names = ["position", "speed", "current", "voltage"]
-        self.start_position = None
         self.callback = callback
 
         self.define_ui_parameters()
         self.create_ui()
-        self.window_commands.add_window(self.window_name)
-        self.window_commands.add_command(["replace", (self.window_name, *self.pose)])
-        self.window_commands.start_in_new_thread()
 
     def HLC(self) -> bool:
         """Returns whether the current mode is HLC."""
@@ -60,7 +59,6 @@ class Controller:
     def define_ui_parameters(self) -> None:
         """Define the UI parameters."""
         glfw.init()
-        self.window_commands = WindowCommands(1)
         self.window_name = "Kinova-Controller"
         w_screen, h_screen = glfw.get_video_mode(glfw.get_primary_monitor()).size
         self.w_win = int(w_screen / 3)
@@ -73,7 +71,14 @@ class Controller:
         """Create the ui."""
         self.active = True
         dpg.create_context()
-        dpg.create_viewport(title=self.window_name)
+        dpg.create_viewport(
+            title=self.window_name,
+            width=self.w_win,
+            height=self.h_win,
+            x_pos=0,
+            y_pos=0,
+            resizable=False,
+        )
         dpg.setup_dearpygui()
 
         self.create_theme()
@@ -82,6 +87,7 @@ class Controller:
         self.create_plot("voltage", [0, self.h_plt])
         self.create_plot("current", [self.w_plt, self.h_plt])
         self.load_control([0, 2 * self.h_plt])
+        self.load_info([0, int(2.5 * self.h_plt)])
         self.load_state([self.w_plt, 2 * self.h_plt])
 
         dpg.show_viewport()
@@ -120,10 +126,29 @@ class Controller:
                 no_tick_marks=True,
             )
 
+    def load_info(self, pos: list) -> None:
+        """Load info."""
+        w = self.w_plt
+        h = int(self.h_plt / 2)
+        with self.window("Info", w, h, pos, tag="window_info"):
+            pass
+        thread = Thread(target=self.update_info)
+        thread.start()
+
+    def update_info(self) -> None:
+        """Update info."""
+        while self.active:
+            if dpg.does_item_exist(item="group_info"):
+                dpg.delete_item(item="group_info")
+            with dpg.group(tag="group_info", parent="window_info"):
+                dpg.add_text(f"Update rate: {self.update_rate}")
+                dpg.add_text(f"Servoing: {self.servoing}")
+            time.sleep(0.5)
+
     def load_control(self, pos: list) -> None:
         """Load control ui."""
         w = self.w_plt
-        h = self.h_plt
+        h = int(self.h_plt / 2)
 
         with self.window("Control", w, h, pos):
             dpg.add_text("High Level:")
@@ -212,8 +237,11 @@ class Controller:
             no_resize=True,
             no_collapse=True,
             no_close=True,
+            no_title_bar=True,
             width=width,
             height=height,
+            min_size=[width, height],
+            max_size=[width, height],
             pos=pos,
             tag=tag,
         )

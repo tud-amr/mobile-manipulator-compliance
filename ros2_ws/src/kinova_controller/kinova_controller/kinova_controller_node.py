@@ -54,6 +54,7 @@ class ControlInterfaceNode(Node):
             joint.speed = joint_feedback.speed
             joint.voltage = joint_feedback.voltage
             joint.current = joint_feedback.current
+        self.controller.update_rate = msg.update_rate
         self.controller.update_feedback()
 
     def update_state(self, msg: KinovaState) -> None:
@@ -66,6 +67,7 @@ class ControlInterfaceNode(Node):
             joint.fric_d = joint_state.fric_d
             joint.fric_s = joint_state.fric_s
         self.controller.mode = msg.mode
+        self.controller.servoing = msg.servoing
         self.controller.update_widgets()
         self.controller.update_state()
 

@@ -4,3 +4,4 @@ kinova_driver_msg/JointFeedback joint2
 kinova_driver_msg/JointFeedback joint3
 kinova_driver_msg/JointFeedback joint4
 kinova_driver_msg/JointFeedback joint5
+int32 update_rate
