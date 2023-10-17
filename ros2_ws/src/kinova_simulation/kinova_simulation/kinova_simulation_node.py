@@ -12,7 +12,7 @@ from kinova_driver_msg.srv import Service
 from kinova.kortex_client_simulation import KortexClientSimulation
 from kinova.mujoco_viewer import MujocoViewer
 from controllers.state import State
-from controllers.controllers import Controllers
+from controllers.controllers import Controllers, Controller
 from controllers.calibration import Calibrations
 from threading import Thread
 
@@ -71,6 +71,10 @@ class KinovaSimulationNode(Node):
                 self.calibrations.high_level.calibrate_all_joints()
             case "LL Calibration":
                 self.calibrations.low_level.calibrate_all_joints()
+            case "Compensate friction":
+                Controller.toggle_CF()
+            case "Automove target":
+                self.mujoco_viewer.toggle_automove()
             case _ if "Toggle" in request.name:
                 self.state.toggle_joint(int(request.name[-1]))
             case _:
@@ -112,6 +116,8 @@ class KinovaSimulationNode(Node):
             setattr(state, f"joint{n}", joint_state)
         state.mode = self.kortex_client.mode
         state.servoing = self.kortex_client.get_servoing_mode()
+        state.compensate_friction = Controller.get_CF()
+        state.automove_target = self.mujoco_viewer.automove_target
         self.state_pub.publish(state)
 
     def callback(self, msg: Command) -> None:

@@ -68,6 +68,8 @@ class ControlInterfaceNode(Node):
             joint.fric_s = joint_state.fric_s
         self.controller.mode = msg.mode
         self.controller.servoing = msg.servoing
+        self.controller.compensate_friction = msg.compensate_friction
+        self.controller.automove_target = msg.automove_target
         self.controller.update_control()
         self.controller.update_state()
 

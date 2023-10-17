@@ -6,3 +6,5 @@ kinova_driver_msg/JointState joint4
 kinova_driver_msg/JointState joint5
 string mode
 string servoing
+bool compensate_friction
+bool automove_target

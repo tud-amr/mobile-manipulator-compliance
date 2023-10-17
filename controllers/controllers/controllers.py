@@ -185,23 +185,3 @@ class CartesianImpedance(CompensateGravity):
                 static_part = (1 - factor) * self.state.static_frictions[n]
                 dynamic_part = factor * self.state.dynamic_frictions[n]
                 current[n] += sign * (static_part + dynamic_part)
-
-
-class TargetMover:
-    """Used to move the target."""
-
-    def __init__(self, state: State) -> None:
-        self.state = state
-        self.target_rate = 0.05  # m/s
-        self.target_step = self.target_rate / client.frequency
-        self.target_rot = 90
-        self.target_rot_rate = 30  # deg / s
-        self.target_rot_step = self.target_rot_rate / client.frequency
-
-    def move(self) -> None:
-        """Move the target."""
-        self.target_rot += self.target_rot_step
-        step_x = np.cos(np.deg2rad(self.target_rot)) * self.target_step
-        step_y = np.sin(np.deg2rad(self.target_rot)) * self.target_step
-        new_target_pos = self.state.target + np.array([step_x, step_y, 0])
-        self.state.update_marker("target", new_target_pos)

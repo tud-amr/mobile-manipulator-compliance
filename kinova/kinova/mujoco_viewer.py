@@ -1,4 +1,5 @@
 from typing import Literal
+from threading import Thread
 import numpy as np
 import importlib.resources as pkg_resources
 import mujoco
@@ -21,6 +22,8 @@ class MujocoViewer:
         self.data = mujoco.MjData(self.model)
         self.name = re.search("b'(.*?)\\\\", str(self.model.names))[1]
         self.active = True
+        move_target_thread = Thread(target=self.move_target_loop)
+        move_target_thread.start()
 
     @property
     def target(self) -> np.ndarray:
@@ -34,6 +37,30 @@ class MujocoViewer:
         """Update the given marker."""
         body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, marker) - 1
         self.data.mocap_pos[body_id] = pos
+
+    def move_target_loop(self) -> None:
+        """A loop that automatically moves the target."""
+        self.automove_target = False
+        frequency = 100
+        target_rate = 0.05  # m/s
+        target_step = target_rate / frequency
+        target_rot = 90
+        target_rot_rate = 30  # deg / s
+        target_rot_step = target_rot_rate / frequency
+        while self.active:
+            if not self.automove_target:
+                time.sleep(0.5)
+                continue
+            target_rot += target_rot_step
+            step_x = np.cos(np.deg2rad(target_rot)) * target_step
+            step_y = np.sin(np.deg2rad(target_rot)) * target_step
+            step_z = 0
+            new_target_pos = self.target + np.array([step_x, step_y, step_z])
+            self.update_marker("target", new_target_pos)
+            time.sleep(1 / frequency)
+
+    def toggle_automove(self) -> None:
+        self.automove_target = not self.automove_target
 
     def key_callback(self, key: int) -> None:
         """Key callback."""

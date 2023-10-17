@@ -37,6 +37,8 @@ class Controller:
         self.mode = "waiting"
         self.update_rate = 0
         self.servoing = "?"
+        self.compensate_friction = False
+        self.automove_target = False
         self.data_names = ["position", "speed", "current", "voltage"]
         self.callback = callback
 
@@ -180,6 +182,11 @@ class Controller:
             with dpg.group(horizontal=True):
                 self.button("HL Calibration", self.HLC)
                 self.button("LL Calibration", self.HLC)
+            dpg.add_spacer(height=10)
+            dpg.add_text("Settings:")
+            with dpg.group(horizontal=True):
+                self.checkbox("Compensate friction", enabled=self.compensate_friction)
+                self.checkbox("Automove target", enabled=self.automove_target)
 
     def load_state(self, pos: list) -> None:
         """Load joint info window."""
@@ -207,11 +214,7 @@ class Controller:
             for joint in self.joints:
                 with dpg.table_row():
                     with dpg.group(horizontal=True):
-                        dpg.add_checkbox(
-                            default_value=joint.active,
-                            callback=self.callback,
-                            tag=f"Toggle_{joint.index}",
-                        )
+                        self.checkbox(None, f"Toggle_{joint.index}", joint.active)
                         dpg.add_text(joint.index)
                     dpg.add_text(joint.mode)
                     dpg.add_text(joint.ratio)
@@ -233,6 +236,20 @@ class Controller:
         if callback is None:
             callback = self.callback
         dpg.add_button(label=label, enabled=enabled, callback=callback, tag=label)
+
+    def checkbox(
+        self,
+        label: str,
+        tag: str = None,
+        enabled: bool = False,
+        callback: callable = None,
+    ) -> None:
+        """Create a dearpygui checkbox."""
+        if tag is None:
+            tag = label
+        if callback is None:
+            callback = self.callback
+        dpg.add_checkbox(label=label, tag=tag, default_value=enabled, callback=callback)
 
     def window(
         self,
