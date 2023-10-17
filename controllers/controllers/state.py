@@ -12,6 +12,7 @@ class State:
     def __init__(self, simulation: bool, actuator_count: int) -> None:
         self.load_robot()
 
+        self.x: np.ndarray
         self.M: np.ndarray
         self.C: np.ndarray
         self.g: np.ndarray

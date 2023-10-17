@@ -1,6 +1,5 @@
 import glfw
 import dearpygui.dearpygui as dpg
-from typing import Literal
 from threading import Thread
 from dataclasses import dataclass
 import time
@@ -175,6 +174,8 @@ class Controller:
             dpg.add_text("Low Level:")
             with dpg.group(horizontal=True):
                 self.button("Gravity", self.LLC)
+                self.button("Impedance", self.LLC)
+                self.button("Cartesian Impedance", self.LLC)
 
     def load_state(self, pos: list) -> None:
         """Load joint info window."""
@@ -254,10 +255,6 @@ class Controller:
             pos=pos,
             tag=tag,
         )
-
-    def get_label_from_tag(self, tag: int) -> None:
-        """Get the item label from tag."""
-        return dpg.get_item_label(tag)
 
     def close(self) -> None:
         """Callback for keyboard input."""

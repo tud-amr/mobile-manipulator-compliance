@@ -11,7 +11,7 @@ from kinova_driver_msg.msg import (
 from kinova_driver_msg.srv import Service
 from kinova.kortex_client_simulation import KortexClientSimulation
 from controllers.state import State
-from controllers.controllers import CompensateGravity
+from controllers.controllers import Controllers
 from threading import Thread
 
 
@@ -28,7 +28,7 @@ class KinovaSimulationNode(Node):
 
         self.kortex_client = KortexClientSimulation()
         self.state = State(True, self.kortex_client.actuator_count)
-        self.controller = CompensateGravity(self.state)
+        self.controllers = Controllers(self.state)
         self.kortex_client.feedback_callback = self.publish_feedback
 
         spin_thread = Thread(target=self.start_spin_loop)
@@ -59,7 +59,13 @@ class KinovaSimulationNode(Node):
                 self.kortex_client._disconnect_LLC()
                 self.publish_state()
             case "Gravity":
-                self.kortex_client._connect_LLC(self.controller, "current")
+                self.kortex_client._connect_LLC(self.controllers.compensate_gravity)
+                self.publish_state()
+            case "Impedance":
+                self.kortex_client._connect_LLC(self.controllers.impedance)
+                self.publish_state()
+            case "Cartesian Impedance":
+                self.kortex_client._connect_LLC(self.controllers.cartesion_impedance)
                 self.publish_state()
             case _ if "Toggle" in request.name:
                 self.state.toggle_joint(int(request.name[-1]))

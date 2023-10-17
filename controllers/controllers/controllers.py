@@ -3,6 +3,16 @@ import numpy as np
 from .state import State
 
 
+class Controllers:
+    """Class containing all the controllers."""
+
+    def __init__(self, state: State) -> None:
+        self.compensate_gravity = CompensateGravity(state)
+        self.compensate_gravity_and_friction = CompensateGravityAndFriction(state)
+        self.impedance = Impedance(state)
+        self.cartesion_impedance = CartesianImpedance(state)
+
+
 class Controller:
     """General controller template."""
 
@@ -18,13 +28,13 @@ class Controller:
         """Return the state of friction compensation."""
         return Controller.friction_compensation
 
-    @property
-    def joints(self) -> list:
-        return [n for n, active in enumerate(self.state.active) if active]
-
     def __init__(self, state: State) -> None:
         self.state = state
         self.mode: Literal["position", "velocity", "current"] = "current"
+
+    def reset_before_connect(self) -> None:
+        """Reset self to prepare for connection."""
+        self.joints = [n for n, active in enumerate(self.state.active) if active]
 
     def command(self) -> None:
         """Update the command of the robot."""
@@ -83,12 +93,11 @@ class Impedance(CompensateGravity):
         self.tolerance = 0.01  # m
         self.thr_dynamic = 0.3  # m/s
 
-    def connect_to_LLC(self) -> None:
+    def reset_before_connect(self) -> None:
         """Set current q and dq as desired."""
         self.q_d = self.state.q.copy()
         self.dq_d = self.state.dq.copy()
-        self.state.update_marker("target", self.state.x)
-        super().connect_to_LLC()
+        super().reset_before_connect()
 
     def command(self) -> None:
         """Joint space impedance control."""
@@ -129,17 +138,15 @@ class CartesianImpedance(CompensateGravity):
         self.tolerance = 0.01  # m
         self.thr_dynamic = 0.3  # m/s
 
-    def connect_to_LLC(self) -> None:
+    def reset_before_connect(self) -> None:
         """Set target to current position."""
         self.state.active = [True, False, True, False, True, False]
-        self.state.update_marker("target", self.state.x)
-        self.target_mover = TargetMover(self.state, self.client)
-        super().connect_to_LLC()
+        self.state.target = self.state.x.copy()
+        super().reset_before_connect()
 
     def command(self) -> None:
         """Passivity based method."""
         super().command()
-        self.target_mover.move()
 
         Minv = np.linalg.inv(self.state.M)
         Jinv = (

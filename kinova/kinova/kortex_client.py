@@ -214,10 +214,13 @@ class KortexClient:
         Logger.log("Low_level control disabled.")
 
     def _connect_LLC(
-        self, controller: "Controller", mode: Literal["position", "velocity", "current"]
+        self,
+        controller: "Controller",
+        mode: Literal["position", "velocity", "current"] = "current",
     ) -> None:
         """Connect a controller to the LLC of the robot."""
         self.controller = controller
+        controller.reset_before_connect()
         for joint in controller.joints:
             self._copy_feedback_to_command_message(joint)
             self.base_cyclic.Refresh(self.command)
