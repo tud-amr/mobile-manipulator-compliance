@@ -1,20 +1,17 @@
 import rclpy
 import os
+import numpy as np
 from rclpy.node import Node
-from kinova_driver_msg.msg import (
-    KinovaFeedback,
-    JointFeedback,
-    KinovaState,
-    JointState,
-    Command,
-)
+from kinova_driver_msg.msg import KinovaFeedback, JointFeedback, KinovaState, JointState
 from kinova_driver_msg.srv import Service
 from kinova.kortex_client_simulation import KortexClientSimulation
 from kinova.mujoco_viewer import MujocoViewer
+from mujoco_viewer_msg.msg import MujocoFeedback
 from controllers.state import State
 from controllers.controllers import Controllers, Controller
 from controllers.calibration import Calibrations
 from threading import Thread
+from std_msgs.msg import MultiArrayDimension
 
 
 class KinovaSimulationNode(Node):
@@ -22,6 +19,7 @@ class KinovaSimulationNode(Node):
 
     def __init__(self) -> None:
         super().__init__("kinova_driver_node")
+        self.create_subscription(MujocoFeedback, "/mujoco/feedback", self.callback, 10)
         self.feedback_pub = self.create_publisher(
             KinovaFeedback, "/kinova/feedback", 10
         )
@@ -38,7 +36,7 @@ class KinovaSimulationNode(Node):
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
         self.publish_state()
-        self.kortex_client.mujoco_viewer.start_simulation()
+        self.mujoco_viewer.start_simulation()
 
     def service_call(
         self, request: Service.Request, response: Service.Response
@@ -120,8 +118,11 @@ class KinovaSimulationNode(Node):
         state.automove_target = self.mujoco_viewer.automove_target
         self.state_pub.publish(state)
 
-    def callback(self, msg: Command) -> None:
-        """Command callback."""
+    def callback(self, msg: MujocoFeedback) -> None:
+        """Mujoco callback."""
+        x: MultiArrayDimension = msg.perturbations.layout.dim[0]
+        y: MultiArrayDimension = msg.perturbations.layout.dim[1]
+        self.mujoco_viewer.data.xfrc_applied = np.array(msg.perturbations.data).reshape((x.size, y.size))
 
     def start_spin_loop(self) -> None:
         """Start the ros spin loop."""

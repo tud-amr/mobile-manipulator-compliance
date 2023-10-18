@@ -21,6 +21,7 @@ class MujocoViewer:
         self.model = mujoco.MjModel.from_xml_path(xml)
         self.data = mujoco.MjData(self.model)
         self.name = re.search("b'(.*?)\\\\", str(self.model.names))[1]
+        self.callback = lambda: None
         self.active = True
         move_target_thread = Thread(target=self.move_target_loop)
         move_target_thread.start()
@@ -69,13 +70,13 @@ class MujocoViewer:
             self.active = False
 
     def start_simulation(self) -> None:
-        """Start the mujoco simulation."""
-        self.viewer = mujoco.viewer._launch_internal(
-            self.model,
-            self.data,
-            run_physics_thread=True,
-            key_callback=self.key_callback,
-        )
+        """Start a mujoco simulation without rendering."""
+        while True:
+            step_start = time.time()
+            mujoco.mj_step(self.model, self.data)
+            time_until_next_step = self.model.opt.timestep - (time.time() - step_start)
+            if time_until_next_step > 0:
+                time.sleep(time_until_next_step)
 
     def start_visualization(self) -> None:
         """Start the mujoco visualization."""
@@ -88,6 +89,7 @@ class MujocoViewer:
                 mujoco.mj_forward(self.model, self.data)
                 if time.time() > sync_time:
                     self.viewer.sync()
+                    self.callback()
                     sync_time += 1 / VISUALIZATION_SYNC_RATE
                 time_until_next_step = self.model.opt.timestep - (
                     time.time() - step_start
