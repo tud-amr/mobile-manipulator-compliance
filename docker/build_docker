@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cd ..
+sudo docker build -t ros2_compliant_control -f docker/Dockerfile .

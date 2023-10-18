@@ -2,7 +2,5 @@
 xhost +local:docker &> /dev/null
 
 sudo docker run -it --rm --net=host --privileged \
-    --env=NVIDIA_VISIBLE_DEVICES=all --env=NVIDIA_DRIVER_CAPABILITIES=all --env=DISPLAY --env=QT_X11_NO_MITSHM=1 \
-    -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
     -v $(dirname "$0")/..:/home/dingo/kinova_compliant_control \
-    dingo bash -c "bash;"
+    ros2_compliant_control_core bash -c "bash;"
