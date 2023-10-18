@@ -11,13 +11,13 @@ find_package(rclcpp REQUIRED)
 find_package(dingo_driver_msg REQUIRED) 
 find_package(Boost REQUIRED)
 
-include_directories("../../../dingo_hardware")
+include_directories("../../../cpp")
 
 add_executable(
   dingo_driver_node src/dingo_driver_node.cpp 
-  ../../../dingo_hardware/dingo_driver.cpp
-  ../../../dingo_hardware/puma_motor_driver/driver.cpp
-  ../../../dingo_hardware/puma_motor_driver/socketcan_gateway.cpp
+  ../../../cpp/dingo_driver/dingo_driver.cpp
+  ../../../cpp/puma_motor_driver/driver.cpp
+  ../../../cpp/puma_motor_driver/socketcan_gateway.cpp
   )
 target_link_libraries(dingo_driver_node boost_thread)
 ament_target_dependencies(dingo_driver_node rclcpp dingo_driver_msg)

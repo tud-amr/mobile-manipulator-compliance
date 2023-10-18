@@ -7,7 +7,7 @@
 #include "dingo_driver_msg/msg/dingo_feedback.hpp"
 #include "dingo_driver_msg/msg/command.hpp"
 #include "dingo_driver_msg/srv/set_gain.hpp"
-#include "dingo_driver.h"
+#include "dingo_driver/dingo_driver.h"
 
 struct Wheel
 {
@@ -23,8 +23,8 @@ public:
     DingoDriverNode()
         : Node("dingo_driver_node"), driver_manager_("vcan0")
     {
-        publisher_ = this->create_publisher<dingo_driver_msg::msg::DingoFeedback>("/dingo_driver/feedback", 10);
-        subscription_ = this->create_subscription<dingo_driver_msg::msg::Command>("/dingo_driver/command", 10, std::bind(&DingoDriverNode::set_command, this, std::placeholders::_1));
+        publisher_ = this->create_publisher<dingo_driver_msg::msg::DingoFeedback>("/dingo/feedback", 10);
+        subscription_ = this->create_subscription<dingo_driver_msg::msg::Command>("/dingo/command", 10, std::bind(&DingoDriverNode::set_command, this, std::placeholders::_1));
         // service_ = this->create_service<dingo_driver_msg::srv::SetGain>("set_gain", std::bind(&DingoDriverNode::set_gain, this, std::placeholders::_1, std::placeholders::_2));
     }
 
