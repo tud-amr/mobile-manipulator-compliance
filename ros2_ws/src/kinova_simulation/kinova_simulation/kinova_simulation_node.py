@@ -1,11 +1,15 @@
 import rclpy
 import os
 import signal
+import time
 import numpy as np
+import subprocess
 from rclpy.node import Node
 from kinova_driver_msg.msg import KinovaFeedback, JointFeedback, KinovaState, JointState
 from kinova_driver_msg.srv import Service
 from kinova.kortex_client_simulation import KortexClientSimulation
+from kinova.utilities import DeviceConnection, DEFAULT_IP
+from kinova.kortex_client import KortexClient
 from kinova.mujoco_viewer import MujocoViewer
 from mujoco_viewer_msg.msg import MujocoFeedback
 from controllers.state import State
@@ -15,8 +19,8 @@ from threading import Thread
 from std_msgs.msg import MultiArrayDimension
 
 
-class KinovaSimulationNode(Node):
-    """A node that starts the simulation of the kinova arm."""
+class KinovaDriverNode(Node):
+    """A node that starts the driver or a simulation of the Kinova arm."""
 
     def __init__(self) -> None:
         super().__init__("kinova_driver_node")
@@ -28,15 +32,40 @@ class KinovaSimulationNode(Node):
         self.create_service(Service, "/kinova/service", self.service_call)
 
         self.mujoco_viewer = MujocoViewer()
-        self.kortex_client = KortexClientSimulation(self.mujoco_viewer)
-        self.state = State(True, self.kortex_client.actuator_count)
+        self.state = State(True, 6)
         self.controllers = Controllers(self.state)
-        self.calibrations = Calibrations(self.state, self.kortex_client)
-        self.kortex_client.feedback_callback = self.publish_feedback
 
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
+
+        if self.ip_available():
+            self.start_driver()
+        else:
+            print("Kinova arm not found, starting simulation...")
+            self.start_simulation()
+
+    def start_driver(self) -> None:
+        """Start the driver for the Kinova arm."""
+        with DeviceConnection.createTcpConnection() as router, DeviceConnection.createUdpConnection() as real_time_router:
+            self.kortex_client = KortexClient(
+                router=router, real_time_router=real_time_router
+            )
+
+            self.kortex_client.feedback_callback = self.publish_feedback
+            self.calibrations = Calibrations(self.state, self.kortex_client)
+            self.publish_state()
+
+            while True:
+                time.sleep(1)
+
+    def start_simulation(self) -> None:
+        """Start a simulaion of the Kinova arm."""
+        self.kortex_client = KortexClientSimulation(self.mujoco_viewer)
+
+        self.kortex_client.feedback_callback = self.publish_feedback
+        self.calibrations = Calibrations(self.state, self.kortex_client)
         self.publish_state()
+
         signal.signal(signal.SIGINT, self.mujoco_viewer.stop_simulation)
         self.mujoco_viewer.start_simulation()
 
@@ -124,17 +153,30 @@ class KinovaSimulationNode(Node):
         """Mujoco callback."""
         x: MultiArrayDimension = msg.perturbations.layout.dim[0]
         y: MultiArrayDimension = msg.perturbations.layout.dim[1]
-        self.mujoco_viewer.data.xfrc_applied = np.array(msg.perturbations.data).reshape((x.size, y.size))
+        self.mujoco_viewer.data.xfrc_applied = np.array(msg.perturbations.data).reshape(
+            (x.size, y.size)
+        )
 
     def start_spin_loop(self) -> None:
         """Start the ros spin loop."""
         rclpy.spin(self)
 
+    def ip_available(self) -> bool:
+        """Check if robot is available."""
+        return (
+            subprocess.call(
+                "ping -c 1 -W 0.1 " + DEFAULT_IP,
+                shell=True,
+                stdout=subprocess.DEVNULL,
+            )
+            == 0
+        )
+
 
 def main(args: any = None) -> None:
     """Main."""
     rclpy.init(args=args)
-    KinovaSimulationNode()
+    KinovaDriverNode()
     rclpy.shutdown()
     os._exit(0)
 
