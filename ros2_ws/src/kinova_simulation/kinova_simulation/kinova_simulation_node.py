@@ -1,5 +1,6 @@
 import rclpy
 import os
+import signal
 import numpy as np
 from rclpy.node import Node
 from kinova_driver_msg.msg import KinovaFeedback, JointFeedback, KinovaState, JointState
@@ -36,6 +37,7 @@ class KinovaSimulationNode(Node):
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
         self.publish_state()
+        signal.signal(signal.SIGINT, self.mujoco_viewer.stop_simulation)
         self.mujoco_viewer.start_simulation()
 
     def service_call(

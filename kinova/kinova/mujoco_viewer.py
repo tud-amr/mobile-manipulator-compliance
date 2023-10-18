@@ -71,12 +71,18 @@ class MujocoViewer:
 
     def start_simulation(self) -> None:
         """Start a mujoco simulation without rendering."""
-        while True:
+        self.simulate = True
+        print("Simulation started")
+        while self.simulate:
             step_start = time.time()
             mujoco.mj_step(self.model, self.data)
             time_until_next_step = self.model.opt.timestep - (time.time() - step_start)
             if time_until_next_step > 0:
                 time.sleep(time_until_next_step)
+
+    def stop_simulation(self, *args) -> None:
+        """Stop the simulation."""
+        self.simulate = False
 
     def start_visualization(self) -> None:
         """Start the mujoco visualization."""
