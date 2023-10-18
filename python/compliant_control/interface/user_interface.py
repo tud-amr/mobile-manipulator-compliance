@@ -11,15 +11,7 @@ class Joint:
 
     index: int
 
-    @property
-    def name(self) -> str:
-        return f"joint{self.index}"
-
-    @property
-    def feedbacks(self) -> list[str]:
-        return ["position", "speed", "current"]
-
-    # continious feedback:
+    # continuous feedback:
     position: float = 0
     speed: float = 0
     current: float = 0
@@ -31,19 +23,32 @@ class Joint:
     fric_d: float = 0
     fric_s: float = 0
 
-
-@dataclass
-class Wheel:
-    name: str
+    @property
+    def name(self) -> str:
+        """Return the name of the joint."""
+        return f"joint{self.index}"
 
     @property
     def feedbacks(self) -> list[str]:
-        return ["position", "speed", "power"]
+        """Return the feedbacks types."""
+        return ["position", "speed", "current"]
 
-    # continious feedback:
+
+@dataclass
+class Wheel:
+    """Data of a wheel."""
+
+    name: str
+
+    # continuous feedback:
     position: float = 0
     speed: float = 0
     power: float = 0
+
+    @property
+    def feedbacks(self) -> list[str]:
+        """Return the feedback types."""
+        return ["position", "speed", "power"]
 
 
 class UserInterface:
@@ -103,6 +108,7 @@ class UserInterface:
             x_pos=0,
             y_pos=0,
             resizable=False,
+            decorated=False,
         )
         dpg.setup_dearpygui()
         self.create_theme()
@@ -170,7 +176,7 @@ class UserInterface:
                 no_tick_marks=True,
             )
 
-    def load_info(self, width, height, pos: list) -> None:
+    def load_info(self, width: int, height: int, pos: list) -> None:
         """Load info."""
         with self.window("Info", width, height, pos, tag="window_info"):
             pass
@@ -223,13 +229,13 @@ class UserInterface:
                 self.checkbox("Compensate friction", enabled=self.compensate_friction)
                 self.checkbox("Automove target", enabled=self.automove_target)
 
-    def load_state(self, width, height, pos: list) -> None:
+    def load_state(self, width: int, height: int, pos: list) -> None:
         """Load joint info window."""
         with self.window("State", width, height, pos, tag="window_state"):
             pass
         self.update_state()
 
-    def update_state(self):
+    def update_state(self) -> None:
         """Update joint info."""
         if dpg.does_item_exist(item="table"):
             dpg.delete_item(item="table")
@@ -240,7 +246,7 @@ class UserInterface:
             tag="table",
             parent="window_state",
         ):
-            headers = ["#", "Mode:", "Ratio:", "Dfric:", "Sfric:"]
+            headers = ["#", "Mode:", "Ratio:", "fric_D:", "fric_S:"]
             for header in headers:
                 dpg.add_table_column(label=header)
             for joint in self.joints:
