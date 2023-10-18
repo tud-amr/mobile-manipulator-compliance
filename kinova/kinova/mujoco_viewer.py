@@ -8,6 +8,8 @@ import kinova.models as models
 import time
 import os
 import re
+from user_interface.window_commands import WindowCommands
+import glfw
 
 VISUALIZATION_SYNC_RATE = 60  # Hz
 MODEL = "GEN3-LITE.xml"
@@ -86,6 +88,15 @@ class MujocoViewer:
 
     def start_visualization(self) -> None:
         """Start the mujoco visualization."""
+        glfw.init()
+        window_commands = WindowCommands(1)
+        window_commands.start_in_new_thread()
+        width, height = glfw.get_video_mode(glfw.get_primary_monitor()).size
+        pose = [int(width / 3), 0, int(width * (2 / 3)), height]
+        window_commands.add_window(self.name)
+        window_commands.add_command(["replace", (self.name, *pose)])
+        window_commands.add_command(["key", (self.name, "Tab")])
+        window_commands.add_command(["key", (self.name, "Shift+Tab")])
         with mujoco.viewer.launch_passive(
             self.model, self.data, key_callback=self.key_callback
         ) as self.viewer:
