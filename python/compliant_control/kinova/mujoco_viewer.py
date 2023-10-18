@@ -4,11 +4,11 @@ import numpy as np
 import importlib.resources as pkg_resources
 import mujoco
 import mujoco.viewer
-import kinova.models as models
+import compliant_control.kinova.models as models
 import time
 import os
 import re
-from user_interface.window_commands import WindowCommands
+from compliant_control.interface.window_commands import WindowCommands
 import glfw
 
 VISUALIZATION_SYNC_RATE = 60  # Hz

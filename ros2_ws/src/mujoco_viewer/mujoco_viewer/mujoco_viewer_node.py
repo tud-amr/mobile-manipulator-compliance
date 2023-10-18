@@ -2,7 +2,7 @@ import rclpy
 import os
 from rclpy.node import Node
 from threading import Thread
-from kinova.mujoco_viewer import MujocoViewer
+from compliant_control.kinova.mujoco_viewer import MujocoViewer
 from kinova_driver_msg.msg import KinovaFeedback, JointFeedback
 from mujoco_viewer_msg.msg import MujocoFeedback
 from std_msgs.msg import MultiArrayDimension

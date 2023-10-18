@@ -1,7 +1,7 @@
 import importlib.resources as pkg_resources
 import numpy as np
 import pinocchio
-import kinova.models as models
+import compliant_control.kinova.models as models
 
 
 class State:

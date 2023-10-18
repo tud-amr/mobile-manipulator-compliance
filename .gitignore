@@ -7,3 +7,4 @@ imgui.ini
 **/build
 **/install
 **/log
+.old/

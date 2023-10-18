@@ -15,11 +15,14 @@ class Joint:
     def name(self) -> str:
         return f"joint{self.index}"
 
+    @property
+    def feedbacks(self) -> list[str]:
+        return ["position", "speed", "current"]
+
     # continious feedback:
     position: float = 0
     speed: float = 0
     current: float = 0
-    voltage: float = 0
 
     # state:
     active: bool = True
@@ -29,17 +32,35 @@ class Joint:
     fric_s: float = 0
 
 
-class Controller:
+@dataclass
+class Wheel:
+    name: str
+
+    @property
+    def feedbacks(self) -> list[str]:
+        return ["position", "speed", "power"]
+
+    # continious feedback:
+    position: float = 0
+    speed: float = 0
+    power: float = 0
+
+
+class UserInterface:
     """Used to tune the PID controller of the Dingo."""
 
     def __init__(self, callback: callable = lambda: None) -> None:
         self.joints = [Joint(n) for n in range(6)]
+        self.wheels = [
+            Wheel(f"{fr}_{lr}_wheel")
+            for fr in ["front", "rear"]
+            for lr in ["left", "right"]
+        ]
         self.mode = "waiting"
         self.update_rate = 0
         self.servoing = "?"
         self.compensate_friction = False
         self.automove_target = False
-        self.data_names = ["position", "speed", "current", "voltage"]
         self.callback = callback
 
         self.define_ui_parameters()
@@ -63,7 +84,7 @@ class Controller:
     def define_ui_parameters(self) -> None:
         """Define the UI parameters."""
         glfw.init()
-        self.window_name = "Kinova-Controller"
+        self.window_name = "Compliant Mobile Manipulation - User Interface"
         w_screen, h_screen = glfw.get_video_mode(glfw.get_primary_monitor()).size
         self.w_win = int(w_screen / 3)
         self.h_win = h_screen
@@ -84,44 +105,63 @@ class Controller:
             resizable=False,
         )
         dpg.setup_dearpygui()
-
         self.create_theme()
-        self.create_plot("position", [0, 0])
-        self.create_plot("speed", [self.w_plt, 0])
-        self.create_plot("voltage", [0, self.h_plt])
-        self.create_plot("current", [self.w_plt, self.h_plt])
-        self.load_control([0, 2 * self.h_plt])
-        self.load_state([self.w_plt, 2 * self.h_plt])
-        self.load_info([self.w_plt, int(2.5 * self.h_plt)])
+
+        w2 = int(self.w_win / 2)
+        w3 = int(self.w_win / 3)
+        h3 = int(self.h_win / 3)
+        h6 = int(self.h_win / 6)
+
+        self.create_plot("joint_position", w3, h3, [0, 0])
+        self.create_plot("joint_speed", w3, h3, [w3, 0])
+        self.create_plot("joint_current", w3, h3, [2 * w3, 0])
+
+        self.load_control(w2, h3, [0, h3])
+        self.load_state(w2, h6, [w2, h3])
+        self.load_info(w2, h6, [w2, h3 + h6])
+
+        self.create_plot("wheel_position", w3, h3, [0, 2 * h3])
+        self.create_plot("wheel_speed", w3, h3, [w3, 2 * h3])
+        self.create_plot("wheel_power", w3, h3, [2 * w3, 2 * h3])
 
         dpg.show_viewport()
 
-    def create_plot(self, data_name: str, pos: list) -> None:
+    def create_plot(self, name: str, width: int, height: int, pos: list) -> None:
         """Create a plot."""
         bar_center = 0.5
-        with self.window(None, self.w_plt, self.h_plt, pos), dpg.plot(
-            height=-1, width=-1
-        ):
+        label = name.split("_")[1]
+        with self.window(None, width, height, pos), dpg.plot(height=-1, width=-1):
             dpg.add_plot_axis(
                 dpg.mvXAxis,
-                label=data_name,
-                tag=f"{data_name}_x_axis",
+                label=label,
+                tag=f"{name}_x_axis",
                 no_gridlines=True,
                 no_tick_labels=True,
                 no_tick_marks=True,
             )
-            dpg.add_plot_axis(dpg.mvYAxis, tag=f"{data_name}_y_axis")
-            for joint in self.joints:
-                dpg.add_bar_series(
-                    [bar_center],
-                    [getattr(joint, data_name)],
-                    weight=0.8,
-                    parent=f"{data_name}_y_axis",
-                    tag=f"{joint.name}_{data_name}",
-                )
-                bar_center += 1
-            dpg.set_axis_limits(f"{data_name}_x_axis", 0, len(self.joints))
-            dpg.set_axis_limits(f"{data_name}_y_axis", -5, 5)
+            dpg.add_plot_axis(dpg.mvYAxis, tag=f"{name}_y_axis")
+            if "joint" in name:
+                for joint in self.joints:
+                    dpg.add_bar_series(
+                        [bar_center],
+                        [getattr(joint, label)],
+                        weight=0.8,
+                        parent=f"{name}_y_axis",
+                        tag=f"{joint.name}_{label}",
+                    )
+                    bar_center += 1
+            elif "wheel" in name:
+                for wheel in self.wheels:
+                    dpg.add_bar_series(
+                        [bar_center],
+                        [getattr(wheel, label)],
+                        weight=0.8,
+                        parent=f"{name}_y_axis",
+                        tag=f"{wheel.name}_{label}",
+                    )
+                    bar_center += 1
+            dpg.set_axis_limits(f"{name}_x_axis", 0, len(self.joints))
+            dpg.set_axis_limits(f"{name}_y_axis", -5, 5)
             dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label=" ",
@@ -130,11 +170,9 @@ class Controller:
                 no_tick_marks=True,
             )
 
-    def load_info(self, pos: list) -> None:
+    def load_info(self, width, height, pos: list) -> None:
         """Load info."""
-        w = self.w_plt
-        h = int(self.h_plt / 2)
-        with self.window("Info", w, h, pos, tag="window_info"):
+        with self.window("Info", width, height, pos, tag="window_info"):
             pass
         thread = Thread(target=self.update_info)
         thread.start()
@@ -149,12 +187,9 @@ class Controller:
                 dpg.add_text(f"Servoing: {self.servoing}")
             time.sleep(0.5)
 
-    def load_control(self, pos: list) -> None:
+    def load_control(self, width: int, height: int, pos: list) -> None:
         """Load the control window."""
-        w = self.w_plt
-        h = int(self.h_plt)
-
-        with self.window("Control", w, h, pos, tag="window_control"):
+        with self.window("Control", width, height, pos, tag="window_control"):
             pass
         self.update_control()
 
@@ -188,12 +223,9 @@ class Controller:
                 self.checkbox("Compensate friction", enabled=self.compensate_friction)
                 self.checkbox("Automove target", enabled=self.automove_target)
 
-    def load_state(self, pos: list) -> None:
+    def load_state(self, width, height, pos: list) -> None:
         """Load joint info window."""
-        w = self.w_plt
-        h = self.h_plt
-
-        with self.window("State", w, h, pos, tag="window_state"):
+        with self.window("State", width, height, pos, tag="window_state"):
             pass
         self.update_state()
 
@@ -221,13 +253,21 @@ class Controller:
                     dpg.add_text(round(joint.fric_d, 3))
                     dpg.add_text(round(joint.fric_s, 3))
 
-    def update_feedback(self) -> None:
-        """Update the feedback."""
+    def update_kinova_plots(self) -> None:
+        """Update the Kinova plots."""
         for joint in self.joints:
-            for data_name in self.data_names:
-                data = dpg.get_value(f"{joint.name}_{data_name}")
-                data[1] = [getattr(joint, data_name)]
-                dpg.set_value(f"{joint.name}_{data_name}", data)
+            for feedback in joint.feedbacks:
+                data = dpg.get_value(f"{joint.name}_{feedback}")
+                data[1] = [getattr(joint, feedback)]
+                dpg.set_value(f"{joint.name}_{feedback}", data)
+
+    def update_dingo_plots(self) -> None:
+        """Update the Dingo plots."""
+        for wheel in self.wheels:
+            for feedback in wheel.feedbacks:
+                data = dpg.get_value(f"{wheel.name}_{feedback}")
+                data[1] = [getattr(wheel, feedback)]
+                dpg.set_value(f"{wheel.name}_{feedback}", data)
 
     def button(
         self, label: str, enabled: bool = False, callback: callable = None

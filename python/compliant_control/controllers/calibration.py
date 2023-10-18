@@ -6,10 +6,10 @@ import importlib.resources as pkg_resources
 from scipy.signal import savgol_filter
 from scipy.optimize import minimize
 
-from kinova.kortex_client import KortexClient
-from kinova.specifications import Position
-from controllers.state import State
-from controllers.controllers import CompensateGravity
+from compliant_control.kinova.kortex_client import KortexClient
+from compliant_control.kinova.specifications import Position
+from compliant_control.controllers.state import State
+from compliant_control.controllers.controllers import CompensateGravity
 import time
 from threading import Thread
 

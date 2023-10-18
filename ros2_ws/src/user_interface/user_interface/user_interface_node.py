@@ -4,7 +4,7 @@ from rclpy.node import Node
 from kinova_driver_msg.msg import JointFeedback, KinovaFeedback, JointState, KinovaState
 from dingo_driver_msg.msg import WheelFeedback, DingoFeedback
 from kinova_driver_msg.srv import Service
-from compliant_control.user_interface import UserInterface
+from compliant_control.interface.user_interface import UserInterface
 from threading import Thread
 import time
 

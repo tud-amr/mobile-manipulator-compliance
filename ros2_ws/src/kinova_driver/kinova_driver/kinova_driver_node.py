@@ -7,14 +7,14 @@ import subprocess
 from rclpy.node import Node
 from kinova_driver_msg.msg import KinovaFeedback, JointFeedback, KinovaState, JointState
 from kinova_driver_msg.srv import Service
-from kinova.kortex_client_simulation import KortexClientSimulation
-from kinova.utilities import DeviceConnection, DEFAULT_IP
-from kinova.kortex_client import KortexClient
-from kinova.mujoco_viewer import MujocoViewer
+from compliant_control.kinova.kortex_client_simulation import KortexClientSimulation
+from compliant_control.kinova.utilities import DeviceConnection, DEFAULT_IP
+from compliant_control.kinova.kortex_client import KortexClient
+from compliant_control.kinova.mujoco_viewer import MujocoViewer
 from mujoco_viewer_msg.msg import MujocoFeedback
-from controllers.state import State
-from controllers.controllers import Controllers, Controller
-from controllers.calibration import Calibrations
+from compliant_control.controllers.state import State
+from compliant_control.controllers.controllers import Controllers, Controller
+from compliant_control.controllers.calibration import Calibrations
 from threading import Thread
 from std_msgs.msg import MultiArrayDimension
 

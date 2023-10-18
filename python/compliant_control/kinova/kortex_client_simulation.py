@@ -2,10 +2,10 @@ import time
 import mujoco
 import numpy as np
 from kortex_api.autogen.messages import ActuatorConfig_pb2
-from kinova.kortex_client import KortexClient
-from kinova.mujoco_viewer import MujocoViewer
-from kinova.messages import Base, BaseCyclic, ActuatorConfig
-from kinova.specifications import Position
+from compliant_control.kinova.kortex_client import KortexClient
+from compliant_control.kinova.mujoco_viewer import MujocoViewer
+from compliant_control.kinova.messages import Base, BaseCyclic, ActuatorConfig
+from compliant_control.kinova.specifications import Position
 
 
 class KortexClientSimulation(KortexClient):

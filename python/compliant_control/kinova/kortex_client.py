@@ -9,7 +9,7 @@ from kortex_api.autogen.client_stubs.BaseCyclicClientRpc import BaseCyclicClient
 from kortex_api.autogen.client_stubs.ActuatorConfigClientRpc import ActuatorConfigClient
 from kortex_api.autogen.messages import Base_pb2, BaseCyclic_pb2, ActuatorConfig_pb2
 from kortex_api.Exceptions.KServerException import KServerException
-from controllers.controllers import Controller
+from compliant_control.controllers.controllers import Controller
 
 from .specifications import Position, actuator_ids, ranges
 
