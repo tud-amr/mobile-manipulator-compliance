@@ -67,6 +67,8 @@ class KinovaDriverNode(Node):
         self.calibrations = Calibrations(self.state, self.kortex_client)
         self.publish_state()
 
+        kortex_thread = Thread(target=self.kortex_client.start_refresh_loop)
+        kortex_thread.start()
         signal.signal(signal.SIGINT, self.mujoco_viewer.stop_simulation)
         self.mujoco_viewer.start_simulation()
 
