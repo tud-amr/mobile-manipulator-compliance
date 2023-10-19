@@ -10,7 +10,7 @@ class Controllers:
         self.compensate_gravity = CompensateGravity(state)
         self.compensate_gravity_and_friction = CompensateGravityAndFriction(state)
         self.impedance = Impedance(state)
-        self.cartesion_impedance = CartesianImpedance(state)
+        self.cartesian_impedance = CartesianImpedance(state)
 
 
 class Controller:

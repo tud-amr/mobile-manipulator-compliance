@@ -63,7 +63,6 @@ class KortexClient:
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         self._refresh()
         self._initialize_command()
-        self.start_refresh_loop()
 
     def get_mode(self) -> str:
         """Get the general mode."""
@@ -87,14 +86,14 @@ class KortexClient:
 
     def start_refresh_loop(self) -> None:
         """Start the refresh loop."""
-        self.refresh_thread = Thread(target=self._refresh_loop)
         self.rate_check_thread = Thread(target=self._rate_check_loop)
         self.active_loop = True
-        self.refresh_thread.start()
         self.rate_check_thread.start()
+        self._refresh_loop()
 
-    def stop_refresh_loop(self) -> None:
+    def stop_refresh_loop(self, *args: any) -> None:
         """Stop the update loop."""
+        print("Closing connection with arm...")
         self.active_loop = False
 
     def set_control_mode(
@@ -233,7 +232,7 @@ class KortexClient:
             self._refresh()
             self.feedback_callback()
             self.n += 1
-            time.sleep(self.sleep_time)
+            # time.sleep(self.sleep_time)
 
     def _refresh(self) -> None:
         """Refresh."""

@@ -57,8 +57,9 @@ class UserInterfaceNode(Node):
         """Update the Dingo feedback."""
         for wheel in self.interface.wheels:
             wheel_feedback: WheelFeedback = getattr(msg, wheel.name)
-            wheel.position = wheel_feedback.position + 1.0
-            wheel.speed = wheel_feedback.speed
+            last_position = wheel.position
+            wheel.encoder_position = wheel_feedback.position
+            wheel.speed = wheel.position - last_position
             wheel.power = wheel_feedback.current * wheel_feedback.voltage
         self.interface.update_dingo_plots()
 

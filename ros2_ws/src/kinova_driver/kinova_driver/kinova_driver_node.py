@@ -32,8 +32,6 @@ class KinovaDriverNode(Node):
         self.create_service(Service, "/kinova/service", self.service_call)
 
         self.mujoco_viewer = MujocoViewer()
-        self.state = State(True, 6)
-        self.controllers = Controllers(self.state)
 
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
@@ -52,17 +50,21 @@ class KinovaDriverNode(Node):
             )
 
             self.kortex_client.feedback_callback = self.publish_feedback
+            self.state = State(False, self.kortex_client.actuator_count)
+            self.controllers = Controllers(self.state)
             self.calibrations = Calibrations(self.state, self.kortex_client)
             self.publish_state()
 
-            while True:
-                time.sleep(1)
+            signal.signal(signal.SIGINT, self.kortex_client.stop_refresh_loop)
+            self.kortex_client.start_refresh_loop()
 
     def start_simulation(self) -> None:
-        """Start a simulaion of the Kinova arm."""
+        """Start a simulation of the Kinova arm."""
         self.kortex_client = KortexClientSimulation(self.mujoco_viewer)
 
         self.kortex_client.feedback_callback = self.publish_feedback
+        self.state = State(False, self.kortex_client.actuator_count)
+        self.controllers = Controllers(self.state)
         self.calibrations = Calibrations(self.state, self.kortex_client)
         self.publish_state()
 
@@ -89,13 +91,15 @@ class KinovaDriverNode(Node):
             case "Stop LLC Task":
                 self.kortex_client._disconnect_LLC()
             case "Gravity":
-                self.kortex_client._connect_LLC(self.controllers.compensate_gravity)
+                self.kortex_client._connect_LLC(
+                    self.controllers.compensate_gravity_and_friction
+                )
             case "Impedance":
                 self.mujoco_viewer.update_marker("target", self.state.x)
                 self.kortex_client._connect_LLC(self.controllers.impedance)
             case "Cartesian Impedance":
                 self.mujoco_viewer.update_marker("target", self.state.x)
-                self.kortex_client._connect_LLC(self.controllers.cartesion_impedance)
+                self.kortex_client._connect_LLC(self.controllers.cartesian_impedance)
             case "HL Calibration":
                 self.calibrations.high_level.calibrate_all_joints()
             case "LL Calibration":
@@ -104,6 +108,8 @@ class KinovaDriverNode(Node):
                 Controller.toggle_CF()
             case "Automove target":
                 self.mujoco_viewer.toggle_automove()
+            case "Clear Faults":
+                self.kortex_client.clear_faults()
             case _ if "Toggle" in request.name:
                 self.state.toggle_joint(int(request.name[-1]))
             case _:

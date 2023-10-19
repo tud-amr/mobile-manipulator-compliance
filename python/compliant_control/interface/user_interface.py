@@ -41,9 +41,15 @@ class Wheel:
     name: str
 
     # continuous feedback:
-    position: float = 0
+    encoder_position: float = 0
+    zero_position: float = 0
     speed: float = 0
     power: float = 0
+
+    @property
+    def position(self) -> float:
+        """Return the current position."""
+        return self.encoder_position - self.zero_position
 
     @property
     def feedbacks(self) -> list[str]:
@@ -134,6 +140,7 @@ class UserInterface:
 
     def create_plot(self, name: str, width: int, height: int, pos: list) -> None:
         """Create a plot."""
+        limits: dict
         bar_center = 0.5
         label = name.split("_")[1]
         with self.window(None, width, height, pos), dpg.plot(height=-1, width=-1):
@@ -147,6 +154,7 @@ class UserInterface:
             )
             dpg.add_plot_axis(dpg.mvYAxis, tag=f"{name}_y_axis")
             if "joint" in name:
+                limits = {"position": 2.6, "speed": 4, "current": 15}
                 for joint in self.joints:
                     dpg.add_bar_series(
                         [bar_center],
@@ -157,6 +165,7 @@ class UserInterface:
                     )
                     bar_center += 1
             elif "wheel" in name:
+                limits = {"position": 10, "speed": 5, "power": 10}
                 for wheel in self.wheels:
                     dpg.add_bar_series(
                         [bar_center],
@@ -167,7 +176,7 @@ class UserInterface:
                     )
                     bar_center += 1
             dpg.set_axis_limits(f"{name}_x_axis", 0, len(self.joints))
-            dpg.set_axis_limits(f"{name}_y_axis", -5, 5)
+            dpg.set_axis_limits(f"{name}_y_axis", -limits[label], limits[label])
             dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label=" ",
@@ -225,9 +234,16 @@ class UserInterface:
                 self.button("LL Calibration", self.HLC)
             dpg.add_spacer(height=10)
             dpg.add_text("Settings:")
-            with dpg.group(horizontal=True):
+            with dpg.group():
                 self.checkbox("Compensate friction", enabled=self.compensate_friction)
                 self.checkbox("Automove target", enabled=self.automove_target)
+                self.button("Clear Faults", True)
+                self.button("Reset wheels", True, self.reset_wheel_positions)
+
+    def reset_wheel_positions(self) -> None:
+        """Reset the wheel positions."""
+        for wheel in self.wheels:
+            wheel.zero_position = wheel.encoder_position
 
     def load_state(self, width: int, height: int, pos: list) -> None:
         """Load joint info window."""
