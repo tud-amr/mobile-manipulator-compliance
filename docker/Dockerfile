@@ -9,7 +9,7 @@ RUN useradd -p "$(openssl passwd -1 compliant)" dingo
 RUN usermod -aG sudo dingo
 
 #Create directory:
-RUN mkdir -p /home/dingo/kinova_compliant_control
+RUN mkdir -p /home/dingo/compliant-control
 Run chown dingo /home/dingo
 
 #Install GUI related packages:
@@ -19,7 +19,7 @@ RUN apt install -y ffmpeg libsm6 libxext6 xdotool wmctrl
 RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano
 
 #Copy files to workspace:
-ADD python /home/dingo/kinova_compliant_control/python
+ADD python /home/dingo/compliant-control/python
 ADD docker/.bashrc /home/dingo
 ADD docker/kortex_api-2.6.0.post3-py3-none-any.whl /home/dingo
 ADD docker/requirements.txt /home/dingo
@@ -31,7 +31,7 @@ WORKDIR /home/dingo
 RUN pip install kortex_api-2.6.0.post3-py3-none-any.whl
 
 #Install python directory:
-RUN pip install -e /home/dingo/kinova_compliant_control/python
+RUN pip install -e /home/dingo/compliant-control/python
 
 #Install required pip packages:
 RUN pip install -r requirements.txt
@@ -47,4 +47,4 @@ RUN stubgen -p mujoco -o ../.
 
 #Run ontainer as nonroot
 USER dingo
-WORKDIR /home/dingo/kinova_compliant_control
+WORKDIR /home/dingo/compliant-control

@@ -16,10 +16,10 @@ Run chown dingo /home/dingo
 RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano
 
 #Copy files to workspace:
-ADD python /home/dingo/kinova_compliant_control/python
+ADD python /home/dingo/compliant-control/python
 ADD docker/.bashrc /home/dingo
 ADD docker/kortex_api-2.6.0.post3-py3-none-any.whl /home/dingo
-ADD docker/requirements_core.txt /home/dingo
+ADD docker/requirements.txt /home/dingo
 ADD docker/requirements_flake8.txt /home/dingo
 WORKDIR /home/dingo
 
@@ -27,7 +27,7 @@ WORKDIR /home/dingo
 RUN pip install kortex_api-2.6.0.post3-py3-none-any.whl
 
 #Install python directory:
-RUN pip install -e /home/dingo/kinova_compliant_control/python
+RUN pip install -e /home/dingo/compliant-control/python
 
 #Install required pip packages:
 RUN pip install -r requirements.txt
@@ -42,4 +42,4 @@ RUN stubgen -p mujoco -o ../.
 
 #Run Container as nonroot
 USER dingo
-WORKDIR /home/dingo/kinova_compliant_control
+WORKDIR /home/dingo/compliant-control
