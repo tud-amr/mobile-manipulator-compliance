@@ -1,7 +1,6 @@
 import rclpy
 import os
 import signal
-import time
 import numpy as np
 import subprocess
 from rclpy.node import Node

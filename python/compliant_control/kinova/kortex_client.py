@@ -232,7 +232,6 @@ class KortexClient:
             self._refresh()
             self.feedback_callback()
             self.n += 1
-            # time.sleep(self.sleep_time)
 
     def _refresh(self) -> None:
         """Refresh."""
