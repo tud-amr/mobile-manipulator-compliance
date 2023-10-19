@@ -10,7 +10,7 @@ from compliant_control.kinova.kortex_client_simulation import KortexClientSimula
 from compliant_control.kinova.utilities import DeviceConnection, DEFAULT_IP
 from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.mujoco_viewer import MujocoViewer
-from mujoco_viewer_msg.msg import MujocoFeedback
+from mujoco_viewer_msg.msg import MujocoFeedback, MujocoCommand
 from compliant_control.controllers.state import State
 from compliant_control.controllers.controllers import Controllers, Controller
 from compliant_control.controllers.calibration import Calibrations
@@ -24,6 +24,7 @@ class KinovaDriverNode(Node):
     def __init__(self) -> None:
         super().__init__("kinova_driver_node")
         self.create_subscription(MujocoFeedback, "/mujoco/feedback", self.callback, 10)
+        self.mujoco_pub = self.create_publisher(MujocoCommand, "/mujoco/command", 10)
         self.feedback_pub = self.create_publisher(
             KinovaFeedback, "/kinova/feedback", 10
         )
@@ -96,10 +97,14 @@ class KinovaDriverNode(Node):
                     self.controllers.compensate_gravity_and_friction
                 )
             case "Impedance":
-                self.mujoco_viewer.update_marker("target", self.state.x)
+                msg = MujocoCommand()
+                msg.target.data = list(self.state.x)
+                self.mujoco_pub.publish(msg)
                 self.kortex_client._connect_LLC(self.controllers.impedance)
             case "Cartesian Impedance":
-                self.mujoco_viewer.update_marker("target", self.state.x)
+                msg = MujocoCommand()
+                msg.target.data = list(self.state.x)
+                self.mujoco_pub.publish(msg)
                 self.kortex_client._connect_LLC(self.controllers.cartesian_impedance)
             case "HL Calibration":
                 self.calibrations.high_level.calibrate_all_joints()
@@ -107,8 +112,6 @@ class KinovaDriverNode(Node):
                 self.calibrations.low_level.calibrate_all_joints()
             case "Compensate friction":
                 Controller.toggle_CF()
-            case "Automove target":
-                self.mujoco_viewer.toggle_automove()
             case "Clear Faults":
                 self.kortex_client.clear_faults()
             case _ if "Toggle" in request.name:
@@ -137,7 +140,6 @@ class KinovaDriverNode(Node):
         self.feedback_pub.publish(feedback)
         self.state.target = self.mujoco_viewer.target
         self.state.update()
-        self.mujoco_viewer.update_marker("end_effector", self.state.x)
 
     def publish_state(self) -> None:
         """Publish the joint state."""
@@ -163,6 +165,7 @@ class KinovaDriverNode(Node):
         self.mujoco_viewer.data.xfrc_applied = np.array(msg.perturbations.data).reshape(
             (x.size, y.size)
         )
+        self.mujoco_viewer.update_target(np.array(msg.target.data))
 
     def start_spin_loop(self) -> None:
         """Start the ros spin loop."""

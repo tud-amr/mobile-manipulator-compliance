@@ -25,9 +25,6 @@
     <mesh name="LEFT_FINGER_DIST" file="LEFT_FINGER_DIST.STL"/>
   </asset>
   <worldbody>
-    <body name="end_effector" pos="0 0 0" mocap="true">
-      <geom type="sphere" pos="0 0 0" size="0.01" contype="0" conaffinity="0" rgba="0 0 1 1"/>
-    </body>
     <body name="target" pos="0.3 -0.3 0.5" mocap="true">
       <geom type="sphere" pos="0 0 0" size="0.01" contype="0" conaffinity="0" rgba="1 0 0 1"/>
     </body>
@@ -63,6 +60,7 @@
                   <geom pos="1.6763e-07 -0.010078 0.115639" quat="0.707105 0 0.707108 0" type="mesh" mesh="RIGHT_FINGER_DIST"/>
                   <geom pos="0 0.0305 0.070003" quat="0.707105 0 0.707108 0" type="mesh" mesh="LEFT_FINGER_PROX"/>
                   <geom pos="7.00686e-05 0.010077 0.115639" quat="0.707105 0 0.707108 0" type="mesh" mesh="LEFT_FINGER_DIST"/>
+                  <site type="sphere" pos="0 0 0.09" size="0.01" rgba="0 0 1 1"/>
                 </body>
               </body>
             </body>

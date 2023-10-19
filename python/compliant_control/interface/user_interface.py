@@ -72,6 +72,7 @@ class UserInterface:
         self.servoing = "?"
         self.compensate_friction = False
         self.automove_target = False
+        self.toggle_automove_target = lambda: None
         self.callback = callback
 
         self.define_ui_parameters()
@@ -236,7 +237,11 @@ class UserInterface:
             dpg.add_text("Settings:")
             with dpg.group():
                 self.checkbox("Compensate friction", enabled=self.compensate_friction)
-                self.checkbox("Automove target", enabled=self.automove_target)
+                self.checkbox(
+                    "Automove target",
+                    enabled=self.automove_target,
+                    callback=self.toggle_automove_target,
+                )
                 self.button("Clear Faults", True)
                 self.button("Reset wheels", True, self.reset_wheel_positions)
 

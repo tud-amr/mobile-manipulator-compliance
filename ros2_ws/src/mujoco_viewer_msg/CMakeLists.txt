@@ -12,6 +12,8 @@ find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MujocoFeedback.msg"
+  "msg/MujocoCommand.msg"
+  "srv/ToggleAutomove.srv"
   DEPENDENCIES std_msgs
  )
 

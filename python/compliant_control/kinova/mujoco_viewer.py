@@ -1,4 +1,3 @@
-from typing import Literal
 from threading import Thread
 import numpy as np
 import importlib.resources as pkg_resources
@@ -34,11 +33,9 @@ class MujocoViewer:
         body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target") - 1
         return self.data.mocap_pos[body_id]
 
-    def update_marker(
-        self, marker: Literal["end_effector", "target"], pos: np.ndarray
-    ) -> None:
+    def update_target(self, pos: np.ndarray) -> None:
         """Update the given marker."""
-        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, marker) - 1
+        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target") - 1
         self.data.mocap_pos[body_id] = pos
 
     def move_target_loop(self) -> None:
@@ -59,7 +56,7 @@ class MujocoViewer:
             step_y = np.sin(np.deg2rad(target_rot)) * target_step
             step_z = 0
             new_target_pos = self.target + np.array([step_x, step_y, step_z])
-            self.update_marker("target", new_target_pos)
+            self.update_target(new_target_pos)
             time.sleep(1 / frequency)
 
     def toggle_automove(self) -> None:

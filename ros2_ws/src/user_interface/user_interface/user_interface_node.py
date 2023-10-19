@@ -4,6 +4,7 @@ from rclpy.node import Node
 from kinova_driver_msg.msg import JointFeedback, KinovaFeedback, JointState, KinovaState
 from dingo_driver_msg.msg import WheelFeedback, DingoFeedback
 from kinova_driver_msg.srv import Service
+from mujoco_viewer_msg.srv import ToggleAutomove
 from compliant_control.interface.user_interface import UserInterface
 from threading import Thread
 import time
@@ -21,15 +22,25 @@ class UserInterfaceNode(Node):
             DingoFeedback, "/dingo/feedback", self.dingo_feedback, 10
         )
         self.create_subscription(KinovaState, "/kinova/state", self.kinova_state, 10)
-        self.client = self.create_client(Service, "/kinova/service")
+        self.kinova_client = self.create_client(Service, "/kinova/service")
+        self.mujoco_client = self.create_client(ToggleAutomove, "/mujoco/automove")
 
         self.start_position = None
         self.interface = UserInterface(self.callback)
+        self.interface.toggle_automove_target = self.toggle_mujoco_automove
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
         initialize_thread = Thread(target=self.callback, args=["Initialize"])
         initialize_thread.start()
         self.interface.start_render_loop()
+
+    def toggle_mujoco_automove(self) -> None:
+        """Toggle target automove of mujoco."""
+        future = self.mujoco_client.call_async(ToggleAutomove.Request())
+        while not future.done():
+            time.sleep(0.1)
+        self.interface.automove_target = future.result().state
+        self.interface.update_control()
 
     def callback(self, name: str) -> None:
         """Connect the interface with service calls."""
@@ -37,7 +48,7 @@ class UserInterfaceNode(Node):
         self.interface.update_control()
         request = Service.Request()
         request.name = name
-        future = self.client.call_async(request)
+        future = self.kinova_client.call_async(request)
         while not future.done():
             time.sleep(0.1)
         self.interface.mode = future.result().mode
