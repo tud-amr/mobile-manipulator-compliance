@@ -1,0 +1,5 @@
+<mujoco model="dingo">
+  <asset>
+    <mesh name="omni_chassis_collision" file="omni_chassis_collision.stl"/>
+  </asset>
+</mujoco>
