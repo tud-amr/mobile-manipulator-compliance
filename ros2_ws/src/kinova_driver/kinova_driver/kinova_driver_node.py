@@ -63,7 +63,7 @@ class KinovaDriverNode(Node):
         self.kortex_client = KortexClientSimulation(self.mujoco_viewer)
 
         self.kortex_client.feedback_callback = self.publish_feedback
-        self.state = State(False, self.kortex_client.actuator_count)
+        self.state = State(True, self.kortex_client.actuator_count)
         self.controllers = Controllers(self.state)
         self.calibrations = Calibrations(self.state, self.kortex_client)
         self.publish_state()
