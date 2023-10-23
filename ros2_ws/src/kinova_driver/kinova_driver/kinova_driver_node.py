@@ -32,9 +32,7 @@ class KinovaDriverNode(Node):
         self.create_service(Service, "/kinova/service", self.service_call)
 
         self.mujoco_viewer = MujocoViewer()
-
-        spin_thread = Thread(target=self.start_spin_loop)
-        spin_thread.start()
+        self.spin_thread = Thread(target=self.start_spin_loop)
 
         if self.ip_available():
             self.start_driver()
@@ -56,6 +54,7 @@ class KinovaDriverNode(Node):
             self.publish_state()
 
             signal.signal(signal.SIGINT, self.kortex_client.stop_refresh_loop)
+            self.spin_thread.start()
             self.kortex_client.start_refresh_loop()
 
     def start_simulation(self) -> None:
@@ -71,6 +70,7 @@ class KinovaDriverNode(Node):
         kortex_thread = Thread(target=self.kortex_client.start_refresh_loop)
         kortex_thread.start()
         signal.signal(signal.SIGINT, self.mujoco_viewer.stop_simulation)
+        self.spin_thread.start()
         self.mujoco_viewer.start_simulation()
 
     def service_call(

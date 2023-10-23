@@ -1,0 +1,21 @@
+<worldbody>
+  <body name="base" pos="0 0 0.04">
+    <joint type="free"/>
+    <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="omni_chassis_collision"/>
+    <body name="front_left_wheel_link" pos="0.31 0.2104 0.035145" euler="3.1415 0 0">
+      <include file="mecanum/wheel1.xml"/>
+    </body>
+    <body name="front_right_wheel_link" pos="0.31 -0.2104 0.035145">
+      <include file="mecanum/wheel2.xml"/>
+    </body>
+    <body name="rear_left_wheel_link" pos="-0.31 0.2104 0.035145" euler="3.1415 0 0">
+      <include file="mecanum/wheel3.xml"/>
+    </body>
+    <body name="rear_right_wheel_link" pos="-0.31 -0.2104 0.035145">
+      <include file="mecanum/wheel4.xml"/>
+    </body>
+    <body pos="0 0 0.09">
+      <include file="kinova/kinova_gen3_lite.xml"/>
+    </body>
+  </body>
+</worldbody>

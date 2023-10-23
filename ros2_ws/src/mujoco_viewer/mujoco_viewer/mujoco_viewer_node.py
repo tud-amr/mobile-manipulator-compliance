@@ -1,6 +1,7 @@
 import rclpy
 import os
 import numpy as np
+import mujoco
 from rclpy.node import Node
 from threading import Thread
 from compliant_control.kinova.mujoco_viewer import MujocoViewer
@@ -8,6 +9,8 @@ from kinova_driver_msg.msg import KinovaFeedback, JointFeedback
 from mujoco_viewer_msg.msg import MujocoFeedback, MujocoCommand
 from mujoco_viewer_msg.srv import ToggleAutomove
 from std_msgs.msg import MultiArrayDimension
+
+JOINTS = 6
 
 
 class MujocoViewerNode(Node):
@@ -28,10 +31,15 @@ class MujocoViewerNode(Node):
 
     def kinova_cb(self, msg: KinovaFeedback) -> None:
         """Callback on kinova data."""
-        for n in range(self.mujoco_viewer.model.njnt):
+        for n in range(JOINTS):
             joint_feedback: JointFeedback = getattr(msg, f"joint{n}")
-            self.mujoco_viewer.data.qpos[n] = joint_feedback.position
-            self.mujoco_viewer.data.qvel[n] = joint_feedback.speed
+            idx = mujoco.mj_name2id(
+                self.mujoco_viewer.model, mujoco.mjtObj.mjOBJ_JOINT, f"K_J{n}"
+            )
+            idpos = self.mujoco_viewer.model.jnt_qposadr[idx]
+            idvel = self.mujoco_viewer.model.jnt_dofadr[idx]
+            self.mujoco_viewer.data.qpos[idpos] = joint_feedback.position
+            self.mujoco_viewer.data.qvel[idvel] = joint_feedback.speed
 
     def mujoco_cb(self, msg: MujocoCommand) -> None:
         """Update the target."""

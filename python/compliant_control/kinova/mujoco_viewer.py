@@ -11,7 +11,7 @@ from compliant_control.interface.window_commands import WindowCommands
 import glfw
 
 VISUALIZATION_SYNC_RATE = 60  # Hz
-MODEL = "GEN3-LITE.xml"
+MODEL = "arm_and_base.xml"
 
 
 class MujocoViewer:

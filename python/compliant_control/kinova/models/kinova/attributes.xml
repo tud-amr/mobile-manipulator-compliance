@@ -20,40 +20,40 @@
     <mesh name="LEFT_FINGER_DIST" file="LEFT_FINGER_DIST.STL"/>
   </asset>
   <sensor>
-    <jointpos name="position0" joint="0"/>
-    <jointpos name="position1" joint="1"/>
-    <jointpos name="position2" joint="2"/>
-    <jointpos name="position3" joint="3"/>
-    <jointpos name="position4" joint="4"/>
-    <jointpos name="position5" joint="5"/>
+    <jointpos name="K_PS0" joint="K_J0"/>
+    <jointpos name="K_PS1" joint="K_J1"/>
+    <jointpos name="K_PS2" joint="K_J2"/>
+    <jointpos name="K_PS3" joint="K_J3"/>
+    <jointpos name="K_PS4" joint="K_J4"/>
+    <jointpos name="K_PS5" joint="K_J5"/>
 
-    <jointvel name="velocity0" joint="0"/>
-    <jointvel name="velocity1" joint="1"/>
-    <jointvel name="velocity2" joint="2"/>
-    <jointvel name="velocity3" joint="3"/>
-    <jointvel name="velocity4" joint="4"/>
-    <jointvel name="velocity5" joint="5"/>
+    <jointvel name="K_VS0" joint="K_J0"/>
+    <jointvel name="K_VS1" joint="K_J1"/>
+    <jointvel name="K_VS2" joint="K_J2"/>
+    <jointvel name="K_VS3" joint="K_J3"/>
+    <jointvel name="K_VS4" joint="K_J4"/>
+    <jointvel name="K_VS5" joint="K_J5"/>
   </sensor>
   <actuator>
-    <position name="PA0" joint="0" kp="2000"/>
-    <position name="PA1" joint="1" kp="1000"/>
-    <position name="PA2" joint="2" kp="500"/>
-    <position name="PA3" joint="3" kp="100"/>
-    <position name="PA4" joint="4" kp="50"/>
-    <position name="PA5" joint="5" kp="1"/>
+    <position name="K_PA0" joint="K_J0" kp="2000"/>
+    <position name="K_PA1" joint="K_J1" kp="1000"/>
+    <position name="K_PA2" joint="K_J2" kp="500"/>
+    <position name="K_PA3" joint="K_J3" kp="100"/>
+    <position name="K_PA4" joint="K_J4" kp="50"/>
+    <position name="K_PA5" joint="K_J5" kp="1"/>
 
-    <velocity name="VA0" joint="0" kv="1"/>
-    <velocity name="VA1" joint="1" kv="10"/>
-    <velocity name="VA2" joint="2" kv="5"/>
-    <velocity name="VA3" joint="3" kv="1"/>
-    <velocity name="VA4" joint="4" kv="0.5"/>
-    <velocity name="VA5" joint="5" kv="0.01"/>
+    <velocity name="K_VA0" joint="K_J0" kv="1"/>
+    <velocity name="K_VA1" joint="K_J1" kv="10"/>
+    <velocity name="K_VA2" joint="K_J2" kv="5"/>
+    <velocity name="K_VA3" joint="K_J3" kv="1"/>
+    <velocity name="K_VA4" joint="K_J4" kv="0.5"/>
+    <velocity name="K_VA5" joint="K_J5" kv="0.01"/>
 
-    <motor name="MA0" joint="0"/>
-    <motor name="MA1" joint="1"/>
-    <motor name="MA2" joint="2"/>
-    <motor name="MA3" joint="3"/>
-    <motor name="MA4" joint="4"/>
-    <motor name="MA5" joint="5"/>
+    <motor name="K_MA0" joint="K_J0"/>
+    <motor name="K_MA1" joint="K_J1"/>
+    <motor name="K_MA2" joint="K_J2"/>
+    <motor name="K_MA3" joint="K_J3"/>
+    <motor name="K_MA4" joint="K_J4"/>
+    <motor name="K_MA5" joint="K_J5"/>
   </actuator>
 </mujoco>
