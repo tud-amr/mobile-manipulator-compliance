@@ -2,12 +2,13 @@ import os
 import rclpy
 from rclpy.node import Node
 from kinova_driver_msg.msg import JointFeedback, KinovaFeedback, JointState, KinovaState
-from dingo_driver_msg.msg import WheelFeedback, DingoFeedback
+from dingo_driver_msg.msg import WheelFeedback, DingoFeedback, DingoCommand
 from kinova_driver_msg.srv import Service
 from mujoco_viewer_msg.srv import ToggleAutomove
 from compliant_control.interface.user_interface import UserInterface
 from threading import Thread
 import time
+import numpy as np
 
 
 class UserInterfaceNode(Node):
@@ -24,9 +25,12 @@ class UserInterfaceNode(Node):
         self.create_subscription(KinovaState, "/kinova/state", self.kinova_state, 10)
         self.kinova_client = self.create_client(Service, "/kinova/service")
         self.mujoco_client = self.create_client(ToggleAutomove, "/mujoco/automove")
+        self.dingo_pub = self.create_publisher(DingoCommand, "/dingo/command", 10)
 
-        self.start_position = None
-        self.interface = UserInterface(self.callback)
+        self.interface = UserInterface()
+        self.interface.callbacks.buttons = self.callback
+        self.interface.callbacks.joystick = self.command_dingo
+
         self.interface.toggle_automove_target = self.toggle_mujoco_automove
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
@@ -41,6 +45,31 @@ class UserInterfaceNode(Node):
             time.sleep(0.1)
         self.interface.automove_target = future.result().state
         self.interface.update_control()
+
+    def command_dingo(self, direction: list) -> None:
+        """Send a command to Dingo."""
+        m = np.linalg.norm(direction) * 3
+        angle = np.arctan2(*direction)
+
+        command = DingoCommand()
+        orientations = ["l", "r", "r", "l"]
+        n = 0
+        for fr in ["f", "r"]:
+            for lr in ["l", "r"]:
+                orientation = orientations[n]
+                torque = self.calculate_torque(angle, orientation) * m
+                torque *= 1 if lr == "l" else 1
+                setattr(command, fr + lr, torque)
+                n += 1
+        self.dingo_pub.publish(command)
+
+    def calculate_torque(self, angle: float, orientation: str) -> float:
+        """Calculate the torque."""
+        torques = [-1, -1, -1, 0, 1, 1, 1, 0, -1]
+        angles = np.linspace(-np.pi, np.pi, 9)
+        if orientation == "l":
+            torques.reverse()
+        return np.interp(angle, angles, torques)
 
     def callback(self, name: str) -> None:
         """Connect the interface with service calls."""

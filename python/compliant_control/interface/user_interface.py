@@ -3,6 +3,8 @@ import dearpygui.dearpygui as dpg
 from threading import Thread
 from dataclasses import dataclass
 import time
+from compliant_control.interface.joystick import Joystick
+from compliant_control.interface.callbacks import Callbacks
 
 
 @dataclass
@@ -60,7 +62,7 @@ class Wheel:
 class UserInterface:
     """Used to tune the PID controller of the Dingo."""
 
-    def __init__(self, callback: callable = lambda: None) -> None:
+    def __init__(self) -> None:
         self.joints = [Joint(n) for n in range(6)]
         self.wheels = [
             Wheel(f"{fr}_{lr}_wheel")
@@ -73,7 +75,8 @@ class UserInterface:
         self.compensate_friction = False
         self.automove_target = False
         self.toggle_automove_target = lambda: None
-        self.callback = callback
+
+        self.callbacks = Callbacks()
 
         self.define_ui_parameters()
         self.create_ui()
@@ -129,9 +132,10 @@ class UserInterface:
         self.create_plot("joint_speed", w3, h3, [w3, 0])
         self.create_plot("joint_current", w3, h3, [2 * w3, 0])
 
-        self.load_control(w2, h3, [0, h3])
+        self.load_control(w2, int(h3 * 0.85), [0, h3])
+        self.load_info(w2, int(h3 * 0.15), [0, int(h3 * 1.85)])
         self.load_state(w2, h6, [w2, h3])
-        self.load_info(w2, h6, [w2, h3 + h6])
+        Joystick(w2, h6, [w2, h3 + h6], self.callbacks)
 
         self.create_plot("wheel_position", w3, h3, [0, 2 * h3])
         self.create_plot("wheel_speed", w3, h3, [w3, 2 * h3])
@@ -198,7 +202,7 @@ class UserInterface:
         while self.active:
             if dpg.does_item_exist(item="group_info"):
                 dpg.delete_item(item="group_info")
-            with dpg.group(tag="group_info", parent="window_info"):
+            with dpg.group(tag="group_info", parent="window_info", horizontal=True):
                 dpg.add_text(f"Update rate: {self.update_rate}")
                 dpg.add_text(f"Servoing: {self.servoing}")
             time.sleep(0.5)
@@ -242,8 +246,9 @@ class UserInterface:
                     enabled=self.automove_target,
                     callback=self.toggle_automove_target,
                 )
-                self.button("Clear Faults", True)
-                self.button("Reset wheels", True, self.reset_wheel_positions)
+                with dpg.group(horizontal=True):
+                    self.button("Clear Faults", True)
+                    self.button("Reset wheels", True, self.reset_wheel_positions)
 
     def reset_wheel_positions(self) -> None:
         """Reset the wheel positions."""
@@ -301,7 +306,7 @@ class UserInterface:
     ) -> None:
         """Create a dearpygui button."""
         if callback is None:
-            callback = self.callback
+            callback = self.callbacks.buttons
         dpg.add_button(label=label, enabled=enabled, callback=callback, tag=label)
 
     def checkbox(
@@ -315,7 +320,7 @@ class UserInterface:
         if tag is None:
             tag = label
         if callback is None:
-            callback = self.callback
+            callback = self.callbacks.buttons
         dpg.add_checkbox(label=label, tag=tag, default_value=enabled, callback=callback)
 
     def window(

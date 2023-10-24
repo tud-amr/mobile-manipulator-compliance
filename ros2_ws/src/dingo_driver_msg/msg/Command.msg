@@ -1,4 +1,0 @@
-float32 front_left_wheel
-float32 front_right_wheel
-float32 rear_left_wheel
-float32 rear_right_wheel

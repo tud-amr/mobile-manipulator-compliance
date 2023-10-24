@@ -6,6 +6,7 @@ from rclpy.node import Node
 from threading import Thread
 from compliant_control.kinova.mujoco_viewer import MujocoViewer
 from kinova_driver_msg.msg import KinovaFeedback, JointFeedback
+from dingo_driver_msg.msg import DingoFeedback
 from mujoco_viewer_msg.msg import MujocoFeedback, MujocoCommand
 from mujoco_viewer_msg.srv import ToggleAutomove
 from std_msgs.msg import MultiArrayDimension
@@ -19,6 +20,7 @@ class MujocoViewerNode(Node):
     def __init__(self) -> None:
         super().__init__("mujoco_visualization_node")
         self.create_subscription(KinovaFeedback, "/kinova/feedback", self.kinova_cb, 10)
+        self.create_subscription(DingoFeedback, "/dingo/feedback", self.dingo_cb, 10)
         self.create_subscription(MujocoCommand, "/mujoco/command", self.mujoco_cb, 10)
         self.publisher = self.create_publisher(MujocoFeedback, "/mujoco/feedback", 10)
         self.create_service(ToggleAutomove, "/mujoco/automove", self.toggle_automove)
@@ -28,6 +30,16 @@ class MujocoViewerNode(Node):
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
         self.mujoco_viewer.start_visualization()
+
+    def dingo_cb(self, msg: DingoFeedback) -> None:
+        """Callback on dingo data."""
+        idx = mujoco.mj_name2id(
+            self.mujoco_viewer.model, mujoco.mjtObj.mjOBJ_JOINT, "D_J_B"
+        )
+        idpos = self.mujoco_viewer.model.jnt_qposadr[idx]
+        self.mujoco_viewer.data.qpos[idpos] = msg.base_pos_x
+        self.mujoco_viewer.data.qpos[idpos + 1] = msg.base_pos_y
+        self.mujoco_viewer.data.qpos[idpos + 6] = msg.base_rot_z
 
     def kinova_cb(self, msg: KinovaFeedback) -> None:
         """Callback on kinova data."""

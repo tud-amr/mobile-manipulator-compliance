@@ -43,7 +43,7 @@
     <position name="K_PA5" joint="K_J5" kp="1"/>
 
     <velocity name="K_VA0" joint="K_J0" kv="1"/>
-    <velocity name="K_VA1" joint="K_J1" kv="10"/>
+    <velocity name="K_VA1" joint="K_J1" kv="50"/>
     <velocity name="K_VA2" joint="K_J2" kv="5"/>
     <velocity name="K_VA3" joint="K_J3" kv="1"/>
     <velocity name="K_VA4" joint="K_J4" kv="0.5"/>

@@ -2,4 +2,21 @@
   <asset>
     <mesh name="omni_chassis_collision" file="omni_chassis_collision.stl"/>
   </asset>
+  <sensor>
+    <jointpos name="D_PS_FL" joint="D_J_FL"/>
+    <jointpos name="D_PS_FR" joint="D_J_FR"/>
+    <jointpos name="D_PS_RL" joint="D_J_RL"/>
+    <jointpos name="D_PS_RR" joint="D_J_RR"/>
+
+    <jointvel name="D_VS_FL" joint="D_J_FL"/>
+    <jointvel name="D_VS_FR" joint="D_J_FR"/>
+    <jointvel name="D_VS_RL" joint="D_J_RL"/>
+    <jointvel name="D_VS_RR" joint="D_J_RR"/>
+  </sensor>
+  <actuator>
+    <motor name="D_MA_FL" joint="D_J_FL"/>
+    <motor name="D_MA_FR" joint="D_J_FR"/>
+    <motor name="D_MA_RL" joint="D_J_RL"/>
+    <motor name="D_MA_RR" joint="D_J_RR"/>
+  </actuator>
 </mujoco>

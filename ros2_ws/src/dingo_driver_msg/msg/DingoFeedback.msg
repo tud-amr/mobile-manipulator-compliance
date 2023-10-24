@@ -3,3 +3,6 @@ dingo_driver_msg/WheelFeedback front_left_wheel
 dingo_driver_msg/WheelFeedback front_right_wheel
 dingo_driver_msg/WheelFeedback rear_left_wheel
 dingo_driver_msg/WheelFeedback rear_right_wheel
+float32 base_pos_x
+float32 base_pos_y
+float32 base_rot_z

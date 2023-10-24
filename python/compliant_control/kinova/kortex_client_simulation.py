@@ -49,11 +49,12 @@ class KortexClientSimulation(KortexClient):
             time.sleep(1 / self.frequency)
 
     def _execute_action(self, joint: int, error: float) -> bool:
+        idx = mj_name2id(self.model, mjtObj.mjOBJ_ACTUATOR, f"K_PA{joint}")
         step = min(abs(error) / self.nearby_goal_divider, self.step_size)
         if error > 0:
-            self.data.ctrl[joint] += step
+            self.data.ctrl[idx] += step
         elif error < 0:
-            self.data.ctrl[joint] -= step
+            self.data.ctrl[idx] -= step
 
 
 class BaseClientSimulation:

@@ -6,6 +6,7 @@ import subprocess
 from rclpy.node import Node
 from kinova_driver_msg.msg import KinovaFeedback, JointFeedback, KinovaState, JointState
 from kinova_driver_msg.srv import Service
+from dingo_driver_msg.msg import DingoFeedback, DingoCommand
 from compliant_control.kinova.kortex_client_simulation import KortexClientSimulation
 from compliant_control.kinova.utilities import DeviceConnection, DEFAULT_IP
 from compliant_control.kinova.kortex_client import KortexClient
@@ -16,6 +17,7 @@ from compliant_control.controllers.controllers import Controllers, Controller
 from compliant_control.controllers.calibration import Calibrations
 from threading import Thread
 from std_msgs.msg import MultiArrayDimension
+import mujoco
 
 
 class KinovaDriverNode(Node):
@@ -31,6 +33,11 @@ class KinovaDriverNode(Node):
         self.state_pub = self.create_publisher(KinovaState, "/kinova/state", 10)
         self.create_service(Service, "/kinova/service", self.service_call)
 
+        self.dingo_pub = self.create_publisher(DingoFeedback, "/dingo/feedback", 10)
+        self.create_subscription(
+            DingoCommand, "/dingo/command", self.dingo_callback, 10
+        )
+
         self.mujoco_viewer = MujocoViewer()
         self.spin_thread = Thread(target=self.start_spin_loop)
 
@@ -39,6 +46,17 @@ class KinovaDriverNode(Node):
         else:
             print("Kinova arm not found, starting simulation...")
             self.start_simulation()
+
+    def dingo_callback(self, msg: DingoCommand) -> None:
+        """Dingo command callback."""
+        for fr in ["f", "r"]:
+            for lr in ["l", "r"]:
+                idx = mujoco.mj_name2id(
+                    self.mujoco_viewer.model,
+                    mujoco.mjtObj.mjOBJ_ACTUATOR,
+                    f"D_MA_{(fr+lr).upper()}",
+                )
+                self.mujoco_viewer.data.ctrl[idx] = getattr(msg, fr + lr)
 
     def start_driver(self) -> None:
         """Start the driver for the Kinova arm."""
@@ -140,6 +158,16 @@ class KinovaDriverNode(Node):
         self.feedback_pub.publish(feedback)
         self.state.target = self.mujoco_viewer.target
         self.state.update()
+
+        feedback = DingoFeedback()
+        idx = mujoco.mj_name2id(
+            self.mujoco_viewer.model, mujoco.mjtObj.mjOBJ_JOINT, "D_J_B"
+        )
+        idpos = self.mujoco_viewer.model.jnt_qposadr[idx]
+        feedback.base_pos_x = self.mujoco_viewer.data.qpos[idpos]
+        feedback.base_pos_y = self.mujoco_viewer.data.qpos[idpos + 1]
+        feedback.base_rot_z = self.mujoco_viewer.data.qpos[idpos + 6]
+        self.dingo_pub.publish(feedback)
 
     def publish_state(self) -> None:
         """Publish the joint state."""
