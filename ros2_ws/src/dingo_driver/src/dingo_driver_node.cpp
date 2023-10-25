@@ -4,8 +4,8 @@
 #include <thread>
 
 #include "rclcpp/rclcpp.hpp"
-#include "dingo_driver_msg/msg/dingo_feedback.hpp"
-#include "dingo_driver_msg/msg/dingo_command.hpp"
+#include "dingo_driver_msg/msg/din_fdbk.hpp"
+#include "dingo_driver_msg/msg/din_cmd.hpp"
 #include "dingo_driver_msg/srv/set_gain.hpp"
 #include "dingo_driver/dingo_driver.h"
 
@@ -23,9 +23,8 @@ public:
     DingoDriverNode()
         : Node("dingo_driver_node"), driver_manager_("vcan0")
     {
-        publisher_ = this->create_publisher<dingo_driver_msg::msg::DingoFeedback>("/dingo/feedback", 10);
-        subscription_ = this->create_subscription<dingo_driver_msg::msg::DingoCommand>("/dingo/command", 10, std::bind(&DingoDriverNode::set_command, this, std::placeholders::_1));
-        // service_ = this->create_service<dingo_driver_msg::srv::SetGain>("set_gain", std::bind(&DingoDriverNode::set_gain, this, std::placeholders::_1, std::placeholders::_2));
+        publisher_ = this->create_publisher<dingo_driver_msg::msg::DinFdbk>("/dingo/fdbk", 10);
+        subscription_ = this->create_subscription<dingo_driver_msg::msg::DinCmd>("/dingo/cmd", 10, std::bind(&DingoDriverNode::set_command, this, std::placeholders::_1));
     }
 
     void initialize_drivers()
@@ -39,25 +38,14 @@ public:
         driver_manager_.initialize_encoders();
     }
 
-    void set_command(const dingo_driver_msg::msg::DingoCommand command)
+    void set_command(const dingo_driver_msg::msg::DinCmd command)
     {
+        int n = 0;
         for (auto &wheel : wheels_)
         {
-            if (wheel.name == "front_left_wheel")
-                wheel.command = command.fl;
-            else if (wheel.name == "front_right_wheel")
-            {
-                wheel.command = command.fr;
-            }
-            else if (wheel.name == "rear_left_wheel")
-            {
-                wheel.command = command.rl;
-            }
-            else if (wheel.name == "rear_right_wheel")
-            {
-                wheel.command = command.rr;
-            }
+            wheel.command = command.wheel_command[n];
             driver_manager_.command(wheel.name, "Vol", wheel.command);
+            n++;
         }
     }
 
@@ -71,48 +59,23 @@ public:
 
     void feedback_loop()
     {
-        dingo_driver_msg::msg::DingoFeedback feedback;
-        int x = 0;
         while (true)
         {
+            dingo_driver_msg::msg::DinFdbk feedback;
             std::vector<dingo_driver::State> states = driver_manager_.get_states();
-            set_wheel_feedbacks(states, feedback);
-            feedback.set__time(x);
+            for (auto &state : states)
+            {
+                feedback.wheel_pos.push_back(state.position);
+                feedback.wheel_vel.push_back(state.speed);
+                feedback.wheel_tor.push_back(state.current * state.voltage);
+            }
             publisher_->publish(feedback);
-            x += 1;
-        }
-    }
-
-    void set_wheel_feedbacks(std::vector<dingo_driver::State> &states, dingo_driver_msg::msg::DingoFeedback &feedback)
-    {
-        for (auto state : states)
-        {
-            dingo_driver_msg::msg::WheelFeedback wheel_feedback;
-            wheel_feedback.set__position(state.position);
-            wheel_feedback.set__speed(state.speed);
-            wheel_feedback.set__voltage(state.voltage);
-            wheel_feedback.set__current(state.current);
-
-            if (state.name == "front_left_wheel")
-                feedback.set__front_left_wheel(wheel_feedback);
-            else if (state.name == "front_right_wheel")
-            {
-                feedback.set__front_right_wheel(wheel_feedback);
-            }
-            else if (state.name == "rear_left_wheel")
-            {
-                feedback.set__rear_left_wheel(wheel_feedback);
-            }
-            else if (state.name == "rear_right_wheel")
-            {
-                feedback.set__rear_right_wheel(wheel_feedback);
-            }
         }
     }
 
 private:
-    rclcpp::Publisher<dingo_driver_msg::msg::DingoFeedback>::SharedPtr publisher_;
-    rclcpp::Subscription<dingo_driver_msg::msg::DingoCommand>::SharedPtr subscription_;
+    rclcpp::Publisher<dingo_driver_msg::msg::DinFdbk>::SharedPtr publisher_;
+    rclcpp::Subscription<dingo_driver_msg::msg::DinCmd>::SharedPtr subscription_;
     rclcpp::Service<dingo_driver_msg::srv::SetGain>::SharedPtr service_;
     dingo_driver::DriverManager driver_manager_;
     std::vector<Wheel> wheels_ = {Wheel("front_left_wheel", 2), Wheel("front_right_wheel", 3), Wheel("rear_left_wheel", 4), Wheel("rear_right_wheel", 5)};

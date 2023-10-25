@@ -2,7 +2,7 @@ import os
 import rclpy
 from rclpy.node import Node
 from kinova_driver_msg.msg import KinFdbk, KinSts
-from dingo_driver_msg.msg import WheelFeedback, DingoFeedback, DingoCommand
+from dingo_driver_msg.msg import DinFdbk, DinCmd
 from kinova_driver_msg.srv import KinSrv
 from simulation_msg.srv import SimSrv
 from compliant_control.interface.user_interface import UserInterface
@@ -16,13 +16,11 @@ class UserInterfaceNode(Node):
     def __init__(self) -> None:
         super().__init__("user_interface_node")
         self.create_subscription(KinFdbk, "/kinova/fdbk", self.kin_fdbk, 10)
-        self.create_subscription(
-            DingoFeedback, "/dingo/feedback", self.dingo_feedback, 10
-        )
+        self.create_subscription(DinFdbk, "/dingo/fdbk", self.dingo_feedback, 10)
         self.create_subscription(KinSts, "/kinova/sts", self.kin_sts, 10)
         self.kinova_client = self.create_client(KinSrv, "/kinova/srv")
         self.sim_client = self.create_client(SimSrv, "/sim/srv")
-        self.dingo_pub = self.create_publisher(DingoCommand, "/dingo/command", 10)
+        self.dingo_pub = self.create_publisher(DinCmd, "/dingo/cmd", 10)
 
         self.interface = UserInterface()
         self.interface.callbacks.buttons = self.callback
@@ -46,16 +44,14 @@ class UserInterfaceNode(Node):
         m = np.linalg.norm(direction) * 3
         angle = np.arctan2(*direction)
 
-        command = DingoCommand()
+        command = DinCmd()
         orientations = ["l", "r", "r", "l"]
-        n = 0
-        for fr in ["f", "r"]:
-            for lr in ["l", "r"]:
-                orientation = orientations[n]
-                torque = self.calculate_torque(angle, orientation) * m
-                torque *= 1 if lr == "l" else 1
-                setattr(command, fr + lr, torque)
-                n += 1
+        side = ["l", "r", "l", "r"]
+        for n in range(4):
+            orientation = orientations[n]
+            torque = self.calculate_torque(angle, orientation) * m
+            torque *= 1 if side[n] == "l" else 1
+            command.wheel_command.append(torque)
         self.dingo_pub.publish(command)
 
     def calculate_torque(self, angle: float, orientation: str) -> float:
@@ -83,14 +79,13 @@ class UserInterfaceNode(Node):
         self.interface.update_rate = msg.update_rate
         self.interface.update_kinova_plots()
 
-    def dingo_feedback(self, msg: DingoFeedback) -> None:
+    def dingo_feedback(self, msg: DinFdbk) -> None:
         """Update the Dingo feedback."""
-        for wheel in self.interface.wheels:
-            wheel_feedback: WheelFeedback = getattr(msg, wheel.name)
+        for n, wheel in enumerate(self.interface.wheels):
             last_position = wheel.position
-            wheel.encoder_position = wheel_feedback.position
+            wheel.encoder_position = msg.wheel_pos[n]
             wheel.speed = wheel.position - last_position
-            wheel.power = wheel_feedback.current * wheel_feedback.voltage
+            wheel.power = msg.wheel_tor[n]
         self.interface.update_dingo_plots()
 
     def kin_sts(self, msg: KinSts) -> None:
