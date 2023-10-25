@@ -1,5 +1,6 @@
 import os
 from threading import Thread
+import time
 
 
 class WindowCommands:
@@ -44,7 +45,7 @@ class WindowCommands:
         """Wait till the windows are ready."""
         ready = False
         while len(self.windows) != self.n_windows:
-            pass
+            time.sleep(0.1)
         while not ready:
             ready = True
             for window in self.windows:

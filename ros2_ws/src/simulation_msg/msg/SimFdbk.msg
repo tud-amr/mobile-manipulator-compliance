@@ -1,0 +1,7 @@
+std_msgs/Float32MultiArray joint_pos
+std_msgs/Float32MultiArray joint_vel
+std_msgs/Float32MultiArray joint_tor
+
+std_msgs/Float32MultiArray wheel_pos
+std_msgs/Float32MultiArray wheel_vel
+std_msgs/Float32MultiArray wheel_tor

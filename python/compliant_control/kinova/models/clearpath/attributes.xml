@@ -3,20 +3,25 @@
     <mesh name="omni_chassis_collision" file="omni_chassis_collision.stl"/>
   </asset>
   <sensor>
-    <jointpos name="D_PS_FL" joint="D_J_FL"/>
-    <jointpos name="D_PS_FR" joint="D_J_FR"/>
-    <jointpos name="D_PS_RL" joint="D_J_RL"/>
-    <jointpos name="D_PS_RR" joint="D_J_RR"/>
+    <jointpos name="Dingo_position_0" joint="D_J_FL"/>
+    <jointpos name="Dingo_position_1" joint="D_J_FR"/>
+    <jointpos name="Dingo_position_2" joint="D_J_RL"/>
+    <jointpos name="Dingo_position_3" joint="D_J_RR"/>
 
-    <jointvel name="D_VS_FL" joint="D_J_FL"/>
-    <jointvel name="D_VS_FR" joint="D_J_FR"/>
-    <jointvel name="D_VS_RL" joint="D_J_RL"/>
-    <jointvel name="D_VS_RR" joint="D_J_RR"/>
+    <jointvel name="Dingo_velocity_0" joint="D_J_FL"/>
+    <jointvel name="Dingo_velocity_1" joint="D_J_FR"/>
+    <jointvel name="Dingo_velocity_2" joint="D_J_RL"/>
+    <jointvel name="Dingo_velocity_3" joint="D_J_RR"/>
+
+    <jointactuatorfrc name="Dingo_torque_0" joint="D_J_FL"/>
+    <jointactuatorfrc name="Dingo_torque_1" joint="D_J_FR"/>
+    <jointactuatorfrc name="Dingo_torque_2" joint="D_J_RL"/>
+    <jointactuatorfrc name="Dingo_torque_3" joint="D_J_RR"/>
   </sensor>
   <actuator>
-    <motor name="D_MA_FL" joint="D_J_FL"/>
-    <motor name="D_MA_FR" joint="D_J_FR"/>
-    <motor name="D_MA_RL" joint="D_J_RL"/>
-    <motor name="D_MA_RR" joint="D_J_RR"/>
+    <motor name="Dingo_torque_0" joint="D_J_FL"/>
+    <motor name="Dingo_torque_1" joint="D_J_FR"/>
+    <motor name="Dingo_torque_2" joint="D_J_RL"/>
+    <motor name="Dingo_torque_3" joint="D_J_RR"/>
   </actuator>
 </mujoco>

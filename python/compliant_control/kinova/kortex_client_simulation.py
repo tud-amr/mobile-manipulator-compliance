@@ -1,11 +1,13 @@
 import time
-from mujoco import mj_name2id, mjtObj
 import numpy as np
 from kortex_api.autogen.messages import ActuatorConfig_pb2
 from compliant_control.kinova.kortex_client import KortexClient
-from compliant_control.kinova.mujoco_viewer import MujocoViewer
 from compliant_control.kinova.messages import Base, BaseCyclic, ActuatorConfig
 from compliant_control.kinova.specifications import Position
+
+from rclpy.node import Node
+from simulation_msg.msg import SimFdbk, SimCmd, SimCmdInc
+from simulation_msg.srv import SimSrv
 
 JOINTS = 6
 
@@ -13,18 +15,27 @@ JOINTS = 6
 class KortexClientSimulation(KortexClient):
     """A mock of the Kortex Client class, to make testing without robot possible."""
 
-    def __init__(self, mujoco_viewer: MujocoViewer) -> None:
-        self.mujoco_viewer = mujoco_viewer
+    def __init__(self, node: Node) -> None:
+        self.base = BaseClientSimulation()
+        self.base_cyclic = BaseCyclicClientSimulation(node)
+        self.actuator_config = ActuatorConfigClientSimulation(node)
         super().__init__(
-            base=BaseClientSimulation(self.mujoco_viewer),
-            base_cyclic=BaseCyclicClientSimulation(self.mujoco_viewer),
-            actuator_config=ActuatorConfigClientSimulation(self.mujoco_viewer),
+            base=self.base,
+            base_cyclic=self.base_cyclic,
+            actuator_config=self.actuator_config,
             mock=True,
             simulate=True,
         )
-        self.model = self.mujoco_viewer.model
-        self.data = self.mujoco_viewer.data
+        node.create_subscription(SimFdbk, "/simulation/feedback", self.sim_fdbk, 10)
+        self.pub = node.create_publisher(SimCmdInc, "/simulation/command_increment", 10)
         self.define_HLC_parameters()
+
+    def sim_fdbk(self, msg: SimFdbk) -> None:
+        """Process the feedback from the simulation."""
+        for n in range(JOINTS):
+            self.base_cyclic.feedback.actuators[n].position = msg.joint_pos.data[n]
+            self.base_cyclic.feedback.actuators[n].velocity = msg.joint_vel.data[n]
+            self.base_cyclic.feedback.actuators[n].current_motor = msg.joint_tor.data[n]
 
     def define_HLC_parameters(self) -> None:
         """Define the HLC parameters."""
@@ -49,19 +60,21 @@ class KortexClientSimulation(KortexClient):
             time.sleep(1 / self.frequency)
 
     def _execute_action(self, joint: int, error: float) -> bool:
-        idx = mj_name2id(self.model, mjtObj.mjOBJ_ACTUATOR, f"K_PA{joint}")
         step = min(abs(error) / self.nearby_goal_divider, self.step_size)
+        msg = SimCmdInc()
+        msg.joint = joint
+        msg.type = "position"
         if error > 0:
-            self.data.ctrl[idx] += step
+            msg.increment = step
         elif error < 0:
-            self.data.ctrl[idx] -= step
+            msg.increment = -step
+        self.pub.publish(msg)
 
 
 class BaseClientSimulation:
     """https://github.com/Kinovarobotics/kortex/blob/master/api_python/doc/markdown/summary_pages/Base.md."""
 
-    def __init__(self, mujoco_viewer: MujocoViewer) -> None:
-        self.model = mujoco_viewer.model
+    def __init__(self) -> None:
         self.servoing_mode = Base.ServoingModeInformation(0)
 
     def GetServoingMode(self) -> Base.ServoingModeInformation:
@@ -82,47 +95,31 @@ class BaseClientSimulation:
 class BaseCyclicClientSimulation:
     """https://github.com/Kinovarobotics/kortex/blob/master/api_python/doc/markdown/summary_pages/BaseCyclic.md."""
 
-    def __init__(self, mujoco_viewer: MujocoViewer) -> None:
-        self.model = mujoco_viewer.model
-        self.data = mujoco_viewer.data
+    def __init__(self, node: Node) -> None:
+        self.pub = node.create_publisher(SimCmd, "/simulation/command", 10)
         self.feedback = BaseCyclic.Feedback(JOINTS)
 
     def Refresh(self, command: BaseCyclic.Command) -> BaseCyclic.Feedback:
         """Send a command to actuators and interface and returns feedback from base, actuators, and interface on actual status."""
-        for n, actuator in enumerate(command.actuators):
-            for x in ["P", "V", "M"]:
-                idx = mj_name2id(self.model, mjtObj.mjOBJ_ACTUATOR, f"K_{x}A{n}")
-                match x:
-                    case "P":
-                        self.data.ctrl[idx] = actuator.position
-                    case "V":
-                        self.data.ctrl[idx] = actuator.velocity
-                    case "M":
-                        self.data.ctrl[idx] = actuator.current_motor
+        command_msg = SimCmd()
+        command_msg.robot = "Kinova"
+        for actuator in command.actuators:
+            command_msg.joint_pos.data.append(actuator.position)
+            command_msg.joint_vel.data.append(actuator.velocity)
+            command_msg.joint_tor.data.append(actuator.current_motor)
+        self.pub.publish(command_msg)
         return self.RefreshFeedback()
 
     def RefreshFeedback(self) -> BaseCyclic.Feedback:
         """Obtain feedback from base, actuators, and interface on their status."""
-        for n in range(JOINTS):
-            idpos = mj_name2id(self.model, mjtObj.mjOBJ_SENSOR, f"K_PS{n}")
-            idvel = mj_name2id(self.model, mjtObj.mjOBJ_SENSOR, f"K_VS{n}")
-            setattr(self.feedback.actuators[n], "position", self.data.sensordata[idpos])
-            setattr(self.feedback.actuators[n], "velocity", self.data.sensordata[idvel])
-            torque = 0
-            for x in ["P", "V", "M"]:
-                idx = mj_name2id(self.model, mjtObj.mjOBJ_ACTUATOR, f"K_{x}A{n}")
-                torque += self.data.actuator_force[idx]
-            setattr(self.feedback.actuators[n], "torque", torque)
         return self.feedback
 
 
 class ActuatorConfigClientSimulation:
     """https://github.com/Kinovarobotics/kortex/blob/master/api_python/doc/markdown/summary_pages/ActuatorConfig.md."""
 
-    def __init__(self, mujoco_viewer: MujocoViewer) -> None:
-        self.model = mujoco_viewer.model
-        self.default_biasprm = self.model.actuator_biasprm.copy()
-        self.default_gainprm = self.model.actuator_gainprm.copy()
+    def __init__(self, node: Node) -> None:
+        self.client = node.create_client(SimSrv, "/simulation/service")
         self.control_modes = [
             ActuatorConfig.ControlModeInformation(1) for _ in range(JOINTS)
         ]
@@ -138,20 +135,14 @@ class ActuatorConfigClientSimulation:
     ) -> None:
         """Set actuator control mode."""
         mode_value = control_mode_information.control_mode
-        for x in ["P", "V"]:
-            idx = mj_name2id(self.model, mjtObj.mjOBJ_ACTUATOR, f"K_{x}A{device_id}")
-            if mode_value == ActuatorConfig_pb2.POSITION:
-                if x == "P":
-                    self.model.actuator_biasprm[idx][1] = self.default_biasprm[idx][1]
-                    self.model.actuator_gainprm[idx][0] = self.default_gainprm[idx][0]
-                elif x == "V":
-                    self.model.actuator_biasprm[idx][2] = self.default_biasprm[idx][2]
-                    self.model.actuator_gainprm[idx][0] = self.default_gainprm[idx][0]
-            elif mode_value == ActuatorConfig_pb2.CURRENT:
-                if x == "P":
-                    self.model.actuator_biasprm[idx][1] = 0
-                    self.model.actuator_gainprm[idx][0] = 0
-                elif x == "V":
-                    self.model.actuator_biasprm[idx][2] = 0
-                    self.model.actuator_gainprm[idx][0] = 0
-        self.control_modes[device_id].control_mode = mode_value
+        request = SimSrv.Request()
+        request.arg = device_id
+        if mode_value == ActuatorConfig_pb2.POSITION:
+            request.name = "KinovaPositionMode"
+        elif mode_value == ActuatorConfig_pb2.CURRENT:
+            request.name = "KinovaTorqueMode"
+        future = self.client.call_async(request)
+        while not future.done():
+            time.sleep(0.1)
+        if future.result().success:
+            self.control_modes[device_id].control_mode = mode_value

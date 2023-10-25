@@ -1,0 +1,4 @@
+string robot
+std_msgs/Float32MultiArray joint_pos
+std_msgs/Float32MultiArray joint_vel
+std_msgs/Float32MultiArray joint_tor

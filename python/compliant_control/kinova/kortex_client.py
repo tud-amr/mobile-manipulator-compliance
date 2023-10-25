@@ -285,11 +285,9 @@ class KortexClient:
             self.command.actuators.extend([actuator_command])
 
     def _copy_feedback_to_command_message(self, joint: int) -> None:
-        self.command.actuators[joint].position = self.feedback.actuators[joint].position
-        if not self.mock:
-            self.command.actuators[joint].current_motor = self.feedback.actuators[
-                joint
-            ].current_motor
+        for prop in ["position", "velocity", "current_motor"]:
+            value = getattr(self.feedback.actuators[joint], prop)
+            setattr(self.command.actuators[joint], prop, value)
 
     def _high_level_move(self, position: Position) -> None:
         """Perform a high level move."""
