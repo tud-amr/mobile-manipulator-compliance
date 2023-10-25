@@ -11,11 +11,11 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/JointFeedback.msg"
-  "msg/KinovaFeedback.msg"
+  "msg/KinFdbk.msg"
   "msg/JointState.msg"
-  "msg/KinovaState.msg"
-  "msg/Command.msg"
-  "srv/Service.srv"
+  "msg/KinSts.msg"
+  "msg/KinCmd.msg"
+  "srv/KinSrv.srv"
  )
  
 if(BUILD_TESTING)

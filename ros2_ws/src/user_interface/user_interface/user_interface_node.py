@@ -1,9 +1,9 @@
 import os
 import rclpy
 from rclpy.node import Node
-from kinova_driver_msg.msg import JointFeedback, KinovaFeedback, JointState, KinovaState
+from kinova_driver_msg.msg import JointFeedback, KinFdbk, JointState, KinSts
 from dingo_driver_msg.msg import WheelFeedback, DingoFeedback, DingoCommand
-from kinova_driver_msg.srv import Service
+from kinova_driver_msg.srv import KinSrv
 from simulation_msg.srv import SimSrv
 from compliant_control.interface.user_interface import UserInterface
 from threading import Thread
@@ -15,14 +15,12 @@ class UserInterfaceNode(Node):
 
     def __init__(self) -> None:
         super().__init__("user_interface_node")
-        self.create_subscription(
-            KinovaFeedback, "/kinova/feedback", self.kinova_feedback, 10
-        )
+        self.create_subscription(KinFdbk, "/kinova/fdbk", self.kin_fdbk, 10)
         self.create_subscription(
             DingoFeedback, "/dingo/feedback", self.dingo_feedback, 10
         )
-        self.create_subscription(KinovaState, "/kinova/state", self.kinova_state, 10)
-        self.kinova_client = self.create_client(Service, "/kinova/service")
+        self.create_subscription(KinSts, "/kinova/sts", self.kin_sts, 10)
+        self.kinova_client = self.create_client(KinSrv, "/kinova/srv")
         self.sim_client = self.create_client(SimSrv, "/sim/srv")
         self.dingo_pub = self.create_publisher(DingoCommand, "/dingo/command", 10)
 
@@ -72,11 +70,11 @@ class UserInterfaceNode(Node):
         """Connect the interface with service calls."""
         self.interface.mode = "waiting"
         self.interface.update_control()
-        request = Service.Request()
+        request = KinSrv.Request()
         request.name = name
         self.kinova_client.call_async(request)
 
-    def kinova_feedback(self, msg: KinovaFeedback) -> None:
+    def kin_fdbk(self, msg: KinFdbk) -> None:
         """Update the Kinova feedback."""
         for joint in self.interface.joints:
             joint_feedback: JointFeedback = getattr(msg, joint.name)
@@ -96,7 +94,7 @@ class UserInterfaceNode(Node):
             wheel.power = wheel_feedback.current * wheel_feedback.voltage
         self.interface.update_dingo_plots()
 
-    def kinova_state(self, msg: KinovaState) -> None:
+    def kin_sts(self, msg: KinSts) -> None:
         """Update the Kinova state."""
         for joint in self.interface.joints:
             joint_state: JointState = getattr(msg, joint.name)

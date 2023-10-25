@@ -5,8 +5,8 @@ import subprocess
 from rclpy.node import Node
 from threading import Thread
 
-from kinova_driver_msg.msg import KinovaFeedback, JointFeedback, KinovaState, JointState
-from kinova_driver_msg.srv import Service
+from kinova_driver_msg.msg import KinFdbk, JointFeedback, KinSts, JointState
+from kinova_driver_msg.srv import KinSrv
 
 from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.kortex_client_simulation import KortexClientSimulation
@@ -22,9 +22,9 @@ class KinovaDriverNode(Node):
 
     def __init__(self) -> None:
         super().__init__("kinova_driver_node")
-        self.create_service(Service, "/kinova/service", self.service_call)
-        self.state_pub = self.create_publisher(KinovaState, "/kinova/state", 10)
-        self.pub = self.create_publisher(KinovaFeedback, "/kinova/feedback", 10)
+        self.create_service(KinSrv, "/kinova/srv", self.service_call)
+        self.state_pub = self.create_publisher(KinSts, "/kinova/sts", 10)
+        self.pub = self.create_publisher(KinFdbk, "/kinova/fdbk", 10)
 
         if self.ip_available():
             self.start_driver()
@@ -58,8 +58,8 @@ class KinovaDriverNode(Node):
             self.kortex_client.feedback_callback = self.publish_feedback
 
     def service_call(
-        self, request: Service.Request, response: Service.Response
-    ) -> Service.Response:
+        self, request: KinSrv.Request, response: KinSrv.Response
+    ) -> KinSrv.Response:
         """Execute service call in new thread."""
         thread = Thread(target=self.execute_service, args=[request.name])
         thread.start()
@@ -106,8 +106,8 @@ class KinovaDriverNode(Node):
         self.publish_state()
 
     def publish_feedback(self) -> None:
-        """Publish the joint feedback."""
-        feedback = KinovaFeedback()
+        """Publish the joint feedback of Kinova arm."""
+        feedback = KinFdbk()
         feedback.update_rate = self.kortex_client.get_update_rate()
         for n in range(self.kortex_client.actuator_count):
             joint_feedback = JointFeedback()
@@ -123,8 +123,8 @@ class KinovaDriverNode(Node):
         self.pub.publish(feedback)
 
     def publish_state(self) -> None:
-        """Publish the joint state."""
-        state = KinovaState()
+        """Publish the status of the Kinova arm."""
+        status = KinSts()
         for n in range(self.kortex_client.actuator_count):
             joint_state = JointState()
             joint_state.active = self.state.active[n]
@@ -132,11 +132,11 @@ class KinovaDriverNode(Node):
             joint_state.ratio = float(self.state.get_ratio(n))
             joint_state.fric_d = self.state.dynamic_frictions[n]
             joint_state.fric_s = self.state.static_frictions[n]
-            setattr(state, f"joint{n}", joint_state)
-        state.mode = self.kortex_client.mode
-        state.servoing = self.kortex_client.get_servoing_mode()
-        state.compensate_friction = Controller.get_CF()
-        self.state_pub.publish(state)
+            setattr(status, f"joint{n}", joint_state)
+        status.mode = self.kortex_client.mode
+        status.servoing = self.kortex_client.get_servoing_mode()
+        status.compensate_friction = Controller.get_CF()
+        self.state_pub.publish(status)
 
     def start_spin_loop(self) -> None:
         """Start the ros spin loop."""
