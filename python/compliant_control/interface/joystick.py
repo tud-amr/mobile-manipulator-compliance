@@ -17,6 +17,11 @@ class Joystick:
         self.create_drawing()
         self.update_drawing()
 
+    @property
+    def direction(self) -> list:
+        """Return the direction as vector."""
+        return [self.point_x, -self.point_y]
+
     def create_drawing(self) -> None:
         """Create a drawing."""
         with dpg.handler_registry():
@@ -57,7 +62,7 @@ class Joystick:
         self.point_x = 0
         self.point_y = 0
         self.update_drawing()
-        self.callback([self.point_x, self.point_y])
+        self.callback()
 
     def mouse_down(self) -> None:
         """Handle mouse down input."""
@@ -68,4 +73,4 @@ class Joystick:
             self.point_x = x / np.linalg.norm([x, y])
             self.point_y = y / np.linalg.norm([x, y])
             self.update_drawing()
-        self.callback([self.point_x, -self.point_y])
+        self.callback()

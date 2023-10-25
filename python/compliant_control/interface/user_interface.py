@@ -41,6 +41,11 @@ class UserInterface:
         """Returns the list of wheel names."""
         return [wheel.name for wheel in self.wheels]
 
+    @property
+    def wheel_torques(self) -> list:
+        """Returns the list of wheel torques based on the joystick."""
+        return Wheel.calculate_torques(self.joystick.direction)
+
     def define_ui_parameters(self) -> None:
         """Define the UI parameters."""
         glfw.init()
@@ -80,7 +85,7 @@ class UserInterface:
         self.load_control(w2, int(h3 * 0.85), [0, h3])
         self.load_info(w2, int(h3 * 0.15), [0, int(h3 * 1.85)])
         self.load_state(w2, h6, [w2, h3])
-        Joystick(w2, h6, [w2, h3 + h6], self.cb_din)
+        self.joystick = Joystick(w2, h6, [w2, h3 + h6], self.cb_din)
 
         create_plot("pos", w3, h3, [0, 2 * h3], self.wheel_names, 10)
         create_plot("vel", w3, h3, [w3, 2 * h3], self.wheel_names, 5)

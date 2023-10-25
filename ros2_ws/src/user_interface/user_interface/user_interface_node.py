@@ -7,7 +7,6 @@ from kinova_driver_msg.srv import KinSrv
 from simulation_msg.srv import SimSrv
 from compliant_control.interface.user_interface import UserInterface
 from threading import Thread
-import numpy as np
 
 
 class UserInterfaceNode(Node):
@@ -48,28 +47,11 @@ class UserInterfaceNode(Node):
         request.name = name
         self.kinova_client.call_async(request)
 
-    def command_dingo(self, direction: list) -> None:
+    def command_dingo(self) -> None:
         """Send a command to Dingo."""
-        m = np.linalg.norm(direction) * 3
-        angle = np.arctan2(*direction)
-
         command = DinCmd()
-        orientations = ["l", "r", "r", "l"]
-        side = ["l", "r", "l", "r"]
-        for n in range(4):
-            orientation = orientations[n]
-            torque = self.calculate_torque(angle, orientation) * m
-            torque *= 1 if side[n] == "l" else 1
-            command.wheel_command.append(torque)
+        command.wheel_command = self.interface.wheel_torques
         self.dingo_pub.publish(command)
-
-    def calculate_torque(self, angle: float, orientation: str) -> float:
-        """Calculate the torque."""
-        torques = [-1, -1, -1, 0, 1, 1, 1, 0, -1]
-        angles = np.linspace(-np.pi, np.pi, 9)
-        if orientation == "l":
-            torques.reverse()
-        return np.interp(angle, angles, torques)
 
     def kin_fdbk(self, msg: KinFdbk) -> None:
         """Update the Kinova feedback."""
@@ -78,7 +60,7 @@ class UserInterfaceNode(Node):
             joint.pos = msg.joint_pos[joint.index]
             joint.vel = msg.joint_vel[joint.index]
             joint.eff = msg.joint_tor[joint.index]
-        self.interface.update_rate = msg.update_rate
+        self.interface.state.update_rate = msg.update_rate
         self.interface.update_bars("Kinova")
 
     def din_fdbk(self, msg: DinFdbk) -> None:

@@ -1,3 +1,4 @@
+import numpy as np
 from dataclasses import dataclass
 
 
@@ -36,6 +37,31 @@ class Wheel:
     zero_position: float = 0
     vel: float = 0
     eff: float = 0
+
+    @staticmethod
+    def calculate_torques(direction: list) -> list:
+        """Calculate the required wheel torques to move in the given direction."""
+        m = np.linalg.norm(direction) * 3
+        angle = np.arctan2(*direction)
+
+        orientations = ["l", "r", "r", "l"]
+        side = ["l", "r", "l", "r"]
+        torques = []
+        for n in range(4):
+            orientation = orientations[n]
+            torque = Wheel.calculate_torque(angle, orientation) * m
+            torque *= 1 if side[n] == "l" else 1
+            torques.append(torque)
+        return torques
+
+    @staticmethod
+    def calculate_torque(angle: float, orientation: str) -> float:
+        """Calculate the required wheel torque to match the given moving angle."""
+        torques = [-1, -1, -1, 0, 1, 1, 1, 0, -1]
+        angles = np.linspace(-np.pi, np.pi, 9)
+        if orientation == "r":
+            torques.reverse()
+        return np.interp(angle, angles, torques)
 
     @property
     def name(self) -> str:
