@@ -42,8 +42,7 @@ class UserInterfaceNode(Node):
 
     def call_kinova(self, name: str) -> None:
         """Call a kinova service."""
-        print(name)
-        self.interface.mode = "waiting"
+        self.interface.state.mode = "waiting"
         self.interface.update_control()
         request = KinSrv.Request()
         request.name = name
@@ -76,9 +75,9 @@ class UserInterfaceNode(Node):
         """Update the Kinova feedback."""
         for n in range(len(msg.joint_pos)):
             joint = self.interface.joints[n]
-            joint.position = msg.joint_pos[joint.index]
-            joint.speed = msg.joint_vel[joint.index]
-            joint.current = msg.joint_tor[joint.index]
+            joint.pos = msg.joint_pos[joint.index]
+            joint.vel = msg.joint_vel[joint.index]
+            joint.eff = msg.joint_tor[joint.index]
         self.interface.update_rate = msg.update_rate
         self.interface.update_bars("Kinova")
 
@@ -86,10 +85,10 @@ class UserInterfaceNode(Node):
         """Update the Dingo feedback."""
         for n in range(len(msg.wheel_pos)):
             wheel = self.interface.wheels[n]
-            last_position = wheel.position
+            last_position = wheel.pos
             wheel.encoder_position = msg.wheel_pos[n]
-            wheel.speed = wheel.position - last_position
-            wheel.power = msg.wheel_tor[n]
+            wheel.vel = wheel.pos - last_position
+            wheel.eff = msg.wheel_tor[n]
         self.interface.update_bars("Dingo")
 
     def kin_sts(self, msg: KinSts) -> None:
@@ -100,10 +99,10 @@ class UserInterfaceNode(Node):
             joint.ratio = msg.joint_ratio[joint.index]
             joint.fric_d = msg.joint_fric_d[joint.index]
             joint.fric_s = msg.joint_fric_s[joint.index]
-        self.interface.mode = msg.mode
-        self.interface.servoing = msg.servoing
-        self.interface.compensate_friction = msg.compensate_friction
-        self.interface.automove_target = msg.automove_target
+        self.interface.state.mode = msg.mode
+        self.interface.state.servoing = msg.servoing
+        self.interface.state.comp_fric = msg.compensate_friction
+        self.interface.state.move_tar = msg.automove_target
         self.interface.update_control()
         self.interface.update_state()
 

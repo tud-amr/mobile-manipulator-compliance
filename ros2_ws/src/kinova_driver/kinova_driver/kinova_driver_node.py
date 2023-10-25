@@ -98,7 +98,7 @@ class KinovaDriverNode(Node):
                 Controller.toggle_CF()
             case "Clear Faults":
                 self.kortex_client.clear_faults()
-            case _ if "Toggle" in name:
+            case _ if "Tog" in name:
                 self.state.toggle_joint(int(name[-1]))
             case _:
                 print(f"Service call {name} is unknown.")

@@ -30,9 +30,13 @@ def button(label: str, enabled: bool = False, callback: callable = None) -> None
     dpg.add_button(label=label, enabled=enabled, callback=callback, tag=label)
 
 
-def checkbox(label: str, enabled: bool = False, callback: callable = None) -> None:
+def checkbox(
+    label: str, enabled: bool = False, callback: callable = None, tag: str = None
+) -> None:
     """Create a dearpygui checkbox."""
-    dpg.add_checkbox(label=label, default_value=enabled, callback=callback, tag=label)
+    if label is not None:
+        tag = label
+    dpg.add_checkbox(label=label, default_value=enabled, callback=callback, tag=tag)
 
 
 def create_plot(

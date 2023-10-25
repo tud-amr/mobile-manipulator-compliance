@@ -2,8 +2,8 @@ import glfw
 from typing import Literal
 import dearpygui.dearpygui as dpg
 from threading import Thread
-from dataclasses import dataclass
 import time
+from compliant_control.interface.data_classes import Joint, Wheel, State
 from compliant_control.interface.joystick import Joystick
 from compliant_control.interface.templates import (
     window,
@@ -13,74 +13,17 @@ from compliant_control.interface.templates import (
     update_plot,
 )
 
-
-@dataclass
-class Joint:
-    """Data of a joint."""
-
-    index: int
-
-    # continuous feedback:
-    position: float = 0
-    speed: float = 0
-    current: float = 0
-
-    # state:
-    active: bool = True
-    mode: str = "?"
-    ratio: float = 0
-    fric_d: float = 0
-    fric_s: float = 0
-
-    @property
-    def name(self) -> str:
-        """Return the name of the joint."""
-        return f"joint{self.index}"
-
-    @property
-    def feedbacks(self) -> list[str]:
-        """Return the feedbacks types."""
-        return ["position", "speed", "current"]
-
-
-@dataclass
-class Wheel:
-    """Data of a wheel."""
-
-    name: str
-
-    # continuous feedback:
-    encoder_position: float = 0
-    zero_position: float = 0
-    speed: float = 0
-    power: float = 0
-
-    @property
-    def position(self) -> float:
-        """Return the current position."""
-        return self.encoder_position - self.zero_position
-
-    @property
-    def feedbacks(self) -> list[str]:
-        """Return the feedback types."""
-        return ["position", "speed", "power"]
+JOINTS = 6
+WHEELS = 4
 
 
 class UserInterface:
     """Used to tune the PID controller of the Dingo."""
 
     def __init__(self) -> None:
-        self.joints = [Joint(n) for n in range(6)]
-        self.wheels = [
-            Wheel(f"{fr}_{lr}_wheel")
-            for fr in ["front", "rear"]
-            for lr in ["left", "right"]
-        ]
-        self.mode = "waiting"
-        self.update_rate = 0
-        self.servoing = "?"
-        self.compensate_friction = False
-        self.automove_target = False
+        self.joints = [Joint(n) for n in range(JOINTS)]
+        self.wheels = [Wheel(n) for n in range(WHEELS)]
+        self.state = State()
 
         self.cb_kin = None
         self.cb_sim = None
@@ -97,21 +40,6 @@ class UserInterface:
     def wheel_names(self) -> list:
         """Returns the list of wheel names."""
         return [wheel.name for wheel in self.wheels]
-
-    @property
-    def HLC(self) -> bool:
-        """Returns whether the current mode is HLC."""
-        return self.mode == "HLC"
-
-    @property
-    def LLC(self) -> bool:
-        """Returns whether the current mode is LLC."""
-        return self.mode == "LLC"
-
-    @property
-    def LLC_task(self) -> bool:
-        """Returns whether a LLC task is active."""
-        return self.mode == "LLC_task"
 
     def define_ui_parameters(self) -> None:
         """Define the UI parameters."""
@@ -147,7 +75,7 @@ class UserInterface:
 
         create_plot("pos", w3, h3, [0, 0], self.joint_names, 2.6)
         create_plot("vel", w3, h3, [w3, 0], self.joint_names, 4)
-        create_plot("tor", w3, h3, [2 * w3, 0], self.joint_names, 15)
+        create_plot("eff", w3, h3, [2 * w3, 0], self.joint_names, 15)
 
         self.load_control(w2, int(h3 * 0.85), [0, h3])
         self.load_info(w2, int(h3 * 0.15), [0, int(h3 * 1.85)])
@@ -156,7 +84,7 @@ class UserInterface:
 
         create_plot("pos", w3, h3, [0, 2 * h3], self.wheel_names, 10)
         create_plot("vel", w3, h3, [w3, 2 * h3], self.wheel_names, 5)
-        create_plot("tor", w3, h3, [2 * w3, 2 * h3], self.wheel_names, 10)
+        create_plot("eff", w3, h3, [2 * w3, 2 * h3], self.wheel_names, 10)
 
         dpg.show_viewport()
 
@@ -173,8 +101,8 @@ class UserInterface:
             if dpg.does_item_exist(item="group_info"):
                 dpg.delete_item(item="group_info")
             with dpg.group(tag="group_info", parent="window_info", horizontal=True):
-                dpg.add_text(f"Update rate: {self.update_rate}")
-                dpg.add_text(f"Servoing: {self.servoing}")
+                dpg.add_text(f"Update rate: {self.state.update_rate}")
+                dpg.add_text(f"Servoing: {self.state.servoing}")
             time.sleep(0.5)
 
     def load_control(self, width: int, height: int, pos: list) -> None:
@@ -190,36 +118,31 @@ class UserInterface:
         with dpg.group(parent="window_control", tag="group_control"):
             dpg.add_text("High Level:")
             with dpg.group(horizontal=True):
-                button("Home", self.HLC, self.cb_kin)
-                button("Zero", self.HLC, self.cb_kin)
-                button("Retract", self.HLC, self.cb_kin)
+                button("Home", self.state.HLC, self.cb_kin)
+                button("Zero", self.state.HLC, self.cb_kin)
+                button("Retract", self.state.HLC, self.cb_kin)
             dpg.add_text("Switch:")
             with dpg.group(horizontal=True):
-                button("Start LLC", self.HLC, self.cb_kin)
-                button("Stop LLC", self.LLC, self.cb_kin)
-                button("Stop LLC Task", self.LLC_task, self.cb_kin)
+                button("Start LLC", self.state.HLC, self.cb_kin)
+                button("Stop LLC", self.state.LLC, self.cb_kin)
+                button("Stop LLC Task", self.state.LLC_task, self.cb_kin)
             dpg.add_text("Low Level:")
             with dpg.group(horizontal=True):
-                button("Gravity", self.LLC, self.cb_kin)
-                button("Impedance", self.LLC, self.cb_kin)
-                button("Cartesian Impedance", self.LLC, self.cb_kin)
+                button("Gravity", self.state.LLC, self.cb_kin)
+                button("Impedance", self.state.LLC, self.cb_kin)
+                button("Cartesian Impedance", self.state.LLC, self.cb_kin)
             dpg.add_text("Calibration:")
             with dpg.group(horizontal=True):
-                button("HL Calibration", self.HLC, self.cb_kin)
-                button("LL Calibration", self.HLC, self.cb_kin)
+                button("HL Calibration", self.state.HLC, self.cb_kin)
+                button("LL Calibration", self.state.HLC, self.cb_kin)
             dpg.add_spacer(height=10)
             dpg.add_text("Settings:")
             with dpg.group():
-                checkbox("Compensate friction", self.compensate_friction, self.cb_kin)
-                checkbox("Automove target", self.automove_target, self.cb_sim)
+                checkbox("Compensate friction", self.state.comp_fric, self.cb_kin)
+                checkbox("Automove target", self.state.move_tar, self.cb_sim)
             with dpg.group(horizontal=True):
                 button("Clear Faults", True, self.cb_kin)
-                button("Reset wheels", True, self.reset_wheel_positions)
-
-    def reset_wheel_positions(self) -> None:
-        """Reset the wheel positions."""
-        for wheel in self.wheels:
-            wheel.zero_position = wheel.encoder_position
+                button("Reset wheels", True, lambda: [w.reset() for w in self.wheels])
 
     def load_state(self, width: int, height: int, pos: list) -> None:
         """Load joint info window."""
@@ -244,7 +167,7 @@ class UserInterface:
             for joint in self.joints:
                 with dpg.table_row():
                     with dpg.group(horizontal=True):
-                        checkbox(f"Toggle_{joint.index}", joint.active, self.cb_kin)
+                        checkbox(None, joint.active, self.cb_kin, f"Tog_{joint.index}")
                         dpg.add_text(joint.index)
                     dpg.add_text(joint.mode)
                     dpg.add_text(joint.ratio)
@@ -255,15 +178,14 @@ class UserInterface:
         """Update the bar plots."""
         match robot:
             case "Kinova":
-                for joint in self.joints:
-                    update_plot("pos", joint.name, joint.position)
-                    update_plot("vel", joint.name, joint.speed)
-                    update_plot("tor", joint.name, joint.current)
+                elements = self.joints
             case "Dingo":
-                for wheel in self.wheels:
-                    update_plot("pos", wheel.name, wheel.position)
-                    update_plot("vel", wheel.name, wheel.speed)
-                    update_plot("tor", wheel.name, wheel.power)
+                elements = self.wheels
+        for prop in ["pos", "vel", "eff"]:
+            for element in elements:
+                name = getattr(element, "name")
+                value = getattr(element, prop)
+                update_plot(prop, name, value)
 
     def close(self) -> None:
         """Callback for keyboard input."""
