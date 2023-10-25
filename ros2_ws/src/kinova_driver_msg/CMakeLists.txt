@@ -10,9 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/JointFeedback.msg"
   "msg/KinFdbk.msg"
-  "msg/JointState.msg"
   "msg/KinSts.msg"
   "msg/KinCmd.msg"
   "srv/KinSrv.srv"

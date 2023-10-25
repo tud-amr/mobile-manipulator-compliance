@@ -1,9 +1,9 @@
-kinova_driver_msg/JointState joint0
-kinova_driver_msg/JointState joint1
-kinova_driver_msg/JointState joint2
-kinova_driver_msg/JointState joint3
-kinova_driver_msg/JointState joint4
-kinova_driver_msg/JointState joint5
+bool[] joint_active
+string[] joint_mode
+float32[] joint_ratio
+float32[] joint_fric_s
+float32[] joint_fric_d
+
 string mode
 string servoing
 bool compensate_friction

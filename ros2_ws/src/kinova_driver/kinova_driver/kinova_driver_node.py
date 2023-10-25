@@ -5,7 +5,7 @@ import subprocess
 from rclpy.node import Node
 from threading import Thread
 
-from kinova_driver_msg.msg import KinFdbk, JointFeedback, KinSts, JointState
+from kinova_driver_msg.msg import KinFdbk, KinSts
 from kinova_driver_msg.srv import KinSrv
 
 from compliant_control.kinova.kortex_client import KortexClient
@@ -110,15 +110,12 @@ class KinovaDriverNode(Node):
         feedback = KinFdbk()
         feedback.update_rate = self.kortex_client.get_update_rate()
         for n in range(self.kortex_client.actuator_count):
-            joint_feedback = JointFeedback()
-            joint_feedback.position = self.state.q[n] = self.kortex_client.get_position(
-                n, False
-            )
-            joint_feedback.speed = self.state.dq[n] = self.kortex_client.get_velocity(
-                n, False
-            )
-            joint_feedback.current = self.kortex_client.get_current(n, False)
-            setattr(feedback, f"joint{n}", joint_feedback)
+            self.state.q[n] = self.kortex_client.get_position(n, False)
+            self.state.dq[n] = self.kortex_client.get_velocity(n, False)
+            torque = self.kortex_client.get_current(n, False)
+            feedback.joint_pos.append(self.state.q[n])
+            feedback.joint_vel.append(self.state.dq[n])
+            feedback.joint_tor.append(torque)
         self.state.update()
         self.pub.publish(feedback)
 
@@ -126,13 +123,11 @@ class KinovaDriverNode(Node):
         """Publish the status of the Kinova arm."""
         status = KinSts()
         for n in range(self.kortex_client.actuator_count):
-            joint_state = JointState()
-            joint_state.active = self.state.active[n]
-            joint_state.mode = self.kortex_client.get_control_mode(n)
-            joint_state.ratio = float(self.state.get_ratio(n))
-            joint_state.fric_d = self.state.dynamic_frictions[n]
-            joint_state.fric_s = self.state.static_frictions[n]
-            setattr(status, f"joint{n}", joint_state)
+            status.joint_active.append(self.state.active[n])
+            status.joint_mode.append(self.kortex_client.get_control_mode(n))
+            status.joint_ratio.append(self.state.get_ratio(n))
+            status.joint_fric_s.append(self.state.static_frictions[n])
+            status.joint_fric_d.append(self.state.dynamic_frictions[n])
         status.mode = self.kortex_client.mode
         status.servoing = self.kortex_client.get_servoing_mode()
         status.compensate_friction = Controller.get_CF()

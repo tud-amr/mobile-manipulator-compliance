@@ -1,7 +1,7 @@
 import os
 import rclpy
 from rclpy.node import Node
-from kinova_driver_msg.msg import JointFeedback, KinFdbk, JointState, KinSts
+from kinova_driver_msg.msg import KinFdbk, KinSts
 from dingo_driver_msg.msg import WheelFeedback, DingoFeedback, DingoCommand
 from kinova_driver_msg.srv import KinSrv
 from simulation_msg.srv import SimSrv
@@ -77,10 +77,9 @@ class UserInterfaceNode(Node):
     def kin_fdbk(self, msg: KinFdbk) -> None:
         """Update the Kinova feedback."""
         for joint in self.interface.joints:
-            joint_feedback: JointFeedback = getattr(msg, joint.name)
-            joint.position = joint_feedback.position
-            joint.speed = joint_feedback.speed
-            joint.current = joint_feedback.current
+            joint.position = msg.joint_pos[joint.index]
+            joint.speed = msg.joint_vel[joint.index]
+            joint.current = msg.joint_tor[joint.index]
         self.interface.update_rate = msg.update_rate
         self.interface.update_kinova_plots()
 
@@ -97,12 +96,11 @@ class UserInterfaceNode(Node):
     def kin_sts(self, msg: KinSts) -> None:
         """Update the Kinova state."""
         for joint in self.interface.joints:
-            joint_state: JointState = getattr(msg, joint.name)
-            joint.active = joint_state.active
-            joint.mode = joint_state.mode[:3]
-            joint.ratio = joint_state.ratio
-            joint.fric_d = joint_state.fric_d
-            joint.fric_s = joint_state.fric_s
+            joint.active = msg.joint_active[joint.index]
+            joint.mode = msg.joint_mode[joint.index][:3]
+            joint.ratio = msg.joint_ratio[joint.index]
+            joint.fric_d = msg.joint_fric_d[joint.index]
+            joint.fric_s = msg.joint_fric_s[joint.index]
         self.interface.mode = msg.mode
         self.interface.servoing = msg.servoing
         self.interface.compensate_friction = msg.compensate_friction

@@ -1,7 +1,5 @@
-kinova_driver_msg/JointFeedback joint0
-kinova_driver_msg/JointFeedback joint1
-kinova_driver_msg/JointFeedback joint2
-kinova_driver_msg/JointFeedback joint3
-kinova_driver_msg/JointFeedback joint4
-kinova_driver_msg/JointFeedback joint5
+float32[] joint_pos
+float32[] joint_vel
+float32[] joint_tor
+
 int32 update_rate
