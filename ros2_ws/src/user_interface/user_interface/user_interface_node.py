@@ -16,28 +16,38 @@ class UserInterfaceNode(Node):
     def __init__(self) -> None:
         super().__init__("user_interface_node")
         self.create_subscription(KinFdbk, "/kinova/fdbk", self.kin_fdbk, 10)
-        self.create_subscription(DinFdbk, "/dingo/fdbk", self.dingo_feedback, 10)
+        self.create_subscription(DinFdbk, "/dingo/fdbk", self.din_fdbk, 10)
         self.create_subscription(KinSts, "/kinova/sts", self.kin_sts, 10)
         self.kinova_client = self.create_client(KinSrv, "/kinova/srv")
         self.sim_client = self.create_client(SimSrv, "/sim/srv")
         self.dingo_pub = self.create_publisher(DinCmd, "/dingo/cmd", 10)
 
         self.interface = UserInterface()
-        self.interface.callbacks.buttons = self.callback
-        self.interface.callbacks.joystick = self.command_dingo
+        self.interface.cb_kin = self.call_kinova
+        self.interface.cb_din = self.command_dingo
+        self.interface.cb_sim = self.call_sim
+        self.interface.create_ui()
 
-        self.interface.toggle_automove_target = self.toggle_automove_target
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
-        initialize_thread = Thread(target=self.callback, args=["Initialize"])
+        initialize_thread = Thread(target=self.call_kinova, args=["Initialize"])
         initialize_thread.start()
         self.interface.start_render_loop()
 
-    def toggle_automove_target(self) -> None:
-        """Toggle target automove of mujoco."""
+    def call_sim(self) -> None:
+        """Call a simulation service."""
         request = SimSrv.Request()
         request.name = "ToggleAutomove"
         self.sim_client.call(request)
+
+    def call_kinova(self, name: str) -> None:
+        """Call a kinova service."""
+        print(name)
+        self.interface.mode = "waiting"
+        self.interface.update_control()
+        request = KinSrv.Request()
+        request.name = name
+        self.kinova_client.call_async(request)
 
     def command_dingo(self, direction: list) -> None:
         """Send a command to Dingo."""
@@ -62,14 +72,6 @@ class UserInterfaceNode(Node):
             torques.reverse()
         return np.interp(angle, angles, torques)
 
-    def callback(self, name: str) -> None:
-        """Connect the interface with service calls."""
-        self.interface.mode = "waiting"
-        self.interface.update_control()
-        request = KinSrv.Request()
-        request.name = name
-        self.kinova_client.call_async(request)
-
     def kin_fdbk(self, msg: KinFdbk) -> None:
         """Update the Kinova feedback."""
         for n in range(len(msg.joint_pos)):
@@ -78,9 +80,9 @@ class UserInterfaceNode(Node):
             joint.speed = msg.joint_vel[joint.index]
             joint.current = msg.joint_tor[joint.index]
         self.interface.update_rate = msg.update_rate
-        self.interface.update_kinova_plots()
+        self.interface.update_bars("Kinova")
 
-    def dingo_feedback(self, msg: DinFdbk) -> None:
+    def din_fdbk(self, msg: DinFdbk) -> None:
         """Update the Dingo feedback."""
         for n in range(len(msg.wheel_pos)):
             wheel = self.interface.wheels[n]
@@ -88,7 +90,7 @@ class UserInterfaceNode(Node):
             wheel.encoder_position = msg.wheel_pos[n]
             wheel.speed = wheel.position - last_position
             wheel.power = msg.wheel_tor[n]
-        self.interface.update_dingo_plots()
+        self.interface.update_bars("Dingo")
 
     def kin_sts(self, msg: KinSts) -> None:
         """Update the Kinova state."""

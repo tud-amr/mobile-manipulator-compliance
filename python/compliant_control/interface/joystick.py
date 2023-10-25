@@ -1,18 +1,17 @@
 import dearpygui.dearpygui as dpg
+from compliant_control.interface.templates import window
 import numpy as np
-from compliant_control.interface.callbacks import Callbacks
 
 
 class Joystick:
     """Defines a dearpygui joystick."""
 
-    def __init__(
-        self, width: int, height: int, pos: list, callbacks: Callbacks
-    ) -> None:
+    def __init__(self, width: int, height: int, pos: list, callback: callable) -> None:
         self.w_win = width
         self.h_win = height
         self.pos = pos
-        self.callbacks = callbacks
+        self.callback = callback
+
         self.point_x = 0
         self.point_y = 0
         self.create_drawing()
@@ -24,20 +23,9 @@ class Joystick:
             dpg.add_mouse_down_handler(callback=self.mouse_down)
             dpg.add_mouse_release_handler(callback=self.mouse_release)
 
-        with dpg.window(
-            width=self.w_win,
-            height=self.h_win,
-            pos=self.pos,
-            no_resize=True,
-            no_move=True,
-            no_close=True,
-            no_collapse=True,
-            no_title_bar=True,
-            no_bring_to_front_on_focus=True,
-            no_scrollbar=True,
-            no_scroll_with_mouse=True,
-        ), dpg.drawlist(width=self.w_win, height=self.h_win, tag="drawing"):
-            pass
+        with window(self.w_win, self.h_win, self.pos):
+            with dpg.drawlist(width=self.w_win, height=self.h_win, tag="drawing"):
+                pass
 
     def update_drawing(self) -> None:
         """Update the drawing."""
@@ -69,7 +57,7 @@ class Joystick:
         self.point_x = 0
         self.point_y = 0
         self.update_drawing()
-        self.callbacks.joystick([self.point_x, self.point_y])
+        self.callback([self.point_x, self.point_y])
 
     def mouse_down(self) -> None:
         """Handle mouse down input."""
@@ -80,4 +68,4 @@ class Joystick:
             self.point_x = x / np.linalg.norm([x, y])
             self.point_y = y / np.linalg.norm([x, y])
             self.update_drawing()
-        self.callbacks.joystick([self.point_x, -self.point_y])
+        self.callback([self.point_x, -self.point_y])

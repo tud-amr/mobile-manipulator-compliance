@@ -1,10 +1,17 @@
 import glfw
+from typing import Literal
 import dearpygui.dearpygui as dpg
 from threading import Thread
 from dataclasses import dataclass
 import time
 from compliant_control.interface.joystick import Joystick
-from compliant_control.interface.callbacks import Callbacks
+from compliant_control.interface.templates import (
+    window,
+    button,
+    checkbox,
+    create_plot,
+    update_plot,
+)
 
 
 @dataclass
@@ -74,12 +81,22 @@ class UserInterface:
         self.servoing = "?"
         self.compensate_friction = False
         self.automove_target = False
-        self.toggle_automove_target = lambda: None
 
-        self.callbacks = Callbacks()
+        self.cb_kin = None
+        self.cb_sim = None
+        self.cb_din = None
 
         self.define_ui_parameters()
-        self.create_ui()
+
+    @property
+    def joint_names(self) -> list:
+        """Returns the list of joint names."""
+        return [joint.name for joint in self.joints]
+
+    @property
+    def wheel_names(self) -> list:
+        """Returns the list of wheel names."""
+        return [wheel.name for wheel in self.wheels]
 
     @property
     def HLC(self) -> bool:
@@ -128,71 +145,24 @@ class UserInterface:
         h3 = int(self.h_win / 3)
         h6 = int(self.h_win / 6)
 
-        self.create_plot("joint_position", w3, h3, [0, 0])
-        self.create_plot("joint_speed", w3, h3, [w3, 0])
-        self.create_plot("joint_current", w3, h3, [2 * w3, 0])
+        create_plot("pos", w3, h3, [0, 0], self.joint_names, 2.6)
+        create_plot("vel", w3, h3, [w3, 0], self.joint_names, 4)
+        create_plot("tor", w3, h3, [2 * w3, 0], self.joint_names, 15)
 
         self.load_control(w2, int(h3 * 0.85), [0, h3])
         self.load_info(w2, int(h3 * 0.15), [0, int(h3 * 1.85)])
         self.load_state(w2, h6, [w2, h3])
-        Joystick(w2, h6, [w2, h3 + h6], self.callbacks)
+        Joystick(w2, h6, [w2, h3 + h6], self.cb_din)
 
-        self.create_plot("wheel_position", w3, h3, [0, 2 * h3])
-        self.create_plot("wheel_speed", w3, h3, [w3, 2 * h3])
-        self.create_plot("wheel_power", w3, h3, [2 * w3, 2 * h3])
+        create_plot("pos", w3, h3, [0, 2 * h3], self.wheel_names, 10)
+        create_plot("vel", w3, h3, [w3, 2 * h3], self.wheel_names, 5)
+        create_plot("tor", w3, h3, [2 * w3, 2 * h3], self.wheel_names, 10)
 
         dpg.show_viewport()
 
-    def create_plot(self, name: str, width: int, height: int, pos: list) -> None:
-        """Create a plot."""
-        limits: dict
-        bar_center = 0.5
-        label = name.split("_")[1]
-        with self.window(None, width, height, pos), dpg.plot(height=-1, width=-1):
-            dpg.add_plot_axis(
-                dpg.mvXAxis,
-                label=label,
-                tag=f"{name}_x_axis",
-                no_gridlines=True,
-                no_tick_labels=True,
-                no_tick_marks=True,
-            )
-            dpg.add_plot_axis(dpg.mvYAxis, tag=f"{name}_y_axis")
-            if "joint" in name:
-                limits = {"position": 2.6, "speed": 4, "current": 15}
-                for joint in self.joints:
-                    dpg.add_bar_series(
-                        [bar_center],
-                        [getattr(joint, label)],
-                        weight=0.8,
-                        parent=f"{name}_y_axis",
-                        tag=f"{joint.name}_{label}",
-                    )
-                    bar_center += 1
-            elif "wheel" in name:
-                limits = {"position": 10, "speed": 5, "power": 10}
-                for wheel in self.wheels:
-                    dpg.add_bar_series(
-                        [bar_center],
-                        [getattr(wheel, label)],
-                        weight=0.8,
-                        parent=f"{name}_y_axis",
-                        tag=f"{wheel.name}_{label}",
-                    )
-                    bar_center += 1
-            dpg.set_axis_limits(f"{name}_x_axis", 0, len(self.joints))
-            dpg.set_axis_limits(f"{name}_y_axis", -limits[label], limits[label])
-            dpg.add_plot_axis(
-                dpg.mvYAxis,
-                label=" ",
-                no_gridlines=True,
-                no_tick_labels=True,
-                no_tick_marks=True,
-            )
-
     def load_info(self, width: int, height: int, pos: list) -> None:
         """Load info."""
-        with self.window("Info", width, height, pos, tag="window_info"):
+        with window(width, height, pos, tag="window_info"):
             pass
         thread = Thread(target=self.update_info)
         thread.start()
@@ -209,7 +179,7 @@ class UserInterface:
 
     def load_control(self, width: int, height: int, pos: list) -> None:
         """Load the control window."""
-        with self.window("Control", width, height, pos, tag="window_control"):
+        with window(width, height, pos, tag="window_control"):
             pass
         self.update_control()
 
@@ -220,35 +190,31 @@ class UserInterface:
         with dpg.group(parent="window_control", tag="group_control"):
             dpg.add_text("High Level:")
             with dpg.group(horizontal=True):
-                self.button("Home", self.HLC)
-                self.button("Zero", self.HLC)
-                self.button("Retract", self.HLC)
+                button("Home", self.HLC, self.cb_kin)
+                button("Zero", self.HLC, self.cb_kin)
+                button("Retract", self.HLC, self.cb_kin)
             dpg.add_text("Switch:")
             with dpg.group(horizontal=True):
-                self.button("Start LLC", self.HLC)
-                self.button("Stop LLC", self.LLC)
-                self.button("Stop LLC Task", self.LLC_task)
+                button("Start LLC", self.HLC, self.cb_kin)
+                button("Stop LLC", self.LLC, self.cb_kin)
+                button("Stop LLC Task", self.LLC_task, self.cb_kin)
             dpg.add_text("Low Level:")
             with dpg.group(horizontal=True):
-                self.button("Gravity", self.LLC)
-                self.button("Impedance", self.LLC)
-                self.button("Cartesian Impedance", self.LLC)
+                button("Gravity", self.LLC, self.cb_kin)
+                button("Impedance", self.LLC, self.cb_kin)
+                button("Cartesian Impedance", self.LLC, self.cb_kin)
             dpg.add_text("Calibration:")
             with dpg.group(horizontal=True):
-                self.button("HL Calibration", self.HLC)
-                self.button("LL Calibration", self.HLC)
+                button("HL Calibration", self.HLC, self.cb_kin)
+                button("LL Calibration", self.HLC, self.cb_kin)
             dpg.add_spacer(height=10)
             dpg.add_text("Settings:")
             with dpg.group():
-                self.checkbox("Compensate friction", enabled=self.compensate_friction)
-                self.checkbox(
-                    "Automove target",
-                    enabled=self.automove_target,
-                    callback=self.toggle_automove_target,
-                )
-                with dpg.group(horizontal=True):
-                    self.button("Clear Faults", True)
-                    self.button("Reset wheels", True, self.reset_wheel_positions)
+                checkbox("Compensate friction", self.compensate_friction, self.cb_kin)
+                checkbox("Automove target", self.automove_target, self.cb_sim)
+            with dpg.group(horizontal=True):
+                button("Clear Faults", True, self.cb_kin)
+                button("Reset wheels", True, self.reset_wheel_positions)
 
     def reset_wheel_positions(self) -> None:
         """Reset the wheel positions."""
@@ -257,7 +223,7 @@ class UserInterface:
 
     def load_state(self, width: int, height: int, pos: list) -> None:
         """Load joint info window."""
-        with self.window("State", width, height, pos, tag="window_state"):
+        with window(width, height, pos, tag="window_state"):
             pass
         self.update_state()
 
@@ -278,76 +244,26 @@ class UserInterface:
             for joint in self.joints:
                 with dpg.table_row():
                     with dpg.group(horizontal=True):
-                        self.checkbox(None, f"Toggle_{joint.index}", joint.active)
+                        checkbox(f"Toggle_{joint.index}", joint.active, self.cb_kin)
                         dpg.add_text(joint.index)
                     dpg.add_text(joint.mode)
                     dpg.add_text(joint.ratio)
                     dpg.add_text(round(joint.fric_d, 3))
                     dpg.add_text(round(joint.fric_s, 3))
 
-    def update_kinova_plots(self) -> None:
-        """Update the Kinova plots."""
-        for joint in self.joints:
-            for feedback in joint.feedbacks:
-                data = dpg.get_value(f"{joint.name}_{feedback}")
-                data[1] = [getattr(joint, feedback)]
-                dpg.set_value(f"{joint.name}_{feedback}", data)
-
-    def update_dingo_plots(self) -> None:
-        """Update the Dingo plots."""
-        for wheel in self.wheels:
-            for feedback in wheel.feedbacks:
-                data = dpg.get_value(f"{wheel.name}_{feedback}")
-                data[1] = [getattr(wheel, feedback)]
-                dpg.set_value(f"{wheel.name}_{feedback}", data)
-
-    def button(
-        self, label: str, enabled: bool = False, callback: callable = None
-    ) -> None:
-        """Create a dearpygui button."""
-        if callback is None:
-            callback = self.callbacks.buttons
-        dpg.add_button(label=label, enabled=enabled, callback=callback, tag=label)
-
-    def checkbox(
-        self,
-        label: str,
-        tag: str = None,
-        enabled: bool = False,
-        callback: callable = None,
-    ) -> None:
-        """Create a dearpygui checkbox."""
-        if tag is None:
-            tag = label
-        if callback is None:
-            callback = self.callbacks.buttons
-        dpg.add_checkbox(label=label, tag=tag, default_value=enabled, callback=callback)
-
-    def window(
-        self,
-        label: str = None,
-        width: int = 0,
-        height: int = 0,
-        pos: list = None,
-        tag: int = None,
-    ) -> dpg.contextmanager:
-        """Create a dearpygui window."""
-        if not tag:
-            tag = dpg.generate_uuid()
-        return dpg.window(
-            label=label,
-            no_move=True,
-            no_resize=True,
-            no_collapse=True,
-            no_close=True,
-            no_title_bar=True,
-            width=width,
-            height=height,
-            min_size=[width, height],
-            max_size=[width, height],
-            pos=pos,
-            tag=tag,
-        )
+    def update_bars(self, robot: Literal["Kinova", "Dingo"]) -> None:
+        """Update the bar plots."""
+        match robot:
+            case "Kinova":
+                for joint in self.joints:
+                    update_plot("pos", joint.name, joint.position)
+                    update_plot("vel", joint.name, joint.speed)
+                    update_plot("tor", joint.name, joint.current)
+            case "Dingo":
+                for wheel in self.wheels:
+                    update_plot("pos", wheel.name, wheel.position)
+                    update_plot("vel", wheel.name, wheel.speed)
+                    update_plot("tor", wheel.name, wheel.power)
 
     def close(self) -> None:
         """Callback for keyboard input."""
