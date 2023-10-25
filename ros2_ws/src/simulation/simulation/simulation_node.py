@@ -12,21 +12,16 @@ class SimulationNode(Node):
 
     def __init__(self) -> None:
         super().__init__("simulation_node")
-        self.create_subscription(
-            SimCmdInc,
-            "/simulation/command_increment",
-            self.command_increment,
-            10,
-        )
-        self.create_subscription(SimCmd, "/simulation/command", self.command, 10)
-        self.create_service(SimSrv, "/simulation/service", self.service_call)
-        self.pub = self.create_publisher(SimFdbk, "/simulation/feedback", 10)
+        self.create_subscription(SimCmdInc, "/sim/cmd_inc", self.cmd_inc, 10)
+        self.create_subscription(SimCmd, "/sim/cmd", self.cmd, 10)
+        self.create_service(SimSrv, "/sim/srv", self.srv)
+        self.pub = self.create_publisher(SimFdbk, "/sim/fdbk", 10)
         self.spin_thread = Thread(target=self.start_spin_loop)
-        self.sim = Simulation(self.callback)
+        self.sim = Simulation(self.pub_fdbk)
         self.spin_thread.start()
         self.sim.start()
 
-    def service_call(self, request: SimSrv.Request, response: SimSrv.Response) -> None:
+    def srv(self, request: SimSrv.Request, response: SimSrv.Response) -> None:
         """Execute service call."""
         match request.name:
             case "KinovaPositionMode":
@@ -38,12 +33,12 @@ class SimulationNode(Node):
         response.success = True
         return response
 
-    def command_increment(self, msg: SimCmdInc) -> None:
-        """Control increment."""
+    def cmd_inc(self, msg: SimCmdInc) -> None:
+        """Send command increment to simulation."""
         self.sim.ctrl_increment("Kinova", msg.type, msg.joint, msg.increment)
 
-    def command(self, msg: SimCmd) -> None:
-        """Update the simulation controllers."""
+    def cmd(self, msg: SimCmd) -> None:
+        """Send command to simulation."""
         match msg.robot:
             case "Kinova":
                 self.sim.set_ctrl_value(msg.robot, "position", msg.joint_pos.data)
@@ -52,8 +47,8 @@ class SimulationNode(Node):
             case "Dingo":
                 self.sim.set_ctrl_value(msg.robot, "torque", msg.joint_tor.data)
 
-    def callback(self) -> None:
-        """Callback that is called every simulation step."""
+    def pub_fdbk(self) -> None:
+        """Publish the simulation feedback."""
         feedback = SimFdbk()
         feedback.joint_pos.data = self.sim.get_sensor_feedback("Kinova", "position")
         feedback.joint_vel.data = self.sim.get_sensor_feedback("Kinova", "velocity")

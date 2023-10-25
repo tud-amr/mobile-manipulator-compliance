@@ -23,7 +23,7 @@ class UserInterfaceNode(Node):
         )
         self.create_subscription(KinovaState, "/kinova/state", self.kinova_state, 10)
         self.kinova_client = self.create_client(Service, "/kinova/service")
-        self.sim_client = self.create_client(SimSrv, "/simulation/service")
+        self.sim_client = self.create_client(SimSrv, "/sim/srv")
         self.dingo_pub = self.create_publisher(DingoCommand, "/dingo/command", 10)
 
         self.interface = UserInterface()

@@ -13,10 +13,10 @@ class DingoDriverSimulationNode(Node):
 
     def __init__(self) -> None:
         super().__init__("dingo_driver_simulation_node")
-        self.create_subscription(SimFdbk, "/simulation/feedback", self.sim_fdbk, 10)
+        self.create_subscription(SimFdbk, "/sim/fdbk", self.sim_fdbk, 10)
         self.pub_fdbk = self.create_publisher(DingoFeedback, "/dingo/feedback", 10)
         self.create_subscription(DingoCommand, "/dingo/command", self.dingo_command, 10)
-        self.pub_cmd = self.create_publisher(SimCmd, "/simulation/command", 10)
+        self.pub_cmd = self.create_publisher(SimCmd, "/sim/cmd", 10)
 
         self.start_spin_loop()
 

@@ -26,8 +26,8 @@ class KortexClientSimulation(KortexClient):
             mock=True,
             simulate=True,
         )
-        node.create_subscription(SimFdbk, "/simulation/feedback", self.sim_fdbk, 10)
-        self.pub = node.create_publisher(SimCmdInc, "/simulation/command_increment", 10)
+        node.create_subscription(SimFdbk, "/sim/fdbk", self.sim_fdbk, 10)
+        self.pub = node.create_publisher(SimCmdInc, "/sim/cmd_inc", 10)
         self.define_HLC_parameters()
 
     def sim_fdbk(self, msg: SimFdbk) -> None:
@@ -96,7 +96,7 @@ class BaseCyclicClientSimulation:
     """https://github.com/Kinovarobotics/kortex/blob/master/api_python/doc/markdown/summary_pages/BaseCyclic.md."""
 
     def __init__(self, node: Node) -> None:
-        self.pub = node.create_publisher(SimCmd, "/simulation/command", 10)
+        self.pub = node.create_publisher(SimCmd, "/sim/cmd", 10)
         self.feedback = BaseCyclic.Feedback(JOINTS)
 
     def Refresh(self, command: BaseCyclic.Command) -> BaseCyclic.Feedback:
@@ -119,7 +119,7 @@ class ActuatorConfigClientSimulation:
     """https://github.com/Kinovarobotics/kortex/blob/master/api_python/doc/markdown/summary_pages/ActuatorConfig.md."""
 
     def __init__(self, node: Node) -> None:
-        self.client = node.create_client(SimSrv, "/simulation/service")
+        self.client = node.create_client(SimSrv, "/sim/srv")
         self.control_modes = [
             ActuatorConfig.ControlModeInformation(1) for _ in range(JOINTS)
         ]
