@@ -2,7 +2,7 @@ from typing import Literal
 import importlib.resources as pkg_resources
 import mujoco.viewer
 from mujoco import MjModel, MjData, mj_name2id, mjtObj
-import compliant_control.kinova.models as models
+import compliant_control.simulation.models as models
 import time
 import re
 from compliant_control.interface.window_commands import WindowCommands
