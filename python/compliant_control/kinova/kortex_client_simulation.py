@@ -33,9 +33,9 @@ class KortexClientSimulation(KortexClient):
     def sim_fdbk(self, msg: SimFdbk) -> None:
         """Process the feedback from the simulation."""
         for n in range(JOINTS):
-            self.base_cyclic.feedback.actuators[n].position = msg.joint_pos.data[n]
-            self.base_cyclic.feedback.actuators[n].velocity = msg.joint_vel.data[n]
-            self.base_cyclic.feedback.actuators[n].current_motor = msg.joint_tor.data[n]
+            self.base_cyclic.feedback.actuators[n].position = msg.joint_pos[n]
+            self.base_cyclic.feedback.actuators[n].velocity = msg.joint_vel[n]
+            self.base_cyclic.feedback.actuators[n].current_motor = msg.joint_tor[n]
 
     def define_HLC_parameters(self) -> None:
         """Define the HLC parameters."""
@@ -104,9 +104,9 @@ class BaseCyclicClientSimulation:
         command_msg = SimCmd()
         command_msg.robot = "Kinova"
         for actuator in command.actuators:
-            command_msg.joint_pos.data.append(actuator.position)
-            command_msg.joint_vel.data.append(actuator.velocity)
-            command_msg.joint_tor.data.append(actuator.current_motor)
+            command_msg.joint_pos.append(actuator.position)
+            command_msg.joint_vel.append(actuator.velocity)
+            command_msg.joint_tor.append(actuator.current_motor)
         self.pub.publish(command_msg)
         return self.RefreshFeedback()
 

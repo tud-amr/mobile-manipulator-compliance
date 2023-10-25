@@ -27,9 +27,9 @@ class DingoDriverSimulationNode(Node):
         for FR in ["front", "rear"]:
             for LR in ["left", "right"]:
                 wheel_feedback = WheelFeedback()
-                wheel_feedback.position = msg.wheel_pos.data[n]
-                wheel_feedback.speed = msg.wheel_vel.data[n]
-                wheel_feedback.current = msg.wheel_tor.data[n]
+                wheel_feedback.position = msg.wheel_pos[n]
+                wheel_feedback.speed = msg.wheel_vel[n]
+                wheel_feedback.current = msg.wheel_tor[n]
                 setattr(dingo_feedback, f"{FR}_{LR}_wheel", wheel_feedback)
                 n += 1
         self.pub_fdbk.publish(dingo_feedback)
@@ -40,7 +40,7 @@ class DingoDriverSimulationNode(Node):
         command_msg.robot = "Dingo"
         for FR in ["f", "r"]:
             for LR in ["l", "r"]:
-                command_msg.joint_tor.data.append(getattr(msg, FR + LR))
+                command_msg.joint_tor.append(getattr(msg, FR + LR))
         self.pub_cmd.publish(command_msg)
 
     def start_spin_loop(self) -> None:

@@ -1,7 +1,7 @@
-std_msgs/Float32MultiArray joint_pos
-std_msgs/Float32MultiArray joint_vel
-std_msgs/Float32MultiArray joint_tor
+float32[] joint_pos
+float32[] joint_vel
+float32[] joint_tor
 
-std_msgs/Float32MultiArray wheel_pos
-std_msgs/Float32MultiArray wheel_vel
-std_msgs/Float32MultiArray wheel_tor
+float32[] wheel_pos
+float32[] wheel_vel
+float32[] wheel_tor

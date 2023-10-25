@@ -41,21 +41,21 @@ class SimulationNode(Node):
         """Send command to simulation."""
         match msg.robot:
             case "Kinova":
-                self.sim.set_ctrl_value(msg.robot, "position", msg.joint_pos.data)
-                self.sim.set_ctrl_value(msg.robot, "velocity", msg.joint_vel.data)
-                self.sim.set_ctrl_value(msg.robot, "torque", msg.joint_tor.data)
+                self.sim.set_ctrl_value(msg.robot, "position", msg.joint_pos)
+                self.sim.set_ctrl_value(msg.robot, "velocity", msg.joint_vel)
+                self.sim.set_ctrl_value(msg.robot, "torque", msg.joint_tor)
             case "Dingo":
-                self.sim.set_ctrl_value(msg.robot, "torque", msg.joint_tor.data)
+                self.sim.set_ctrl_value(msg.robot, "torque", msg.joint_tor)
 
     def pub_fdbk(self) -> None:
         """Publish the simulation feedback."""
         feedback = SimFdbk()
-        feedback.joint_pos.data = self.sim.get_sensor_feedback("Kinova", "position")
-        feedback.joint_vel.data = self.sim.get_sensor_feedback("Kinova", "velocity")
-        feedback.joint_tor.data = self.sim.get_sensor_feedback("Kinova", "torque")
-        feedback.wheel_pos.data = self.sim.get_sensor_feedback("Dingo", "position")
-        feedback.wheel_vel.data = self.sim.get_sensor_feedback("Dingo", "velocity")
-        feedback.wheel_tor.data = self.sim.get_sensor_feedback("Dingo", "torque")
+        feedback.joint_pos = self.sim.get_sensor_feedback("Kinova", "position")
+        feedback.joint_vel = self.sim.get_sensor_feedback("Kinova", "velocity")
+        feedback.joint_tor = self.sim.get_sensor_feedback("Kinova", "torque")
+        feedback.wheel_pos = self.sim.get_sensor_feedback("Dingo", "position")
+        feedback.wheel_vel = self.sim.get_sensor_feedback("Dingo", "velocity")
+        feedback.wheel_tor = self.sim.get_sensor_feedback("Dingo", "torque")
         self.pub.publish(feedback)
 
     def start_spin_loop(self) -> None:
