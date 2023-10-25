@@ -1,7 +1,0 @@
-<mujoco model="robot">
-  <asset>
-    <mesh name="wheel_link" file="wheel_link.stl"/>
-    <mesh name="mecanum_wheel" file="mecanum_wheel.stl"/>
-    <mesh name="roller" file="roller.stl"/>
-  </asset>
-</mujoco>

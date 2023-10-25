@@ -22,10 +22,11 @@ class Simulation:
         xml = str(pkg_resources.files(models) / MODEL)
         self.model = MjModel.from_xml_path(xml)
         self.data = MjData(self.model)
-        self.name = re.search("b'(.*?)\\\\", str(self.model.names))[1]
+        self.define_robots()
+
+        self.active = True
         self.default_biasprm = self.model.actuator_biasprm.copy()
         self.default_gainprm = self.model.actuator_gainprm.copy()
-        self.active = True
         move_target_thread = Thread(target=self.move_target_loop)
         move_target_thread.start()
 
@@ -157,6 +158,13 @@ class Simulation:
     def stop(self, *args: any) -> None:
         """Stop the simulation."""
         self.active = False
+
+    def define_robots(self) -> None:
+        """Define which robots are simulated."""
+        names = str(self.model.names)
+        self.name = re.search("b'(.*?)\\\\", names)[1]
+        self.kinova = "Kinova" in names
+        self.dingo = "Dingo" in names
 
     def load_window_commands(self) -> None:
         """Load the window commands."""

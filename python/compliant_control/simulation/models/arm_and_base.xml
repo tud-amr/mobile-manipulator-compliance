@@ -6,5 +6,4 @@
     </worldbody>
     <include file="clearpath/attributes.xml"/>
     <include file="kinova/attributes.xml"/>
-    <include file="mecanum/attributes.xml"/>
 </mujoco>

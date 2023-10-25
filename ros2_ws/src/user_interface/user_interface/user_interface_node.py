@@ -72,7 +72,8 @@ class UserInterfaceNode(Node):
 
     def kin_fdbk(self, msg: KinFdbk) -> None:
         """Update the Kinova feedback."""
-        for joint in self.interface.joints:
+        for n in range(len(msg.joint_pos)):
+            joint = self.interface.joints[n]
             joint.position = msg.joint_pos[joint.index]
             joint.speed = msg.joint_vel[joint.index]
             joint.current = msg.joint_tor[joint.index]
@@ -81,7 +82,8 @@ class UserInterfaceNode(Node):
 
     def dingo_feedback(self, msg: DinFdbk) -> None:
         """Update the Dingo feedback."""
-        for n, wheel in enumerate(self.interface.wheels):
+        for n in range(len(msg.wheel_pos)):
+            wheel = self.interface.wheels[n]
             last_position = wheel.position
             wheel.encoder_position = msg.wheel_pos[n]
             wheel.speed = wheel.position - last_position

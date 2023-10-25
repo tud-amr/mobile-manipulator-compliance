@@ -5,5 +5,4 @@
         <include file="clearpath/clearpath_dingo_o.xml"/>
     </worldbody>
     <include file="clearpath/attributes.xml"/>
-    <include file="mecanum/attributes.xml"/>
 </mujoco>
