@@ -34,15 +34,31 @@ class Viewer:
         move_target_thread.start()
 
     @property
+    def end_effector(self) -> np.ndarray:
+        """Get the position of the kinova end_effector."""
+        if not self.kinova:
+            return [0, 0, 0]
+        idx = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, "end_effector")
+        return self.data.site_xpos[idx]
+
+    @property
+    def origin_arm(self) -> np.ndarray:
+        """Get the position of the origin of the kinova arm."""
+        if not self.kinova:
+            return [0, 0, 0]
+        idx = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "BASE")
+        return self.data.xpos[idx]
+
+    @property
     def target(self) -> np.ndarray:
         """Get the position of the target mocap body."""
-        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target") - 1
-        return self.data.mocap_pos[body_id]
+        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target")
+        return self.data.mocap_pos[body_id - 1] - self.origin_arm
 
     def update_target(self, pos: np.ndarray) -> None:
         """Update the given marker."""
-        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target") - 1
-        self.data.mocap_pos[body_id] = pos
+        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target")
+        self.data.mocap_pos[body_id - 1] = pos
 
     def move_target_loop(self) -> None:
         """A loop that automatically moves the target."""

@@ -1,12 +1,16 @@
 import rclpy
 import os
 import signal
+import time
 import subprocess
+import numpy as np
 from rclpy.node import Node
 from threading import Thread
 
-from kinova_driver_msg.msg import KinFdbk, KinSts
+from kinova_driver_msg.msg import KinFdbk, KinSts, KinTar
 from kinova_driver_msg.srv import KinSrv
+
+from simulation_msg.srv import SimSrv
 
 from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.kortex_client_simulation import KortexClientSimulation
@@ -22,9 +26,11 @@ class KinovaDriverNode(Node):
 
     def __init__(self) -> None:
         super().__init__("kinova_driver_node")
+        self.create_subscription(KinTar, "/kinova/tar", self.update_target, 10)
         self.create_service(KinSrv, "/kinova/srv", self.service_call)
         self.state_pub = self.create_publisher(KinSts, "/kinova/sts", 10)
         self.pub = self.create_publisher(KinFdbk, "/kinova/fdbk", 10)
+        self.sim_srv = self.create_client(SimSrv, "/sim/srv")
 
         self.state = State()
         self.controllers = Controllers(self.state)
@@ -91,8 +97,10 @@ class KinovaDriverNode(Node):
                     self.controllers.compensate_gravity_and_friction
                 )
             case "Impedance":
+                self.reset_target()
                 self.kortex_client._connect_LLC(self.controllers.impedance)
             case "Cartesian Impedance":
+                self.reset_target()
                 self.kortex_client._connect_LLC(self.controllers.cartesian_impedance)
             case "HL Calibration":
                 self.calibrations.high_level.calibrate_all_joints()
@@ -108,6 +116,18 @@ class KinovaDriverNode(Node):
                 print(f"Service call {name} is unknown.")
 
         self.publish_state()
+
+    def reset_target(self) -> None:
+        """Reset the target."""
+        request = SimSrv.Request()
+        request.name = "ResetTarget"
+        future = self.sim_srv.call_async(request)
+        while not future.done():
+            time.sleep(0.1)
+
+    def update_target(self, msg: KinTar) -> None:
+        """Update the target."""
+        self.state.target = np.array(msg.target)
 
     def pub_fdbk(self) -> None:
         """Publish the joint feedback of Kinova arm."""

@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 import os
 from compliant_control.mujoco.viewer import Viewer
+from kinova_driver_msg.msg import KinTar
 from simulation_msg.msg import SimFdbk, SimCmd, SimCmdInc
 from simulation_msg.srv import SimSrv
 from threading import Thread
@@ -16,6 +17,7 @@ class SimulationNode(Node):
         self.create_subscription(SimCmd, "/sim/cmd", self.cmd, 10)
         self.create_service(SimSrv, "/sim/srv", self.srv)
         self.pub = self.create_publisher(SimFdbk, "/sim/fdbk", 10)
+        self.tar_pub = self.create_publisher(KinTar, "/kinova/tar", 10)
         self.spin_thread = Thread(target=self.start_spin_loop)
         self.sim = Viewer("simulation", self.pub_fdbk)
         self.spin_thread.start()
@@ -30,6 +32,8 @@ class SimulationNode(Node):
                 self.sim.change_mode("torque", request.arg)
             case "ToggleAutomove":
                 self.sim.toggle_automove_target()
+            case "ResetTarget":
+                self.sim.update_target(self.sim.end_effector)
         response.success = True
         return response
 
@@ -59,6 +63,10 @@ class SimulationNode(Node):
             feedback.wheel_vel = self.sim.get_sensor_feedback("Dingo", "velocity")
             feedback.wheel_tor = self.sim.get_sensor_feedback("Dingo", "torque")
         self.pub.publish(feedback)
+
+        target = KinTar()
+        target.target = list(self.sim.target)
+        self.tar_pub.publish(target)
 
     def start_spin_loop(self) -> None:
         """Start the ros spin loop."""

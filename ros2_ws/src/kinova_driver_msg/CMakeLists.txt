@@ -13,6 +13,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/KinFdbk.msg"
   "msg/KinSts.msg"
   "msg/KinCmd.msg"
+  "msg/KinTar.msg"
   "srv/KinSrv.srv"
  )
  
