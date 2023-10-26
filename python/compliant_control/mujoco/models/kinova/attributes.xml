@@ -1,0 +1,66 @@
+<mujoco model="KR7108-URDF">
+  <default>
+    <default class="body">
+      <geom material="body"/>
+    </default>
+  </default>
+  <asset>
+    <texture name="body" type="cube" builtin="flat" mark="cross" width="127" height="1278" rgb1="0.9 0.9 0.9" rgb2="1 1 1" markrgb="0.8 0.8 0.8" random="0.01"/>
+    <material name="body" texture="body" texuniform="true" rgba="0.8 0.8 0.8 1"/>
+    <mesh name="BASE" file="BASE.STL"/>
+    <mesh name="SHOULDER" file="SHOULDER.STL"/>
+    <mesh name="ARM" file="ARM.STL"/>
+    <mesh name="FOREARM" file="FOREARM.STL"/>
+    <mesh name="LOWER_WRIST" file="LOWER_WRIST.STL"/>
+    <mesh name="UPPER_WRIST" file="UPPER_WRIST.STL"/>
+    <mesh name="GRIPPER_FRAME" file="GRIPPER_FRAME.STL"/>
+    <mesh name="RIGHT_FINGER_PROX" file="RIGHT_FINGER_PROX.STL"/>
+    <mesh name="RIGHT_FINGER_DIST" file="RIGHT_FINGER_DIST.STL"/>
+    <mesh name="LEFT_FINGER_PROX" file="LEFT_FINGER_PROX.STL"/>
+    <mesh name="LEFT_FINGER_DIST" file="LEFT_FINGER_DIST.STL"/>
+  </asset>
+  <sensor>
+    <jointpos name="Kinova_position_0" joint="Kinova_0"/>
+    <jointpos name="Kinova_position_1" joint="Kinova_1"/>
+    <jointpos name="Kinova_position_2" joint="Kinova_2"/>
+    <jointpos name="Kinova_position_3" joint="Kinova_3"/>
+    <jointpos name="Kinova_position_4" joint="Kinova_4"/>
+    <jointpos name="Kinova_position_5" joint="Kinova_5"/>
+
+    <jointvel name="Kinova_velocity_0" joint="Kinova_0"/>
+    <jointvel name="Kinova_velocity_1" joint="Kinova_1"/>
+    <jointvel name="Kinova_velocity_2" joint="Kinova_2"/>
+    <jointvel name="Kinova_velocity_3" joint="Kinova_3"/>
+    <jointvel name="Kinova_velocity_4" joint="Kinova_4"/>
+    <jointvel name="Kinova_velocity_5" joint="Kinova_5"/>
+
+    <jointactuatorfrc name="Kinova_torque_0" joint="Kinova_0"/>
+    <jointactuatorfrc name="Kinova_torque_1" joint="Kinova_1"/>
+    <jointactuatorfrc name="Kinova_torque_2" joint="Kinova_2"/>
+    <jointactuatorfrc name="Kinova_torque_3" joint="Kinova_3"/>
+    <jointactuatorfrc name="Kinova_torque_4" joint="Kinova_4"/>
+    <jointactuatorfrc name="Kinova_torque_5" joint="Kinova_5"/>
+  </sensor>
+  <actuator>
+    <position name="Kinova_position_0" joint="Kinova_0" kp="2000"/>
+    <position name="Kinova_position_1" joint="Kinova_1" kp="1000"/>
+    <position name="Kinova_position_2" joint="Kinova_2" kp="500"/>
+    <position name="Kinova_position_3" joint="Kinova_3" kp="100"/>
+    <position name="Kinova_position_4" joint="Kinova_4" kp="50"/>
+    <position name="Kinova_position_5" joint="Kinova_5" kp="1"/>
+
+    <velocity name="Kinova_velocity_0" joint="Kinova_0" kv="1"/>
+    <velocity name="Kinova_velocity_1" joint="Kinova_1" kv="50"/>
+    <velocity name="Kinova_velocity_2" joint="Kinova_2" kv="5"/>
+    <velocity name="Kinova_velocity_3" joint="Kinova_3" kv="1"/>
+    <velocity name="Kinova_velocity_4" joint="Kinova_4" kv="0.5"/>
+    <velocity name="Kinova_velocity_5" joint="Kinova_5" kv="0.01"/>
+
+    <motor name="Kinova_torque_0" joint="Kinova_0"/>
+    <motor name="Kinova_torque_1" joint="Kinova_1"/>
+    <motor name="Kinova_torque_2" joint="Kinova_2"/>
+    <motor name="Kinova_torque_3" joint="Kinova_3"/>
+    <motor name="Kinova_torque_4" joint="Kinova_4"/>
+    <motor name="Kinova_torque_5" joint="Kinova_5"/>
+  </actuator>
+</mujoco>

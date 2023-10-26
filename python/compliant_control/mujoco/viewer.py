@@ -2,7 +2,7 @@ from typing import Literal
 import importlib.resources as pkg_resources
 import mujoco.viewer
 from mujoco import MjModel, MjData, mj_name2id, mjtObj
-import compliant_control.simulation.models as models
+import compliant_control.mujoco.models as models
 import time
 import re
 from compliant_control.interface.window_commands import WindowCommands
@@ -14,11 +14,14 @@ SYNC_RATE = 60
 MODEL = "arm_and_base.xml"
 
 
-class Simulation:
-    """Provides the mujoco visualization of the robot."""
+class Viewer:
+    """Provides the mujoco simulation or visualization of the robot."""
 
-    def __init__(self, callback: callable) -> None:
-        self.callback = callback
+    def __init__(
+        self, mode: Literal["simulation", "visualization"], sim_cb: callable = None
+    ) -> None:
+        self.mode: Literal["simulation", "visualization"] = mode
+        self.sim_cb = sim_cb
         xml = str(pkg_resources.files(models) / MODEL)
         self.model = MjModel.from_xml_path(xml)
         self.data = MjData(self.model)
@@ -107,6 +110,23 @@ class Simulation:
         idx = mj_name2id(self.model, mjtObj.mjOBJ_ACTUATOR, f"{robot}_{prop}_{joint}")
         self.data.ctrl[idx] += increment
 
+    def set_qpos_value(
+        self,
+        robot: Literal["Kinova", "Dingo"],
+        prop: Literal["position", "velocity"],
+        values: list[float],
+    ) -> None:
+        """Set the joint position or velocity for kinova arm or dingo base."""
+        for n, value in enumerate(values):
+            idx = mj_name2id(self.model, mjtObj.mjOBJ_JOINT, f"{robot}_{n}")
+            match prop:
+                case "position":
+                    idpos = self.model.jnt_qposadr[idx]
+                    self.data.qpos[idpos] = value
+                case "velocity":
+                    idvel = self.model.jnt_dofadr[idx]
+                    self.data.qvel[idvel]
+
     def change_mode(self, mode: Literal["position", "torque"], joint: int) -> None:
         """Change the control mode of the Kinova arm."""
         idx = mj_name2id(self.model, mjtObj.mjOBJ_ACTUATOR, f"Kinova_position_{joint}")
@@ -126,7 +146,13 @@ class Simulation:
             self.model.actuator_gainprm[idx][0] = 0
 
     def start(self) -> None:
-        """Start a mujoco simulation without rendering."""
+        """Start a mujoco simulation."""
+        match self.mode:
+            case "simulation":
+                step = self.sim_step
+            case "visualization":
+                step = self.vis_step
+
         self.load_window_commands()
         viewer = mujoco.viewer.launch_passive(
             self.model, self.data, key_callback=self.key_callback
@@ -136,8 +162,7 @@ class Simulation:
         sync = time.time()
         while self.active:
             step_start = time.time()
-            mujoco.mj_step(self.model, self.data)
-            self.callback()
+            step()
             if time.time() > sync + (1 / SYNC_RATE):
                 viewer.sync()
                 sync = time.time()
@@ -149,6 +174,15 @@ class Simulation:
             time_until_next_step = self.model.opt.timestep - (time.time() - step_start)
             if time_until_next_step > 0:
                 time.sleep(time_until_next_step)
+
+    def sim_step(self) -> None:
+        """Perform a simulation step."""
+        mujoco.mj_step(self.model, self.data)
+        self.sim_cb()
+
+    def vis_step(self) -> None:
+        """Perform a visualization step."""
+        mujoco.mj_forward(self.model, self.data)
 
     def key_callback(self, key: int) -> None:
         """Key callback."""

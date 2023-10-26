@@ -2,7 +2,7 @@
     <include file="world/attributes.xml"/>
     <worldbody>
         <include file="world/world.xml"/>
-        <include file="kinova/kinova_gen3_lite.xml"/>
+        <include file="kinova/gen3_lite.xml"/>
     </worldbody>
     <include file="kinova/attributes.xml"/>
 </mujoco>

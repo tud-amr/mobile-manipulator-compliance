@@ -1,14 +1,14 @@
 import rclpy
 from rclpy.node import Node
 import os
-from compliant_control.simulation.simulation import Simulation
+from compliant_control.mujoco.viewer import Viewer
 from simulation_msg.msg import SimFdbk, SimCmd, SimCmdInc
 from simulation_msg.srv import SimSrv
 from threading import Thread
 
 
 class SimulationNode(Node):
-    """A node that starts the driver or a simulation of the Kinova arm."""
+    """A node that starts a simulation of the robot."""
 
     def __init__(self) -> None:
         super().__init__("simulation_node")
@@ -17,7 +17,7 @@ class SimulationNode(Node):
         self.create_service(SimSrv, "/sim/srv", self.srv)
         self.pub = self.create_publisher(SimFdbk, "/sim/fdbk", 10)
         self.spin_thread = Thread(target=self.start_spin_loop)
-        self.sim = Simulation(self.pub_fdbk)
+        self.sim = Viewer("simulation", self.pub_fdbk)
         self.spin_thread.start()
         self.sim.start()
 

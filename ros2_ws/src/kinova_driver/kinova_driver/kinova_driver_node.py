@@ -26,27 +26,24 @@ class KinovaDriverNode(Node):
         self.state_pub = self.create_publisher(KinSts, "/kinova/sts", 10)
         self.pub = self.create_publisher(KinFdbk, "/kinova/fdbk", 10)
 
-        if self.ip_available():
-            self.start_driver()
-        else:
-            self.start_simulation()
-
+        self.state = State()
         self.controllers = Controllers(self.state)
-        self.calibrations = Calibrations(self.state, self.kortex_client)
 
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
-        self.publish_state()
 
-        signal.signal(signal.SIGINT, self.kortex_client.stop_refresh_loop)
-        self.kortex_client.start_refresh_loop()
+        if self.ip_available():
+            self.state.simulation = False
+            self.start_driver()
+        else:
+            self.state.simulation = True
+            self.start_simulation()
 
     def start_simulation(self) -> None:
         """Start a simulation of the Kinova arm."""
         print("Kinova arm not found, starting simulation...")
         self.kortex_client = KortexClientSimulation(self)
-        self.state = State(True, self.kortex_client.actuator_count)
-        self.kortex_client.feedback_callback = self.publish_feedback
+        self.start_kortex()
 
     def start_driver(self) -> None:
         """Start the driver for the Kinova arm."""
@@ -54,8 +51,15 @@ class KinovaDriverNode(Node):
             self.kortex_client = KortexClient(
                 router=router, real_time_router=real_time_router
             )
-            self.state = State(False, self.kortex_client.actuator_count)
-            self.kortex_client.feedback_callback = self.publish_feedback
+            self.start_kortex()
+
+    def start_kortex(self) -> None:
+        """Start kortex."""
+        self.kortex_client.feedback_callback = self.pub_fdbk
+        self.calibrations = Calibrations(self.state, self.kortex_client)
+        signal.signal(signal.SIGINT, self.kortex_client.stop_refresh_loop)
+        self.publish_state()
+        self.kortex_client.start_refresh_loop()
 
     def service_call(
         self, request: KinSrv.Request, response: KinSrv.Response
@@ -105,7 +109,7 @@ class KinovaDriverNode(Node):
 
         self.publish_state()
 
-    def publish_feedback(self) -> None:
+    def pub_fdbk(self) -> None:
         """Publish the joint feedback of Kinova arm."""
         feedback = KinFdbk()
         feedback.update_rate = self.kortex_client.get_update_rate()

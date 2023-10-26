@@ -6,7 +6,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "dingo_driver_msg/msg/din_fdbk.hpp"
 #include "dingo_driver_msg/msg/din_cmd.hpp"
-#include "dingo_driver_msg/srv/set_gain.hpp"
 #include "dingo_driver/dingo_driver.h"
 
 struct Wheel
@@ -44,7 +43,7 @@ public:
         for (auto &wheel : wheels_)
         {
             wheel.command = command.wheel_command[n];
-            driver_manager_.command(wheel.name, "Vol", wheel.command);
+            // driver_manager_.command(wheel.name, "Vol", wheel.command);
             n++;
         }
     }
@@ -76,7 +75,6 @@ public:
 private:
     rclcpp::Publisher<dingo_driver_msg::msg::DinFdbk>::SharedPtr publisher_;
     rclcpp::Subscription<dingo_driver_msg::msg::DinCmd>::SharedPtr subscription_;
-    rclcpp::Service<dingo_driver_msg::srv::SetGain>::SharedPtr service_;
     dingo_driver::DriverManager driver_manager_;
     std::vector<Wheel> wheels_ = {Wheel("front_left_wheel", 2), Wheel("front_right_wheel", 3), Wheel("rear_left_wheel", 4), Wheel("rear_right_wheel", 5)};
 };

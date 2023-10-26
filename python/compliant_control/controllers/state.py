@@ -1,13 +1,15 @@
 import importlib.resources as pkg_resources
 import numpy as np
 import pinocchio
-import compliant_control.simulation.models as models
+import compliant_control.mujoco.models as models
+
+JOINTS = 6
 
 
 class State:
     """Contains the state of the robot."""
 
-    def __init__(self, simulation: bool, actuator_count: int) -> None:
+    def __init__(self) -> None:
         self.load_robot()
 
         self.target: np.ndarray
@@ -18,22 +20,35 @@ class State:
         self.J: np.ndarray
         self.dJ: np.ndarray
 
-        self.active = [True] * actuator_count
-        self.q = np.empty(actuator_count)
-        self.dq = np.empty(actuator_count)
-        self.current_torque_ratios = (
+        self.simulation = False
+        self.active = [True] * JOINTS
+        self.q = np.empty(JOINTS)
+        self.dq = np.empty(JOINTS)
+
+    @property
+    def current_torque_ratios(self) -> None:
+        """Return the current torque ratios."""
+        return (
             {0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}
-            if simulation
+            if self.simulation
             else {0: 1, 1: 0.316, 2: 1.02, 3: 2.58, 4: 2.02, 5: 1}
         )
-        self.dynamic_frictions = (
+
+    @property
+    def static_frictions(self) -> dict:
+        """Return the static frictions."""
+        return (
             {0: 0.2, 1: 0.2, 2: 0.2, 3: 0.2, 4: 0.2, 5: 0.2}
-            if simulation
+            if self.simulation
             else {0: 0.55, 1: 1.1, 2: 0.55, 3: 0.11, 4: 0.13, 5: 0.33}
         )
-        self.static_frictions = (
+
+    @property
+    def dynamic_frictions(self) -> dict:
+        """Return the dynamic frictions."""
+        return (
             {0: 0.2, 1: 0.2, 2: 0.2, 3: 0.2, 4: 0.2, 5: 0.2}
-            if simulation
+            if self.simulation
             else {0: 0.622, 1: 0.875, 2: 0.747, 3: 0.551, 4: 0.694, 5: 0.565}
         )
 

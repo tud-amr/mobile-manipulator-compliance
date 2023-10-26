@@ -2,111 +2,9 @@
   <body name="base" pos="0 0 0.02">
     <joint name="D_J_B" type="free" damping="50"/>
     <geom type="mesh" mesh="omni_chassis_collision"/>
-    <body name="right_front_wheel_link" pos="0.35 -0.22 0.05">
-      <inertial pos="0 -0.011 0" quat="0.707107 0 0 0.707107" mass="0.25" diaginertia="0.0005 0.00031 0.00031"/>
-      <joint name="D_J_FR" pos="0 0 0" axis="0 1 0" frictionloss="1"/>
-      <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="wheel_link"/>
-      <geom type="mesh" mesh="mecanum_wheel"/>
-      <body name="r1_RF_roller_link" pos="-0.006546 -0.0143 0.066466" quat="0.923348 -0.0312347 -0.015772 0.382365">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r1_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r2_RF_roller_link" pos="-0.031483 -0.0143 0.058902" quat="0.91262 -0.135919 -0.115839 0.367739">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r2_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r3_RF_roller_link" pos="-0.051628 -0.0143 0.04237" quat="0.89167 -0.201484 -0.248451 0.320313">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r3_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r4_RE_roller_link" pos="-0.063912 -0.0143 0.019388" quat="0.858046 -0.265662 -0.365241 0.244497">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r4_RE_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r5_RF_roller_link" pos="-0.066466 -0.0143 -0.006546" quat="0.814668 -0.352228 -0.429108 0.167683">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r5_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r6_RF_roller_link" pos="-0.058902 -0.0143 -0.031483" quat="0.77072 -0.383656 -0.504982 0.0615824">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r6_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r7_RF_roller_link" pos="-0.04237 -0.0143 -0.051628" quat="0.724037 -0.368972 -0.57817 -0.0731418">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r7_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r8_RF_roller_link" pos="-0.019388 -0.0143 -0.063912" quat="0.679938 -0.334158 -0.622261 -0.197012">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r8_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r9_RF_roller_link" pos="0.006546 -0.0143 -0.066466" quat="0.923348 0.0312347 -0.015772 -0.382365">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r9_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r10_RF_roller_link" pos="0.031483 -0.0143 -0.058902" quat="0.91262 0.135919 -0.115839 -0.367739">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r10_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r11_RF_roller_link" pos="0.051628 -0.0143 -0.04237" quat="0.89167 0.201484 -0.248451 -0.320313">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r11_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r12_RF_roller_link" pos="0.063912 -0.0143 -0.019388" quat="0.858046 0.265662 -0.365241 -0.244497">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r12_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r13_RF_roller_link" pos="0.066466 -0.0143 0.006546" quat="0.814668 0.352228 -0.429108 -0.167683">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r13_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r14_RF_roller_link" pos="0.058902 -0.0143 0.031483" quat="0.77072 0.383656 -0.504982 -0.0615824">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r14_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r15_RF_roller_link" pos="0.04237 -0.0143 0.051628" quat="0.724037 0.368972 -0.57817 0.0731418">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r15_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-      <body name="r16_RF_roller_link" pos="0.019388 -0.0143 0.063912" quat="0.679938 0.334158 -0.622261 0.197012">
-        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r16_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
-        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
-        <geom type="mesh" mesh="roller"/>
-      </body>
-    </body>
     <body name="left_front_wheel_link" pos="0.35 0.22 0.05" quat="-4.32051e-08 0 0 1">
       <inertial pos="0 -0.011 0" quat="0.707107 0 0 0.707107" mass="0.25" diaginertia="0.0005 0.00031 0.00031"/>
-      <joint name="D_J_FL" pos="0 0 0" axis="0 -1 0" frictionloss="1"/>
+      <joint name="Dingo_0" pos="0 0 0" axis="0 -1 0" frictionloss="1"/>
       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="wheel_link"/>
       <geom type="mesh" mesh="mecanum_wheel"/>
       <body name="r1_LF_roller_link" pos="0.006546 -0.0143 0.066466" quat="0.923278 -0.0332387 0.0109338 -0.382534">
@@ -206,111 +104,111 @@
         <geom type="mesh" mesh="roller"/>
       </body>
     </body>
-    <body name="right_rear_wheel_link" pos="-0.35 -0.22 0.05">
+    <body name="right_front_wheel_link" pos="0.35 -0.22 0.05">
       <inertial pos="0 -0.011 0" quat="0.707107 0 0 0.707107" mass="0.25" diaginertia="0.0005 0.00031 0.00031"/>
-      <joint name="D_J_RR" pos="0 0 0" axis="0 1 0" frictionloss="1"/>
+      <joint name="Dingo_1" pos="0 0 0" axis="0 1 0" frictionloss="1"/>
       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="wheel_link"/>
       <geom type="mesh" mesh="mecanum_wheel"/>
-      <body name="r1_RR_roller_link" pos="0.006546 -0.0143 0.066466" quat="0.923278 -0.0332387 0.0109338 -0.382534">
+      <body name="r1_RF_roller_link" pos="-0.006546 -0.0143 0.066466" quat="0.923348 -0.0312347 -0.015772 0.382365">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r1_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r1_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r2_RR_roller_link" pos="0.031483 -0.0143 0.058902" quat="0.68927 -0.364732 -0.604417 -0.162966">
+      <body name="r2_RF_roller_link" pos="-0.031483 -0.0143 0.058902" quat="0.91262 -0.135919 -0.115839 0.367739">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r2_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r2_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r3_RR_roller_link" pos="0.051628 -0.0143 0.04237" quat="0.742991 -0.356287 -0.565773 -0.0304195">
+      <body name="r3_RF_roller_link" pos="-0.051628 -0.0143 0.04237" quat="0.89167 -0.201484 -0.248451 0.320313">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r3_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r3_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r4_RR_roller_link" pos="0.063912 -0.0143 0.019388" quat="0.788265 -0.367296 -0.483496 0.0998173">
+      <body name="r4_RE_roller_link" pos="-0.063912 -0.0143 0.019388" quat="0.858046 -0.265662 -0.365241 0.244497">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r4_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r4_RE_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r5_RR_roller_link" pos="0.066466 -0.0143 -0.006546" quat="0.829388 -0.328403 -0.407652 0.195157">
+      <body name="r5_RF_roller_link" pos="-0.066466 -0.0143 -0.006546" quat="0.814668 -0.352228 -0.429108 0.167683">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r5_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r5_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r6_RR_roller_link" pos="0.058902 -0.0143 -0.031483" quat="0.869564 -0.239704 -0.339165 0.267147">
+      <body name="r6_RF_roller_link" pos="-0.058902 -0.0143 -0.031483" quat="0.77072 -0.383656 -0.504982 0.0615824">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r6_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r6_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r7_RR_roller_link" pos="0.04237 -0.0143 -0.051628" quat="0.897978 -0.171191 -0.237468 0.328538">
+      <body name="r7_RF_roller_link" pos="-0.04237 -0.0143 -0.051628" quat="0.724037 -0.368972 -0.57817 -0.0731418">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r7_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r7_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r8_RR_roller_link" pos="0.019388 -0.0143 -0.063912" quat="0.919963 -0.0708351 -0.0894593 0.37503">
+      <body name="r8_RF_roller_link" pos="-0.019388 -0.0143 -0.063912" quat="0.679938 -0.334158 -0.622261 -0.197012">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r8_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r8_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r9_RR_roller_link" pos="-0.006546 -0.0143 -0.066466" quat="0.923278 0.0332387 0.0109338 0.382534">
+      <body name="r9_RF_roller_link" pos="0.006546 -0.0143 -0.066466" quat="0.923348 0.0312347 -0.015772 -0.382365">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r9_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r9_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r10_RR_roller_link" pos="-0.031483 -0.0143 -0.058902" quat="0.68927 0.364732 -0.604417 0.162966">
+      <body name="r10_RF_roller_link" pos="0.031483 -0.0143 -0.058902" quat="0.91262 0.135919 -0.115839 -0.367739">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r10_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r10_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r11_RR_roller_link" pos="-0.051628 -0.0143 -0.04237" quat="0.742991 0.356287 -0.565773 0.0304195">
+      <body name="r11_RF_roller_link" pos="0.051628 -0.0143 -0.04237" quat="0.89167 0.201484 -0.248451 -0.320313">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r11_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r11_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r12_RR_roller_link" pos="-0.063912 -0.0143 -0.019388" quat="0.788265 0.367296 -0.483496 -0.0998173">
+      <body name="r12_RF_roller_link" pos="0.063912 -0.0143 -0.019388" quat="0.858046 0.265662 -0.365241 -0.244497">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r12_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r12_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r13_RR_roller_link" pos="-0.066466 -0.0143 0.006546" quat="0.829388 0.328403 -0.407652 -0.195157">
+      <body name="r13_RF_roller_link" pos="0.066466 -0.0143 0.006546" quat="0.814668 0.352228 -0.429108 -0.167683">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r13_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r13_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r14_RR_roller_link" pos="-0.058902 -0.0143 0.031483" quat="0.869564 0.239704 -0.339165 -0.267147">
+      <body name="r14_RF_roller_link" pos="0.058902 -0.0143 0.031483" quat="0.77072 0.383656 -0.504982 -0.0615824">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r14_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r14_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r15_RR_roller_link" pos="-0.04237 -0.0143 0.051628" quat="0.897978 0.171191 -0.237468 -0.328538">
+      <body name="r15_RF_roller_link" pos="0.04237 -0.0143 0.051628" quat="0.724037 0.368972 -0.57817 0.0731418">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r15_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r15_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
-      <body name="r16_RR_roller_link" pos="-0.019388 -0.0143 0.063912" quat="0.919963 0.0708351 -0.0894593 -0.37503">
+      <body name="r16_RF_roller_link" pos="0.019388 -0.0143 0.063912" quat="0.679938 0.334158 -0.622261 0.197012">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
-        <joint name="r16_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <joint name="r16_RF_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>
     </body>
     <body name="left_rear_wheel_link" pos="-0.35 0.22 0.05" quat="-4.32051e-08 0 0 1">
       <inertial pos="0 -0.011 0" quat="0.707107 0 0 0.707107" mass="0.25" diaginertia="0.0005 0.00031 0.00031"/>
-      <joint name="D_J_RL" pos="0 0 0" axis="0 -1 0" frictionloss="1"/>
+      <joint name="Dingo_2" pos="0 0 0" axis="0 -1 0" frictionloss="1"/>
       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="wheel_link"/>
       <geom type="mesh" mesh="mecanum_wheel"/>
       <body name="r1_LR_roller_link" pos="-0.006546 -0.0143 0.066466" quat="0.923348 -0.0312347 -0.015772 0.382365">
@@ -406,6 +304,108 @@
       <body name="r16_LR_roller_link" pos="0.019388 -0.0143 0.063912" quat="0.679938 0.334158 -0.622261 0.197012">
         <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
         <joint name="r16_LR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+    </body>
+    <body name="right_rear_wheel_link" pos="-0.35 -0.22 0.05">
+      <inertial pos="0 -0.011 0" quat="0.707107 0 0 0.707107" mass="0.25" diaginertia="0.0005 0.00031 0.00031"/>
+      <joint name="Dingo_3" pos="0 0 0" axis="0 1 0" frictionloss="1"/>
+      <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="wheel_link"/>
+      <geom type="mesh" mesh="mecanum_wheel"/>
+      <body name="r1_RR_roller_link" pos="0.006546 -0.0143 0.066466" quat="0.923278 -0.0332387 0.0109338 -0.382534">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r1_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r2_RR_roller_link" pos="0.031483 -0.0143 0.058902" quat="0.68927 -0.364732 -0.604417 -0.162966">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r2_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r3_RR_roller_link" pos="0.051628 -0.0143 0.04237" quat="0.742991 -0.356287 -0.565773 -0.0304195">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r3_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r4_RR_roller_link" pos="0.063912 -0.0143 0.019388" quat="0.788265 -0.367296 -0.483496 0.0998173">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r4_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r5_RR_roller_link" pos="0.066466 -0.0143 -0.006546" quat="0.829388 -0.328403 -0.407652 0.195157">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r5_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r6_RR_roller_link" pos="0.058902 -0.0143 -0.031483" quat="0.869564 -0.239704 -0.339165 0.267147">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r6_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r7_RR_roller_link" pos="0.04237 -0.0143 -0.051628" quat="0.897978 -0.171191 -0.237468 0.328538">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r7_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r8_RR_roller_link" pos="0.019388 -0.0143 -0.063912" quat="0.919963 -0.0708351 -0.0894593 0.37503">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r8_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r9_RR_roller_link" pos="-0.006546 -0.0143 -0.066466" quat="0.923278 0.0332387 0.0109338 0.382534">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r9_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r10_RR_roller_link" pos="-0.031483 -0.0143 -0.058902" quat="0.68927 0.364732 -0.604417 0.162966">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r10_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r11_RR_roller_link" pos="-0.051628 -0.0143 -0.04237" quat="0.742991 0.356287 -0.565773 0.0304195">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r11_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r12_RR_roller_link" pos="-0.063912 -0.0143 -0.019388" quat="0.788265 0.367296 -0.483496 -0.0998173">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r12_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r13_RR_roller_link" pos="-0.066466 -0.0143 0.006546" quat="0.829388 0.328403 -0.407652 -0.195157">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r13_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r14_RR_roller_link" pos="-0.058902 -0.0143 0.031483" quat="0.869564 0.239704 -0.339165 -0.267147">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r14_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r15_RR_roller_link" pos="-0.04237 -0.0143 0.051628" quat="0.897978 0.171191 -0.237468 -0.328538">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r15_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
+        <geom type="mesh" mesh="roller"/>
+      </body>
+      <body name="r16_RR_roller_link" pos="-0.019388 -0.0143 0.063912" quat="0.919963 0.0708351 -0.0894593 -0.37503">
+        <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="0.009" diaginertia="1.257e-06 1.257e-06 3.42e-07"/>
+        <joint name="r16_RR_roller_joint" pos="0 0 0" axis="0 1 0" frictionloss="0.1"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="roller"/>
         <geom type="mesh" mesh="roller"/>
       </body>

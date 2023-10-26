@@ -2,7 +2,7 @@
     <include file="world/attributes.xml"/>
     <worldbody>
         <include file="world/world.xml"/>
-        <include file="clearpath/clearpath_dingo_o.xml"/>
+        <include file="clearpath/dingo.xml"/>
     </worldbody>
     <include file="clearpath/attributes.xml"/>
 </mujoco>

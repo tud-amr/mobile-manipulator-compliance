@@ -1,0 +1,30 @@
+<mujoco model="dingo">
+  <asset>
+    <mesh name="omni_chassis_collision" file="omni_chassis_collision.stl"/>
+    <mesh name="wheel_link" file="wheel_link.stl"/>
+    <mesh name="mecanum_wheel" file="mecanum_wheel.stl"/>
+    <mesh name="roller" file="roller.stl"/>
+  </asset>
+  <sensor>
+    <jointpos name="Dingo_position_0" joint="Dingo_0"/>
+    <jointpos name="Dingo_position_1" joint="Dingo_1"/>
+    <jointpos name="Dingo_position_2" joint="Dingo_2"/>
+    <jointpos name="Dingo_position_3" joint="Dingo_3"/>
+
+    <jointvel name="Dingo_velocity_0" joint="Dingo_0"/>
+    <jointvel name="Dingo_velocity_1" joint="Dingo_1"/>
+    <jointvel name="Dingo_velocity_2" joint="Dingo_2"/>
+    <jointvel name="Dingo_velocity_3" joint="Dingo_3"/>
+
+    <jointactuatorfrc name="Dingo_torque_0" joint="Dingo_0"/>
+    <jointactuatorfrc name="Dingo_torque_1" joint="Dingo_1"/>
+    <jointactuatorfrc name="Dingo_torque_2" joint="Dingo_2"/>
+    <jointactuatorfrc name="Dingo_torque_3" joint="Dingo_3"/>
+  </sensor>
+  <actuator>
+    <motor name="Dingo_torque_0" joint="Dingo_0"/>
+    <motor name="Dingo_torque_1" joint="Dingo_1"/>
+    <motor name="Dingo_torque_2" joint="Dingo_2"/>
+    <motor name="Dingo_torque_3" joint="Dingo_3"/>
+  </actuator>
+</mujoco>
