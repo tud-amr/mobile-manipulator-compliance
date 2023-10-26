@@ -19,7 +19,7 @@ class SimulationNode(Node):
         self.pub = self.create_publisher(SimFdbk, "/sim/fdbk", 10)
         self.tar_pub = self.create_publisher(KinTar, "/kinova/tar", 10)
         self.spin_thread = Thread(target=self.start_spin_loop)
-        self.sim = Viewer("simulation", self.pub_fdbk)
+        self.sim = Viewer("simulation", self.step_callback)
         self.spin_thread.start()
         self.sim.start()
 
@@ -51,8 +51,13 @@ class SimulationNode(Node):
             case "Dingo" if self.sim.dingo:
                 self.sim.set_ctrl_value(msg.robot, "torque", msg.joint_tor)
 
-    def pub_fdbk(self) -> None:
-        """Publish the simulation feedback."""
+    def step_callback(self) -> None:
+        """Callback that is called every simulation step."""
+        self.publish_feedback()
+        self.publish_target()
+
+    def publish_feedback(self) -> None:
+        """Publish the robot feedback."""
         feedback = SimFdbk()
         if self.sim.kinova:
             feedback.joint_pos = self.sim.get_sensor_feedback("Kinova", "position")
@@ -64,6 +69,8 @@ class SimulationNode(Node):
             feedback.wheel_tor = self.sim.get_sensor_feedback("Dingo", "torque")
         self.pub.publish(feedback)
 
+    def publish_target(self) -> None:
+        """Publish the target."""
         target = KinTar()
         target.target = list(self.sim.target)
         self.tar_pub.publish(target)

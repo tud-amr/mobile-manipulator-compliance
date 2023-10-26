@@ -18,10 +18,10 @@ class Viewer:
     """Provides the mujoco simulation or visualization of the robot."""
 
     def __init__(
-        self, mode: Literal["simulation", "visualization"], sim_cb: callable = None
+        self, mode: Literal["simulation", "visualization"], step_cb: callable = None
     ) -> None:
         self.mode: Literal["simulation", "visualization"] = mode
-        self.sim_cb = sim_cb
+        self.step_cb = step_cb
         xml = str(pkg_resources.files(models) / MODEL)
         self.model = MjModel.from_xml_path(xml)
         self.data = MjData(self.model)
@@ -179,6 +179,7 @@ class Viewer:
         while self.active:
             step_start = time.time()
             step()
+            self.step_cb()
             if time.time() > sync + (1 / SYNC_RATE):
                 viewer.sync()
                 sync = time.time()
@@ -194,7 +195,6 @@ class Viewer:
     def sim_step(self) -> None:
         """Perform a simulation step."""
         mujoco.mj_step(self.model, self.data)
-        self.sim_cb()
 
     def vis_step(self) -> None:
         """Perform a visualization step."""
