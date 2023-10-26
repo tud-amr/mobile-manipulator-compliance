@@ -72,7 +72,7 @@ class SimulationNode(Node):
     def publish_target(self) -> None:
         """Publish the target."""
         target = KinTar()
-        target.target = list(self.sim.target)
+        target.target = list(self.sim.relative_target)
         self.tar_pub.publish(target)
 
     def start_spin_loop(self) -> None:

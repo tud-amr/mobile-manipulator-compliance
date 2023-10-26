@@ -53,7 +53,12 @@ class Viewer:
     def target(self) -> np.ndarray:
         """Get the position of the target mocap body."""
         body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target")
-        return self.data.mocap_pos[body_id - 1] - self.origin_arm
+        return self.data.mocap_pos[body_id - 1]
+
+    @property
+    def relative_target(self) -> np.ndarray:
+        """Get the target position in the arm frame."""
+        return self.target - self.origin_arm
 
     def update_target(self, pos: np.ndarray) -> None:
         """Update the given marker."""
