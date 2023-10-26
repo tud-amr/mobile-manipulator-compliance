@@ -29,9 +29,10 @@ namespace dingo_driver
     struct Actuator
     {
     public:
-        Actuator(std::string name, puma_motor_driver::Driver driver);
+        Actuator(std::string name, puma_motor_driver::Driver driver, bool flip);
         puma_motor_driver::Driver *get_driver();
         dingo_driver::State state;
+        int flip_value;
 
     private:
         puma_motor_driver::Driver driver_;
@@ -62,8 +63,9 @@ namespace dingo_driver
          *
          * @param can_id "The can id of the actuator."
          * @param name "The name of the actuator."
+         * @param flip "Wether the actuator is flipped."
          */
-        void add_actuator(int can_id, std::string name);
+        void add_actuator(int can_id, std::string name, bool flip);
 
         /**
          * @brief Initialize the encoders for all actuators.

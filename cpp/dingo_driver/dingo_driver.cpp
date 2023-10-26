@@ -5,7 +5,7 @@
 
 namespace dingo_driver
 {
-    Actuator::Actuator(std::string name, puma_motor_driver::Driver driver) : driver_(driver)
+    Actuator::Actuator(std::string name, puma_motor_driver::Driver driver, bool flip) : driver_(driver), flip_value(flip ? -1 : 1)
     {
         state.name = name;
     }
@@ -37,10 +37,10 @@ namespace dingo_driver
         std::cout << "Already connected to gateway." << std::endl;
     }
 
-    void DriverManager::add_actuator(int can_id, std::string name)
+    void DriverManager::add_actuator(int can_id, std::string name, bool flip)
     {
         puma_motor_driver::Driver driver(*gateway_, can_id, name);
-        Actuator actuator(name, driver);
+        Actuator actuator(name, driver, flip);
         actuators_.insert({name, actuator});
         gateway_->addDriver(get_actuator_(name)->get_driver());
     }
@@ -85,9 +85,9 @@ namespace dingo_driver
                 start = std::chrono::steady_clock::now();
             }
             state.name = driver->deviceName();
-            state.position = driver->lastPosition();
-            state.speed = driver->lastSpeed();
-            state.voltage = driver->lastOutVoltage();
+            state.position = driver->lastPosition() * actuator.flip_value;
+            state.speed = driver->lastSpeed() * actuator.flip_value;
+            state.voltage = driver->lastOutVoltage() * actuator.flip_value;
             state.current = driver->lastCurrent();
             states.push_back(state);
         }
@@ -148,9 +148,12 @@ namespace dingo_driver
     void DriverManager::command(std::string name, std::string mode, double value)
     {
         puma_motor_driver::Driver *driver;
+        int flip_value;
         try
         {
-            driver = get_actuator_(name)->get_driver();
+            dingo_driver::Actuator* actuator = get_actuator_(name);
+            driver = actuator->get_driver();
+            flip_value = actuator->flip_value;
         }
         catch (std::invalid_argument &exception)
         {
@@ -160,7 +163,7 @@ namespace dingo_driver
 
         if (mode == "Vol")
         {
-            driver->commandDutyCycle(value);
+            driver->commandDutyCycle(value * flip_value);
         }
         else if (mode == "Cur")
         {

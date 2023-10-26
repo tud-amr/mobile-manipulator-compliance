@@ -41,16 +41,14 @@ class Wheel:
     @staticmethod
     def calculate_torques(direction: list) -> list:
         """Calculate the required wheel torques to move in the given direction."""
-        m = np.linalg.norm(direction) * 3
+        m = np.linalg.norm(direction)
         angle = np.arctan2(*direction)
 
         orientations = ["l", "r", "r", "l"]
-        side = ["l", "r", "l", "r"]
         torques = []
         for n in range(4):
             orientation = orientations[n]
             torque = Wheel.calculate_torque(angle, orientation) * m
-            torque *= 1 if side[n] == "l" else 1
             torques.append(torque)
         return torques
 

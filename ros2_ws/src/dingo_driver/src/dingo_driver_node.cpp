@@ -10,7 +10,9 @@
 
 struct Wheel
 {
-    Wheel(std::string name_, int canbus_id_) : name(name_), canbus_id(canbus_id_), command(0) {}
+    Wheel(std::string FR_, std::string LR_, int canbus_id_) : FR(FR_), LR(LR_), name(FR_ + "_" + LR_), canbus_id(canbus_id_), command(0) {}
+    std::string FR;
+    std::string LR;
     std::string name;
     int canbus_id;
     float command;
@@ -31,7 +33,7 @@ public:
         driver_manager_.connect_gateway();
         for (auto &wheel : wheels_)
         {
-            driver_manager_.add_actuator(wheel.canbus_id, wheel.name);
+            driver_manager_.add_actuator(wheel.canbus_id, wheel.name, wheel.LR == "right");
             driver_manager_.set_mode(wheel.name, "Vol");
         }
         driver_manager_.initialize_encoders();
@@ -42,8 +44,10 @@ public:
         int n = 0;
         for (auto &wheel : wheels_)
         {
-            wheel.command = command.wheel_command[n];
-            // driver_manager_.command(wheel.name, "Vol", wheel.command);
+            wheel.command = command.wheel_command[n] * gain_;
+            wheel.command = wheel.command > limit_ ? limit_ : wheel.command;
+            wheel.command = wheel.command < -limit_ ? -limit_ : wheel.command;
+            driver_manager_.command(wheel.name, "Vol", wheel.command);
             n++;
         }
     }
@@ -76,7 +80,9 @@ private:
     rclcpp::Publisher<dingo_driver_msg::msg::DinFdbk>::SharedPtr publisher_;
     rclcpp::Subscription<dingo_driver_msg::msg::DinCmd>::SharedPtr subscription_;
     dingo_driver::DriverManager driver_manager_;
-    std::vector<Wheel> wheels_ = {Wheel("front_left_wheel", 2), Wheel("front_right_wheel", 3), Wheel("rear_left_wheel", 4), Wheel("rear_right_wheel", 5)};
+    std::vector<Wheel> wheels_ = {Wheel("front", "left", 2), Wheel("front", "right", 3), Wheel("rear", "left", 4), Wheel("rear", "right", 5)};
+    float gain_ = 0.2;
+    float limit_ = 0.4;
 };
 
 int main(int argc, char *argv[])

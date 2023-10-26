@@ -6,6 +6,7 @@ from dingo_driver_msg.msg import DinFdbk, DinCmd
 from simulation_msg.msg import SimFdbk, SimCmd
 
 WHEELS = 4
+GAIN = 3
 
 
 class DingoDriverSimulationNode(Node):
@@ -32,7 +33,7 @@ class DingoDriverSimulationNode(Node):
         """Send dingo command to simulation."""
         command_msg = SimCmd()
         command_msg.robot = "Dingo"
-        command_msg.joint_tor = msg.wheel_command
+        command_msg.joint_tor = [command * GAIN for command in msg.wheel_command]
         self.pub_cmd.publish(command_msg)
 
     def start_spin_loop(self) -> None:
