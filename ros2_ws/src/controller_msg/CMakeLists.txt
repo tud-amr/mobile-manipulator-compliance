@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(kinova_driver_msg)
+project(controller_msg)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -7,15 +7,13 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/KinFdbk.msg"
-  "msg/KinCmd.msg"
-  "msg/KinTar.msg"
-  "srv/KinSrv.srv"
+  "srv/ConSrv.srv"
  )
- 
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

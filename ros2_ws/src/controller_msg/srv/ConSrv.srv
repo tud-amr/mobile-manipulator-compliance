@@ -1,0 +1,6 @@
+string name
+---
+float32[] joint_ratio
+float32[] joint_fric_s
+float32[] joint_fric_d
+bool compensate_friction

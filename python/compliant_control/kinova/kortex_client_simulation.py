@@ -12,22 +12,24 @@ from simulation_msg.srv import SimSrv
 JOINTS = 6
 
 
-class KortexClientSimulation(KortexClient):
+class KortexClientSimulation(KortexClient, Node):
     """A mock of the Kortex Client class, to make testing without robot possible."""
 
-    def __init__(self, node: Node) -> None:
+    def __init__(self) -> None:
+        Node.__init__(self, "kortex_simulation_node")
         self.base = BaseClientSimulation()
-        self.base_cyclic = BaseCyclicClientSimulation(node)
-        self.actuator_config = ActuatorConfigClientSimulation(node)
-        super().__init__(
+        self.base_cyclic = BaseCyclicClientSimulation(self)
+        self.actuator_config = ActuatorConfigClientSimulation(self)
+        KortexClient.__init__(
+            self,
             base=self.base,
             base_cyclic=self.base_cyclic,
             actuator_config=self.actuator_config,
             mock=True,
             simulate=True,
         )
-        node.create_subscription(SimFdbk, "/sim/fdbk", self.sim_fdbk, 10)
-        self.pub = node.create_publisher(SimCmdInc, "/sim/cmd_inc", 10)
+        self.create_subscription(SimFdbk, "/sim/fdbk", self.sim_fdbk, 10)
+        self.pub = self.create_publisher(SimCmdInc, "/sim/cmd_inc", 10)
         self.define_HLC_parameters()
 
     def sim_fdbk(self, msg: SimFdbk) -> None:

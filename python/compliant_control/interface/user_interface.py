@@ -26,8 +26,9 @@ class UserInterface:
         self.state = State()
 
         self.cb_kin = None
-        self.cb_sim = None
         self.cb_din = None
+        self.cb_con = None
+        self.cb_sim = None
 
         self.define_ui_parameters()
 
@@ -143,7 +144,7 @@ class UserInterface:
             dpg.add_spacer(height=10)
             dpg.add_text("Settings:")
             with dpg.group():
-                checkbox("Compensate friction", self.state.comp_fric, self.cb_kin)
+                checkbox("Compensate friction", self.state.comp_fric, self.cb_con)
                 checkbox("Automove target", self.state.move_tar, self.cb_sim)
             with dpg.group(horizontal=True):
                 button("Clear Faults", True, self.cb_kin)

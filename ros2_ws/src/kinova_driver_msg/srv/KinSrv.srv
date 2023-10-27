@@ -1,3 +1,6 @@
 string name
 ---
 string mode
+string servoing_mode
+string[] control_mode
+bool[] active

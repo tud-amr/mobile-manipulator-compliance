@@ -34,12 +34,11 @@ class Controller:
 
     def reset_before_connect(self) -> None:
         """Reset self to prepare for connection."""
-        self.joints = [n for n, active in enumerate(self.state.active) if active]
 
     def command(self) -> None:
         """Update the command of the robot."""
         if self.mode == "current":
-            self.commands = np.zeros(len(self.joints))
+            self.commands = np.zeros(6)
 
 
 class CompensateGravity(Controller):
@@ -51,10 +50,7 @@ class CompensateGravity(Controller):
     def command(self) -> None:
         """Compensate gravity."""
         super().command()
-        for n, joint in enumerate(self.joints):
-            self.commands[n] += (
-                self.state.g[joint] * self.state.current_torque_ratios[joint]
-            )
+        self.commands += self.state.g * self.state.ratios
 
 
 class CompensateGravityAndFriction(CompensateGravity):
@@ -69,11 +65,11 @@ class CompensateGravityAndFriction(CompensateGravity):
         super().command()
         if not Controller.friction_compensation:
             return
-        for n, joint in enumerate(self.joints):
-            vel = self.state.dq[joint]
+        for n in range(len(self.commands)):
+            vel = self.state.dq[n]
             abs_vel = abs(vel)
             if abs_vel > 0:
-                comp = vel / abs_vel * self.state.dynamic_frictions[joint]
+                comp = vel / abs_vel * self.state.dynamic_frictions[n]
                 comp *= (
                     abs_vel / self.friction_threshold
                     if abs_vel < self.friction_threshold
@@ -105,7 +101,7 @@ class Impedance(CompensateGravity):
         q_e = self.q_d - self.state.q
         dq_e = self.dq_d - self.state.dq
         tau = self.S * q_e + self.D * dq_e
-        current = [tau[n] * self.state.get_ratio(n) for n in range(len(tau))]
+        current = tau * self.state.ratios
 
         if Controller.friction_compensation:
             x = self.state.x
@@ -113,8 +109,7 @@ class Impedance(CompensateGravity):
             x_e = x_d - x
             self.compensate_friction(current, x_e)
 
-        for n, joint in enumerate(self.joints):
-            self.commands[n] += current[joint]
+        self.commands += current
 
     def compensate_friction(self, current: np.ndarray, x_e: np.ndarray) -> np.ndarray:
         """Compensate friction."""
@@ -140,7 +135,6 @@ class CartesianImpedance(CompensateGravity):
 
     def reset_before_connect(self) -> None:
         """Set target to current position."""
-        self.state.active = [True, False, True, False, True, False]
         self.state.target = self.state.x.copy()
         super().reset_before_connect()
 
@@ -168,13 +162,12 @@ class CartesianImpedance(CompensateGravity):
 
         f = lam @ ddx_d + mu @ dx_d + (self.Kd @ x_e + self.Dd @ dx_e)
         tau = self.state.J.T @ f
-        current = [tau[n] * self.state.get_ratio(n) for n in range(len(tau))]
+        current = tau * self.state.ratios
 
         if Controller.friction_compensation:
             self.compensate_friction(current, x_e)
 
-        for n, joint in enumerate(self.joints):
-            self.commands[n] += current[joint]
+        self.commands += current
 
     def compensate_friction(self, current: np.ndarray, x_e: np.ndarray) -> np.ndarray:
         """Compensate friction."""

@@ -21,35 +21,34 @@ class State:
         self.dJ: np.ndarray
 
         self.simulation = False
-        self.active = [True] * JOINTS
         self.q = np.empty(JOINTS)
         self.dq = np.empty(JOINTS)
 
     @property
-    def current_torque_ratios(self) -> None:
+    def ratios(self) -> np.ndarray:
         """Return the current torque ratios."""
         return (
-            {0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}
+            np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
             if self.simulation
-            else {0: 1, 1: 0.316, 2: 1.02, 3: 2.58, 4: 2.02, 5: 1}
+            else np.array([1, 0.316, 1.02, 2.58, 2.02, 1])
         )
 
     @property
-    def static_frictions(self) -> dict:
+    def static_frictions(self) -> list:
         """Return the static frictions."""
         return (
-            {0: 0.2, 1: 0.2, 2: 0.2, 3: 0.2, 4: 0.2, 5: 0.2}
+            [0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
             if self.simulation
-            else {0: 0.55, 1: 1.1, 2: 0.55, 3: 0.11, 4: 0.13, 5: 0.33}
+            else [0.55, 1.1, 0.55, 0.11, 0.13, 0.33]
         )
 
     @property
-    def dynamic_frictions(self) -> dict:
+    def dynamic_frictions(self) -> list:
         """Return the dynamic frictions."""
         return (
-            {0: 0.2, 1: 0.2, 2: 0.2, 3: 0.2, 4: 0.2, 5: 0.2}
+            [0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
             if self.simulation
-            else {0: 0.622, 1: 0.875, 2: 0.747, 3: 0.551, 4: 0.694, 5: 0.565}
+            else [0.622, 0.875, 0.747, 0.551, 0.694, 0.565]
         )
 
     def update(self) -> None:
@@ -65,17 +64,9 @@ class State:
         self.update_J()
         self.update_dJ()
 
-    def toggle_joint(self, joint: int) -> None:
-        """Toggle active state of joint."""
-        self.active[joint] = not self.active[joint]
-
-    def get_joint_state(self, joint: int) -> bool:
-        """Return whether the given joint is active."""
-        return self.active[joint]
-
     def get_ratio(self, joint: int) -> float:
         """Get the current/torque ratio between the model and the real robot for the given joint."""
-        return self.current_torque_ratios[joint]
+        return self.ratios[joint]
 
     def get_dynamic_friction(self, joint: int) -> float:
         """Get the dynamic friction for the given joint."""

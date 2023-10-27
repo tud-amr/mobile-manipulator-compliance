@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 
 from kortex_api.TCPTransport import TCPTransport
 from kortex_api.UDPTransport import UDPTransport
@@ -7,6 +8,17 @@ from kortex_api.SessionManager import SessionManager
 from kortex_api.autogen.messages import Session_pb2
 
 DEFAULT_IP = "192.168.1.10"
+
+def ip_available() -> bool:
+    """Check if robot is available."""
+    return (
+        subprocess.call(
+            "ping -c 1 -W 0.1 " + DEFAULT_IP,
+            shell=True,
+            stdout=subprocess.DEVNULL,
+        )
+        == 0
+    )
 
 def parseConnectionArguments(parser = argparse.ArgumentParser()):
     parser.add_argument("--ip", type=str, help="IP address of destination", default=DEFAULT_IP)

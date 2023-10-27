@@ -44,7 +44,7 @@ class KortexClient:
         self.simulate = simulate
         self.time_out_duration = 3 if self.mock else 20
         self.actuator_count = self.base.GetActuatorCount().count
-        self.active = False
+        self.active = [True] * self.actuator_count
         self.calibrating = False
         self.changing_servoing_mode = False
         self.controller_connected = False
@@ -179,10 +179,27 @@ class KortexClient:
             return (abs(torque) - lower_bound) / (upper_bound - lower_bound)
         return getattr(self.feedback.actuators[joint], "torque")
 
+    def copy_feedback_to_command(self) -> None:
+        """Copy the feedback to the command message."""
+        for prop in ["position", "velocity", "current_motor"]:
+            for n in range(self.actuator_count):
+                value = getattr(self.feedback.actuators[n], prop)
+                setattr(self.command.actuators[n], prop, value)
+
+    def set_command(self, commands: list) -> None:
+        """Set the command."""
+        for n, command in enumerate(commands):
+            if self.active[n]:
+                self.command.actuators[n].current_motor = command
+
+    def toggle_active(self, joint: int) -> None:
+        """Toggle active state of joint."""
+        self.active[joint] = not self.active[joint]
+
     def _start_LLC(self) -> None:
         """Start low_level control."""
+        self.copy_feedback_to_command()
         for n in range(self.actuator_count):
-            self._copy_feedback_to_command_message(n)
             self.set_control_mode(n, "position")
         self._set_servoing_mode(Base_pb2.LOW_LEVEL_SERVOING)
         self.mode = "LLC"
@@ -196,16 +213,14 @@ class KortexClient:
 
     def _connect_LLC(
         self,
-        controller: "Controller",
         mode: Literal["position", "velocity", "current"] = "current",
     ) -> None:
         """Connect a controller to the LLC of the robot."""
-        self.controller = controller
-        controller.reset_before_connect()
-        for joint in controller.joints:
-            self._copy_feedback_to_command_message(joint)
-            self.base_cyclic.Refresh(self.command)
-            self.set_control_mode(joint, mode)
+        self.copy_feedback_to_command()
+        for n in range(self.actuator_count):
+            if self.active[n]:
+                self.base_cyclic.Refresh(self.command)
+                self.set_control_mode(n, mode)
         self.controller_connected = True
         self.mode = "LLC_task"
         Logger.log("Controller connected.")
@@ -218,15 +233,6 @@ class KortexClient:
         self.mode = "LLC"
         Logger.log("Controller disconnected.")
 
-    def _copy_commands_to_command_message(self) -> None:
-        self.controller.command()
-        for joint, command in zip(self.controller.joints, self.controller.commands):
-            if self.controller.mode == "current":
-                self.command.actuators[joint].current_motor = command
-            else:
-                command = command if self.mock else np.rad2deg(command)
-                self.command.actuators[joint].position = command
-
     def _refresh_loop(self) -> bool:
         while self.active_loop:
             self._refresh()
@@ -238,9 +244,6 @@ class KortexClient:
     def _refresh(self) -> None:
         """Refresh."""
         if not self.changing_servoing_mode and self.controller_connected:
-            for joint in self.controller.joints:
-                self._copy_feedback_to_command_message(joint)
-            self._copy_commands_to_command_message()
             try:
                 self.feedback = self.base_cyclic.Refresh(self.command)
             except KServerException:
@@ -283,11 +286,6 @@ class KortexClient:
             actuator_command.position = self.feedback.actuators[n].position
             actuator_command.velocity = self.feedback.actuators[n].velocity
             self.command.actuators.extend([actuator_command])
-
-    def _copy_feedback_to_command_message(self, joint: int) -> None:
-        for prop in ["position", "velocity", "current_motor"]:
-            value = getattr(self.feedback.actuators[joint], prop)
-            setattr(self.command.actuators[joint], prop, value)
 
     def _high_level_move(self, position: Position) -> None:
         """Perform a high level move."""
