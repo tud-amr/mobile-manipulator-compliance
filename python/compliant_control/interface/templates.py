@@ -1,4 +1,151 @@
+import itertools
 import dearpygui.dearpygui as dpg
+from typing import Callable, Literal
+
+
+class Widget:
+    """Create a dearpygui widget."""
+
+    callback_link: callable
+
+    def __init__(
+        self,
+        label: str | Callable[[], str],
+        cb_group: Literal["Kin", "Din", "Sim", "Con", "UI"] = None,
+    ) -> None:
+        self.label = label
+        self.cb_group = cb_group
+        self.enabled: bool
+        self.tag = dpg.generate_uuid()
+
+    def callback(self) -> None:
+        """Link to the general callback with objects callback string."""
+        Widget.callback_link([self.cb_group, self.label])
+
+    def create(self) -> None:
+        """Create the widget."""
+
+    def update(self, enabled: bool) -> None:
+        """Update the widget."""
+
+
+class Text(Widget):
+    """Create a dearpygui text."""
+
+    def __init__(self, pre_label: str, label: Callable[[], str] = "") -> None:
+        super().__init__(label, True)
+        self.pre_label = pre_label
+
+    def create(self) -> None:
+        """Create the widget."""
+        dpg.add_text(tag=self.tag)
+
+    def update(self, enabled: bool) -> None:
+        """Update the widget."""
+        value = self.label if isinstance(self.label, str) else self.label()
+        dpg.set_value(self.tag, self.pre_label + value)
+
+
+class Button(Widget):
+    """Create a dearpygui button."""
+
+    def __init__(
+        self,
+        label: str,
+        cb_group: Literal["Kin", "Din", "Sim", "Con", "UI"] = None,
+    ) -> None:
+        super().__init__(label, cb_group)
+
+    def create(self) -> None:
+        """Create the widget."""
+        dpg.add_button(label=self.label, callback=self.callback, tag=self.tag)
+
+    def update(self, enabled: bool) -> None:
+        """Update the widget."""
+        dpg.configure_item(self.tag, enabled=enabled)
+
+
+class Checkbox(Widget):
+    """Create a dearpygui button."""
+
+    def __init__(
+        self,
+        label: str,
+        value: Callable[[], bool],
+        cb_group: Literal["Kin", "Din", "Sim", "Con", "UI"] = None,
+    ) -> None:
+        self.value = value
+        super().__init__(label, cb_group)
+
+    def create(self) -> None:
+        """Create the widget."""
+        dpg.add_checkbox(label=self.label, callback=self.callback, tag=self.tag)
+
+    def update(self, enabled: bool) -> None:
+        """Update the widget."""
+        value = self.value if isinstance(self.value, bool) else self.value()
+        dpg.configure_item(self.tag, enabled=enabled)
+        dpg.set_value(self.tag, value)
+
+
+class Group:
+    """A group of widgets."""
+
+    groups: list["Group"] = []
+
+    @staticmethod
+    def update_all() -> None:
+        """Update all groups."""
+        for group in Group.groups:
+            group.update()
+
+    def __init__(
+        self, widgets: list["Widget"], enabled: bool | Callable[[], bool] = False
+    ) -> None:
+        self.widgets = widgets
+        self.enabled = enabled
+        Group.groups.append(self)
+
+    def update(self) -> None:
+        """Update the group."""
+        enabled = self.enabled if isinstance(self.enabled, bool) else self.enabled()
+        for widget in self.widgets:
+            widget.update(enabled)
+
+
+class Row(Group):
+    """A row of widgets."""
+
+    def __init__(
+        self, widgets: list[Widget], enabled: bool | Callable[[], bool] = False
+    ) -> None:
+        super().__init__(widgets, enabled)
+        with dpg.group(horizontal=True):
+            for widget in widgets:
+                widget.create()
+        self.update()
+
+
+class Table(Group):
+    """A table of widgets."""
+
+    def __init__(
+        self,
+        headers: list[str] | None,
+        widgets: list[list[Widget]],
+        enabled: bool | Callable[[], bool] = False,
+    ) -> None:
+        super().__init__(list(itertools.chain(*widgets)), enabled)
+        header_row = headers is not None
+        with dpg.table(header_row=header_row, borders_outerH=True, borders_outerV=True):
+            for n in range(len(widgets[0])):
+                header = None if headers is None else headers[n]
+                dpg.add_table_column(label=header)
+            for row in widgets:
+                with dpg.table_row():
+                    for widget in row:
+                        widget.create()
+        self.update()
 
 
 def window(
@@ -23,20 +170,6 @@ def window(
         pos=pos,
         tag=tag,
     )
-
-
-def button(label: str, enabled: bool = False, callback: callable = None) -> None:
-    """Create a dearpygui button."""
-    dpg.add_button(label=label, enabled=enabled, callback=callback, tag=label)
-
-
-def checkbox(
-    label: str, enabled: bool = False, callback: callable = None, tag: str = None
-) -> None:
-    """Create a dearpygui checkbox."""
-    if label is not None:
-        tag = label
-    dpg.add_checkbox(label=label, default_value=enabled, callback=callback, tag=tag)
 
 
 def create_plot(

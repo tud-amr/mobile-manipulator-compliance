@@ -1,16 +1,20 @@
 import glfw
+import time
+from threading import Thread
 from typing import Literal
 import dearpygui.dearpygui as dpg
-from threading import Thread
-import time
-from compliant_control.interface.data_classes import Joint, Wheel, State
+from compliant_control.interface.data_classes import Joint, Wheel, State, Rate
 from compliant_control.interface.joystick import Joystick
 from compliant_control.interface.templates import (
     window,
-    button,
-    checkbox,
     create_plot,
     update_plot,
+    Group,
+    Row,
+    Table,
+    Button,
+    Checkbox,
+    Text,
 )
 
 JOINTS = 6
@@ -24,12 +28,11 @@ class UserInterface:
         self.joints = [Joint(n) for n in range(JOINTS)]
         self.wheels = [Wheel(n) for n in range(WHEELS)]
         self.state = State()
+        self.rates = {"kin": Rate(), "din": Rate(), "sim": Rate(), "con": Rate()}
+        thread = Thread(target=self.update_rates_loop)
+        thread.start()
 
-        self.cb_kin = None
-        self.cb_din = None
-        self.cb_con = None
-        self.cb_sim = None
-
+        self.cb_din = lambda: None
         self.define_ui_parameters()
 
     @property
@@ -46,6 +49,19 @@ class UserInterface:
     def wheel_torques(self) -> list:
         """Returns the list of wheel torques based on the joystick."""
         return Wheel.calculate_torques(self.joystick.direction)
+
+    def reset_wheels(self) -> None:
+        """Reset the wheels."""
+        for wheel in self.wheels:
+            wheel.reset()
+
+    def update_rates_loop(self) -> None:
+        """Update the rates."""
+        while True:
+            for rate in self.rates.values():
+                rate.update()
+                Group.update_all()
+            time.sleep(1)
 
     def define_ui_parameters(self) -> None:
         """Define the UI parameters."""
@@ -94,91 +110,83 @@ class UserInterface:
 
         dpg.show_viewport()
 
-    def load_info(self, width: int, height: int, pos: list) -> None:
-        """Load info."""
-        with window(width, height, pos, tag="window_info"):
-            pass
-        thread = Thread(target=self.update_info)
-        thread.start()
-
-    def update_info(self) -> None:
-        """Update info."""
-        while self.active:
-            if dpg.does_item_exist(item="group_info"):
-                dpg.delete_item(item="group_info")
-            with dpg.group(tag="group_info", parent="window_info", horizontal=True):
-                dpg.add_text(f"Update rate: {self.state.update_rate}")
-                dpg.add_text(f"Servoing: {self.state.servoing}")
-            time.sleep(0.5)
-
     def load_control(self, width: int, height: int, pos: list) -> None:
         """Load the control window."""
         with window(width, height, pos, tag="window_control"):
-            pass
-        self.update_control()
-
-    def update_control(self) -> None:
-        """Update the control window."""
-        if dpg.does_item_exist(item="group_control"):
-            dpg.delete_item(item="group_control")
-        with dpg.group(parent="window_control", tag="group_control"):
             dpg.add_text("High Level:")
-            with dpg.group(horizontal=True):
-                button("Home", self.state.HLC, self.cb_kin)
-                button("Zero", self.state.HLC, self.cb_kin)
-                button("Retract", self.state.HLC, self.cb_kin)
+            Row(
+                [
+                    Button("Home", "Kin"),
+                    Button("Zero", "Kin"),
+                    Button("Retract", "Kin"),
+                    Button("Start LLC", "Kin"),
+                ],
+                enabled=self.state.HLC,
+            )
+
             dpg.add_text("Switch:")
-            with dpg.group(horizontal=True):
-                button("Start LLC", self.state.HLC, self.cb_kin)
-                button("Stop LLC", self.state.LLC, self.cb_kin)
-                button("Stop LLC Task", self.state.LLC_task, self.cb_kin)
+            Row(
+                [Button("Stop LLC", "Kin"), Button("Start LLC Task")],
+                self.state.LLC,
+            )
+            Row([Button("Stop LLC Task")], self.state.LLC_task)
+
             dpg.add_text("Low Level:")
-            with dpg.group(horizontal=True):
-                button("Gravity", self.state.LLC, self.cb_kin)
-                button("Impedance", self.state.LLC, self.cb_kin)
-                button("Cartesian Impedance", self.state.LLC, self.cb_kin)
-            dpg.add_text("Calibration:")
-            with dpg.group(horizontal=True):
-                button("HL Calibration", self.state.HLC, self.cb_kin)
-                button("LL Calibration", self.state.HLC, self.cb_kin)
-            dpg.add_spacer(height=10)
+            Table(
+                None,
+                [
+                    [
+                        Text("Compensate:"),
+                        Checkbox("gravity", self.state.get_comp_grav, "Con"),
+                        Checkbox("friction", self.state.get_comp_fric, "Con"),
+                    ],
+                    [
+                        Text("Impedance:"),
+                        Checkbox("joint", self.state.get_imp_joint, "Con"),
+                        Checkbox("cartesian", self.state.get_imp_cart, "Con"),
+                    ],
+                ],
+                self.state.LLC_task,
+            )
+
+            dpg.add_spacer(height=30)
             dpg.add_text("Settings:")
-            with dpg.group():
-                checkbox("Compensate friction", self.state.comp_fric, self.cb_con)
-                checkbox("Automove target", self.state.move_tar, self.cb_sim)
-            with dpg.group(horizontal=True):
-                button("Clear Faults", True, self.cb_kin)
-                button("Reset wheels", True, lambda: [w.reset() for w in self.wheels])
+            Row(
+                [
+                    Checkbox("Automove target", self.state.move_tar),
+                ]
+            )
+            Row(
+                [
+                    Button("Clear Faults", "Kin"),
+                    Button("Reset wheels", "UI"),
+                    Button("Refresh"),
+                ],
+                True,
+            )
+
+    def load_info(self, width: int, height: int, pos: list) -> None:
+        """Load info."""
+        with window(width, height, pos, tag="window_info"):
+            headers = list(self.rates.keys())
+            widgets = [[Text("", x.get_rate) for x in self.rates.values()]]
+            self.info = Table(headers, widgets)
 
     def load_state(self, width: int, height: int, pos: list) -> None:
         """Load joint info window."""
-        with window(width, height, pos, tag="window_state"):
-            pass
-        self.update_state()
-
-    def update_state(self) -> None:
-        """Update joint info."""
-        if dpg.does_item_exist(item="table"):
-            dpg.delete_item(item="table")
-        with dpg.table(
-            header_row=True,
-            borders_outerH=True,
-            borders_outerV=True,
-            tag="table",
-            parent="window_state",
-        ):
-            headers = ["#", "Mode:", "Ratio:", "fric_D:", "fric_S:"]
-            for header in headers:
-                dpg.add_table_column(label=header)
-            for joint in self.joints:
-                with dpg.table_row():
-                    with dpg.group(horizontal=True):
-                        checkbox(None, joint.active, self.cb_kin, f"Tog_{joint.index}")
-                        dpg.add_text(joint.index)
-                    dpg.add_text(joint.mode)
-                    dpg.add_text(joint.ratio)
-                    dpg.add_text(round(joint.fric_d, 3))
-                    dpg.add_text(round(joint.fric_s, 3))
+        headers = ["#", "Mode:", "Ratio:", "fric_D:", "fric_S:"]
+        widgets = [
+            [
+                Checkbox(str(joint.index), joint.is_active, "Kin"),
+                Text("", joint.get_mode),
+                Text("", joint.get_ratio),
+                Text("", joint.get_fric_d),
+                Text("", joint.get_fric_s),
+            ]
+            for joint in self.joints
+        ]
+        with window(width, height, pos):
+            Table(headers, widgets, self.state.HLC)
 
     def update_bars(self, robot: Literal["Kinova", "Dingo"]) -> None:
         """Update the bar plots."""
@@ -202,10 +210,13 @@ class UserInterface:
         """Create the theme."""
         # Colors from https://github.com/hoffstadt/DearPyGui_Ext/blob/master/dearpygui_ext/themes.py
         disabled = (0.50 * 255, 0.50 * 255, 0.50 * 255, 1.00 * 255)
-        with dpg.theme() as t, dpg.theme_component(dpg.mvButton, enabled_state=False):
-            dpg.add_theme_color(dpg.mvThemeCol_Button, disabled)
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, disabled)
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, disabled)
+        with dpg.theme() as t:
+            with dpg.theme_component(dpg.mvButton, enabled_state=False):
+                dpg.add_theme_color(dpg.mvThemeCol_Button, disabled)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, disabled)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, disabled)
+            with dpg.theme_component(dpg.mvCheckbox, enabled_state=False):
+                dpg.add_theme_color(dpg.mvThemeCol_CheckMark, disabled)
         dpg.bind_theme(t)
 
     def start_render_loop(self) -> None:

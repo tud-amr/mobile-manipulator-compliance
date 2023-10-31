@@ -3,4 +3,8 @@ string name
 float32[] joint_ratio
 float32[] joint_fric_s
 float32[] joint_fric_d
-bool compensate_friction
+
+bool comp_grav
+bool comp_fric
+bool imp_joint
+bool imp_cart

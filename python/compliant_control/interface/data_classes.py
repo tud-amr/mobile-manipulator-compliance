@@ -14,7 +14,7 @@ class Joint:
     eff: float = 0
 
     # state:
-    active: bool = True
+    active: bool = False
     mode: str = "?"
     ratio: float = 0
     fric_d: float = 0
@@ -24,6 +24,26 @@ class Joint:
     def name(self) -> str:
         """Return the name of the joint."""
         return f"joint{self.index}"
+
+    def is_active(self) -> bool:
+        """Return wether the joint is active."""
+        return self.active
+
+    def get_mode(self) -> str:
+        """Return the mode of the joint."""
+        return self.mode
+
+    def get_ratio(self) -> str:
+        """Return the ratio of the joint."""
+        return str(self.ratio)
+
+    def get_fric_d(self) -> str:
+        """Return the dynamic friction of the joint."""
+        return str(round(self.fric_d, 3))
+
+    def get_fric_s(self) -> str:
+        """Return the static friction of the joint."""
+        return str(round(self.fric_s, 3))
 
 
 @dataclass
@@ -77,26 +97,71 @@ class Wheel:
 
 
 @dataclass
+class Rate:
+    """Object to collect update rate."""
+
+    n: int = 0
+    last: int = 0
+
+    def inc(self) -> str:
+        """Increment n."""
+        self.n += 1
+
+    def get_rate(self) -> str:
+        """Get the last rate."""
+        return str(self.last)
+
+    def update(self) -> None:
+        """Update the rate."""
+        self.last = self.n
+        self.n = 0
+
+
+@dataclass
 class State:
     """Data of the robot state."""
 
     mode: str = "waiting"
     update_rate: int = 0
     servoing: str = "?"
+    comp_grav: bool = False
     comp_fric: bool = False
+    imp_joint: bool = False
+    imp_cart: bool = False
     move_tar: bool = False
 
-    @property
     def HLC(self) -> bool:
         """Returns whether the current mode is HLC."""
         return self.mode == "HLC"
 
-    @property
     def LLC(self) -> bool:
         """Returns whether the current mode is LLC."""
         return self.mode == "LLC"
 
-    @property
     def LLC_task(self) -> bool:
         """Returns whether a LLC task is active."""
         return self.mode == "LLC_task"
+
+    def get_rate(self) -> str:
+        """Get the update rate."""
+        return str(self.update_rate)
+
+    def get_servoing(self) -> str:
+        """Get the servoing mode."""
+        return self.servoing
+
+    def get_comp_grav(self) -> bool:
+        """Return whether gravity compensation is enabled."""
+        return self.comp_grav
+
+    def get_comp_fric(self) -> bool:
+        """Return whether friction compensation is enabled."""
+        return self.comp_fric
+
+    def get_imp_joint(self) -> bool:
+        """Return whether joint impedance is enabled."""
+        return self.imp_joint
+
+    def get_imp_cart(self) -> bool:
+        """Return whether cartesian impedance is enabled."""
+        return self.imp_cart

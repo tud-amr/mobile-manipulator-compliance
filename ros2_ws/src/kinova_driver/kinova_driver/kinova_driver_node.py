@@ -11,6 +11,8 @@ from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.kortex_client_simulation import KortexClientSimulation
 from compliant_control.kinova.utilities import DeviceConnection, ip_available
 
+JOINTS = 6
+
 
 class KinovaServiceNode(Node):
     """Handles the services requests."""
@@ -24,6 +26,7 @@ class KinovaServiceNode(Node):
         self, request: KinSrv.Request, response: KinSrv.Response
     ) -> KinSrv.Response:
         """Execute service call."""
+        print(f"KIN CALL: {request.name}")
         match request.name:
             case "Refresh":
                 pass
@@ -37,22 +40,14 @@ class KinovaServiceNode(Node):
                 self.kortex_client._start_LLC()
             case "Stop LLC":
                 self.kortex_client._stop_LLC()
+            case "Start LLC Task":
+                self.kortex_client._connect_LLC()
             case "Stop LLC Task":
                 self.kortex_client._disconnect_LLC()
-            case "Gravity":
-                self.kortex_client._connect_LLC()
-            case "Impedance":
-                self.kortex_client._connect_LLC()
-            case "Cartesian Impedance":
-                self.kortex_client._connect_LLC()
-            case "HL Calibration":
-                print("HL Calibration.")
-            case "LL Calibration":
-                print("LL Calibration.")
             case "Clear Faults":
                 self.kortex_client.clear_faults()
-            case _ if "Tog" in request.name:
-                self.kortex_client.toggle_active(int(request.name[-1]))
+            case _ if request.name in [str(n) for n in range(JOINTS)]:
+                self.kortex_client.toggle_active(int(request.name))
             case _:
                 print(f"Service call {request.name} is unknown.")
 

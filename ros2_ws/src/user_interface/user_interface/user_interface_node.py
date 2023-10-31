@@ -2,19 +2,40 @@ import os
 import rclpy
 import time
 from rclpy.node import Node
-from kinova_driver_msg.msg import KinFdbk
+from kinova_driver_msg.msg import KinFdbk, KinCmd
 from dingo_driver_msg.msg import DinFdbk, DinCmd
 from kinova_driver_msg.srv import KinSrv
+from simulation_msg.msg import SimFdbk
 from simulation_msg.srv import SimSrv
 from controller_msg.srv import ConSrv
 from compliant_control.interface.user_interface import UserInterface
+from compliant_control.interface.templates import Widget, Group
 from threading import Thread
+
+
+class RateCounterNode(Node):
+    """A node that counts the update rates."""
+
+    def __init__(self, interface: UserInterface) -> None:
+        super().__init__("rate_counter_node")
+        self.create_subscription(
+            KinFdbk, "/kinova/fdbk", lambda _: interface.rates["kin"].inc(), 10
+        )
+        self.create_subscription(
+            DinFdbk, "/dingo/fdbk", lambda _: interface.rates["din"].inc(), 10
+        )
+        self.create_subscription(
+            KinCmd, "/kinova/cmd", lambda _: interface.rates["con"].inc(), 10
+        )
+        self.create_subscription(
+            SimFdbk, "/sim/fdbk", lambda _: interface.rates["sim"].inc(), 10
+        )
 
 
 class UserInterfaceNode(Node):
     """A node that starts the user interface."""
 
-    def __init__(self) -> None:
+    def __init__(self, interface: UserInterface) -> None:
         super().__init__("user_interface_node")
         self.create_subscription(KinFdbk, "/kinova/fdbk", self.kin_fdbk, 10)
         self.create_subscription(DinFdbk, "/dingo/fdbk", self.din_fdbk, 10)
@@ -23,21 +44,35 @@ class UserInterfaceNode(Node):
         self.dingo_pub = self.create_publisher(DinCmd, "/dingo/cmd", 10)
         self.con_client = self.create_client(ConSrv, "/control/srv")
 
-        self.interface = UserInterface()
-        self.interface.cb_kin = self.call_kinova
+        self.interface = interface
         self.interface.cb_din = self.command_dingo
-        self.interface.cb_sim = self.call_sim
-        self.interface.cb_con = self.call_con
+        Widget.callback_link = self.callback
         self.interface.create_ui()
 
-        spin_thread = Thread(target=self.start_spin_loop)
-        spin_thread.start()
-        initialize_thread = Thread(target=self.call_kinova, args=["Refresh"])
-        initialize_thread.start()
-        self.interface.start_render_loop()
+    def callback(self, info: list[str]) -> None:
+        """Callback."""
+        print(info)
+        match info[0]:
+            case "Kin":
+                self.call_kinova(info[1])
+            case "Sim":
+                self.call_sim(info[1])
+            case "Con":
+                self.call_con(info[1])
+            case None:
+                self.call_con(info[1])
+                self.call_kinova(info[1])
+        Group.update_all()
+
+    def call_UI(self, name: str) -> None:
+        """Call a UI method."""
+        match name:
+            case "Reset wheels":
+                self.interface.reset_wheels()
 
     def call_con(self, name: str) -> None:
         """Call a controller service."""
+        print(name)
         request = ConSrv.Request()
         request.name = name
         future = self.con_client.call_async(request)
@@ -48,9 +83,10 @@ class UserInterfaceNode(Node):
             joint.ratio = response.joint_ratio[joint.index]
             joint.fric_d = response.joint_fric_d[joint.index]
             joint.fric_s = response.joint_fric_s[joint.index]
-        self.interface.state.comp_fric = response.compensate_friction
-        self.interface.update_control()
-        self.interface.update_state()
+        self.interface.state.comp_grav = response.comp_grav
+        self.interface.state.comp_fric = response.comp_fric
+        self.interface.state.imp_joint = response.imp_joint
+        self.interface.state.imp_cart = response.imp_cart
 
     def call_sim(self) -> None:
         """Call a simulation service."""
@@ -61,7 +97,6 @@ class UserInterfaceNode(Node):
     def call_kinova(self, name: str) -> None:
         """Call a kinova service."""
         self.interface.state.mode = "waiting"
-        self.interface.update_control()
         request = KinSrv.Request()
         request.name = name
         future = self.kinova_client.call_async(request)
@@ -73,8 +108,6 @@ class UserInterfaceNode(Node):
         for joint in self.interface.joints:
             joint.mode = response.control_mode[joint.index][:3]
             joint.active = response.active[joint.index]
-        self.interface.update_control()
-        self.interface.update_state()
 
     def command_dingo(self) -> None:
         """Send a command to Dingo."""
@@ -102,15 +135,17 @@ class UserInterfaceNode(Node):
             wheel.eff = msg.wheel_tor[n]
         self.interface.update_bars("Dingo")
 
-    def start_spin_loop(self) -> None:
-        """Start the ros spin loop."""
-        rclpy.spin(self)
-
 
 def main(args: any = None) -> None:
     """Main."""
     rclpy.init(args=args)
-    UserInterfaceNode()
+    executor: rclpy.Executor = rclpy.executors.MultiThreadedExecutor()
+    interface = UserInterface()
+    executor.add_node(RateCounterNode(interface))
+    executor.add_node(UserInterfaceNode(interface))
+    spin_thread = Thread(target=executor.spin)
+    spin_thread.start()
+    interface.start_render_loop()
     rclpy.shutdown()
     os._exit(0)
 
