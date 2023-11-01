@@ -1,6 +1,7 @@
 import os
 import rclpy
 import time
+import signal
 from rclpy.node import Node
 from kinova_driver_msg.msg import KinFdbk, KinCmd
 from dingo_driver_msg.msg import DinFdbk, DinCmd
@@ -145,7 +146,8 @@ def main(args: any = None) -> None:
     executor.add_node(UserInterfaceNode(interface))
     spin_thread = Thread(target=executor.spin)
     spin_thread.start()
-    interface.start_render_loop()
+    signal.signal(signal.SIGINT, interface.stop)
+    interface.start()
     rclpy.shutdown()
     os._exit(0)
 

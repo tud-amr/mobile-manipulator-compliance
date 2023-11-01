@@ -1,5 +1,6 @@
 import rclpy
 import os
+import signal
 import numpy as np
 from rclpy.node import Node
 
@@ -20,7 +21,8 @@ class DingoDriverSimulationNode(Node):
         self.create_subscription(DinCmd, "/dingo/cmd", self.cmd, 10)
         self.pub_cmd = self.create_publisher(SimCmd, "/sim/cmd", 10)
 
-        self.start_spin_loop()
+        signal.signal(signal.SIGINT, self.stop)
+        self.start()
 
     def sim_fdbk(self, msg: SimFdbk) -> None:
         """Process the feedback from the simulation."""
@@ -59,9 +61,15 @@ class DingoDriverSimulationNode(Node):
             torques.reverse()
         return np.interp(angle, angles, torques)
 
-    def start_spin_loop(self) -> None:
+    def start(self) -> None:
         """Start the ros spin loop."""
-        rclpy.spin(self)
+        self.active = True
+        while self.active:
+            rclpy.spin_once(self, timeout_sec=0)
+
+    def stop(self, *args: any) -> None:
+        """Stop the ros spin loop."""
+        self.active = False
 
 
 def main(args: any = None) -> None:

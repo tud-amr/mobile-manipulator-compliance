@@ -1,5 +1,6 @@
 import rclpy
 import os
+import signal
 from rclpy.node import Node
 import numpy as np
 
@@ -120,8 +121,10 @@ def main(args: any = None) -> None:
     target_client = TargetClient()
     executor.add_node(target_client)
     executor.add_node(ControllerServiceNode(state, controller, target_client))
-    executor.spin()
-    rclpy.shutdown()
+
+    signal.signal(signal.SIGINT, lambda *_: executor.shutdown(0))
+    while not executor._is_shutdown:
+        executor.spin_once(timeout_sec=0)
     os._exit(0)
 
 

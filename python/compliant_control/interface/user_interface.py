@@ -197,9 +197,8 @@ class UserInterface:
                 value = getattr(element, prop)
                 update_plot(prop, name, value)
 
-    def close(self) -> None:
-        """Callback for keyboard input."""
-        print("Close")
+    def stop(self, *args: any) -> None:
+        """Stop the render loop."""
         self.active = False
 
     def create_theme(self) -> None:
@@ -215,9 +214,9 @@ class UserInterface:
                 dpg.add_theme_color(dpg.mvThemeCol_CheckMark, disabled)
         dpg.bind_theme(t)
 
-    def start_render_loop(self) -> None:
+    def start(self) -> None:
         """Start the render loop."""
         with dpg.handler_registry():
-            dpg.add_key_press_handler(dpg.mvKey_Escape, callback=self.close)
+            dpg.add_key_press_handler(dpg.mvKey_Escape, callback=self.stop)
         while self.active:
             dpg.render_dearpygui_frame()

@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 import os
+import signal
 from compliant_control.mujoco.simulation import Simulation
 from kinova_driver_msg.msg import KinTar
 from simulation_msg.msg import SimFdbk, SimCmd, SimCmdInc
@@ -21,6 +22,7 @@ class SimulationNode(Node):
         self.spin_thread = Thread(target=self.start_spin_loop)
         self.sim = Simulation(self.step_callback)
         self.spin_thread.start()
+        signal.signal(signal.SIGINT, self.sim.stop)
         self.sim.start()
 
     def srv(self, request: SimSrv.Request, response: SimSrv.Response) -> None:

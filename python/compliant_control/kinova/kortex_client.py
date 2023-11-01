@@ -78,14 +78,14 @@ class KortexClient:
         """Clear the faults."""
         self.base.ClearFaults()
 
-    def start_refresh_loop(self) -> None:
+    def start(self) -> None:
         """Start the refresh loop."""
         self.rate_check_thread = Thread(target=self._rate_check_loop)
         self.active = True
         self.rate_check_thread.start()
         self._refresh_loop()
 
-    def stop_refresh_loop(self, *args: any) -> None:
+    def stop(self, *args: any) -> None:
         """Stop the update loop."""
         print("Closing connection with arm...")
         self.active = False

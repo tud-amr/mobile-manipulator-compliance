@@ -105,8 +105,8 @@ def start(kortex_client: KortexClient, sim: bool = False) -> None:
     spin_thread = Thread(target=executor.spin)
     spin_thread.start()
 
-    signal.signal(signal.SIGINT, kortex_client.stop_refresh_loop)
-    kortex_client.start_refresh_loop()
+    signal.signal(signal.SIGINT, kortex_client.stop)
+    kortex_client.start()
 
 
 def main(args: any = None) -> None:
