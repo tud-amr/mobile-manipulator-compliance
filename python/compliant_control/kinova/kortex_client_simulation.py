@@ -13,7 +13,7 @@ JOINTS = 6
 
 
 class KortexClientSimulation(KortexClient, Node):
-    """A mock of the Kortex Client class, to make testing without robot possible."""
+    """A simulation of the Kortex Client class."""
 
     def __init__(self) -> None:
         Node.__init__(self, "kortex_simulation_node")
