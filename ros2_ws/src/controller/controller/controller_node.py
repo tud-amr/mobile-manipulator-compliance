@@ -8,8 +8,8 @@ from dingo_driver_msg.msg import DinFdbk, DinCmd
 from controller_msg.srv import ConSrv
 from simulation_msg.srv import SimSrv
 
-from compliant_control.controllers.state import State
-from compliant_control.controllers.controllers import Controller
+from compliant_control.control.state import State
+from compliant_control.control.controller import Controller
 
 
 class TargetClient(Node):

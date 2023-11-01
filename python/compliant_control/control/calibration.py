@@ -8,8 +8,8 @@ from scipy.optimize import minimize
 
 from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.specifications import Position
-from compliant_control.controllers.state import State
-from compliant_control.controllers.controllers import CompensateGravity
+from compliant_control.control.state import State
+from compliant_control.control.controller import CompensateGravity
 import time
 from threading import Thread
 
