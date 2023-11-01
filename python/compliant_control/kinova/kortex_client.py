@@ -9,14 +9,8 @@ from kortex_api.autogen.client_stubs.BaseCyclicClientRpc import BaseCyclicClient
 from kortex_api.autogen.client_stubs.ActuatorConfigClientRpc import ActuatorConfigClient
 from kortex_api.autogen.messages import Base_pb2, BaseCyclic_pb2, ActuatorConfig_pb2
 from kortex_api.Exceptions.KServerException import KServerException
-from compliant_control.control.controller import Controller
 
 from .specifications import Position, actuator_ids, ranges
-
-
-class Logger:
-    def log(message: str):
-        print(message)
 
 
 class KortexClient:
@@ -29,7 +23,6 @@ class KortexClient:
         actuator_config: ActuatorConfigClient = None,
         router: RouterClient = None,
         real_time_router: RouterClient = None,
-        mock: bool = False,
         simulate: bool = False,
     ) -> None:
         if None in [base, base_cyclic, actuator_config]:
@@ -40,15 +33,17 @@ class KortexClient:
             self.base = base
             self.base_cyclic = base_cyclic
             self.actuator_config = actuator_config
-        self.mock = mock
+
+        self.log = lambda msg: print(msg)
+
         self.simulate = simulate
-        self.time_out_duration = 3 if self.mock else 20
         self.actuator_count = self.base.GetActuatorCount().count
-        self.active = [n % 2 == 0 for n in range(self.actuator_count)]
+        self.joint_active = [n % 2 == 0 for n in range(self.actuator_count)]
+
         self.calibrating = False
         self.changing_servoing_mode = False
         self.controller_connected = False
-        self.active_loop = False
+        self.active = False
 
         self.frequency = 1000
         self.rate = self.frequency
@@ -58,7 +53,6 @@ class KortexClient:
         self.feedback_callback = lambda: None
 
         self.mode = "HLC"
-        self.calibrating = False
 
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         self._refresh()
@@ -87,14 +81,14 @@ class KortexClient:
     def start_refresh_loop(self) -> None:
         """Start the refresh loop."""
         self.rate_check_thread = Thread(target=self._rate_check_loop)
-        self.active_loop = True
+        self.active = True
         self.rate_check_thread.start()
         self._refresh_loop()
 
     def stop_refresh_loop(self, *args: any) -> None:
         """Stop the update loop."""
         print("Closing connection with arm...")
-        self.active_loop = False
+        self.active = False
 
     def set_control_mode(
         self, joint: int, mode: Literal["position", "velocity", "current"]
@@ -103,28 +97,43 @@ class KortexClient:
         mode = getattr(ActuatorConfig_pb2, mode.upper())
         control_mode_information = ActuatorConfig_pb2.ControlModeInformation()
         control_mode_information.control_mode = mode
-        _id = joint if self.mock else actuator_ids[joint]
+        _id = joint if self.simulate else actuator_ids[joint]
         self.actuator_config.SetControlMode(control_mode_information, _id)
         self._update_modes()
 
     def start_LLC(self) -> None:
         """Start low_level control."""
-        self._start_control(self._start_LLC)
+        self.copy_feedback_to_command()
+        for n in range(self.actuator_count):
+            self.set_control_mode(n, "position")
+        self._set_servoing_mode(Base_pb2.LOW_LEVEL_SERVOING)
+        self.mode = "LLC"
+        self.log("Low_level control enabled.")
 
     def stop_LLC(self) -> None:
         """Stop low_level control."""
-        self._start_control(self._stop_LLC)
+        self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
+        self.mode = "HLC"
+        self.log("Low_level control disabled.")
 
-    def connect_LLC(
-        self, controller: "Controller", mode: Literal["position", "velocity", "current"]
-    ) -> None:
+    def connect_LLC(self) -> None:
         """Connect a controller to the LLC of the robot."""
+        self.copy_feedback_to_command()
+        for n in range(self.actuator_count):
+            if self.joint_active[n]:
+                self.base_cyclic.Refresh(self.command)
+                self.set_control_mode(n, "current")
+        self.controller_connected = True
         self.mode = "LLC_task"
-        self._start_control(self._connect_LLC, [controller, mode])
+        self.log("Controller connected.")
 
     def disconnect_LLC(self) -> None:
         """Disconnect a controller from the LLC of the robot."""
-        self._start_control(self._disconnect_LLC)
+        self.controller_connected = False
+        for joint in range(self.actuator_count):
+            self.set_control_mode(joint, "position")
+        self.mode = "LLC"
+        self.log("Controller disconnected.")
 
     def home(self) -> bool:
         """Move the arm to the home position."""
@@ -145,7 +154,7 @@ class KortexClient:
     def get_position(self, joint: int, as_percentage: bool) -> float:
         """Get the position of a joint."""
         position = getattr(self.feedback.actuators[joint], "position")
-        if self.mock:
+        if self.simulate:
             position = np.rad2deg(position)
         lower_bound = ranges["position"][joint][0]
         upper_bound = ranges["position"][joint][1]
@@ -157,7 +166,7 @@ class KortexClient:
     def get_velocity(self, joint: int, as_percentage: bool) -> float:
         """Get the velocity of a joint."""
         velocity = getattr(self.feedback.actuators[joint], "velocity")
-        if self.mock:
+        if self.simulate:
             velocity = np.rad2deg(velocity)
         if as_percentage:
             lower_bound = ranges["velocity"][joint][0]
@@ -193,52 +202,15 @@ class KortexClient:
     def set_command(self, commands: list) -> None:
         """Set the command."""
         for n, command in enumerate(commands):
-            if self.active[n]:
+            if self.joint_active[n]:
                 self.command.actuators[n].current_motor = command
 
     def toggle_active(self, joint: int) -> None:
         """Toggle active state of joint."""
-        self.active[joint] = not self.active[joint]
-
-    def _start_LLC(self) -> None:
-        """Start low_level control."""
-        self.copy_feedback_to_command()
-        for n in range(self.actuator_count):
-            self.set_control_mode(n, "position")
-        self._set_servoing_mode(Base_pb2.LOW_LEVEL_SERVOING)
-        self.mode = "LLC"
-        Logger.log("Low_level control enabled.")
-
-    def _stop_LLC(self) -> None:
-        """Stop low_level control."""
-        self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
-        self.mode = "HLC"
-        Logger.log("Low_level control disabled.")
-
-    def _connect_LLC(
-        self,
-        mode: Literal["position", "velocity", "current"] = "current",
-    ) -> None:
-        """Connect a controller to the LLC of the robot."""
-        self.copy_feedback_to_command()
-        for n in range(self.actuator_count):
-            if self.active[n]:
-                self.base_cyclic.Refresh(self.command)
-                self.set_control_mode(n, mode)
-        self.controller_connected = True
-        self.mode = "LLC_task"
-        Logger.log("Controller connected.")
-
-    def _disconnect_LLC(self) -> None:
-        """Disconnect a controller from the LLC of the robot."""
-        self.controller_connected = False
-        for joint in range(self.actuator_count):
-            self.set_control_mode(joint, "position")
-        self.mode = "LLC"
-        Logger.log("Controller disconnected.")
+        self.joint_active[joint] = not self.joint_active[joint]
 
     def _refresh_loop(self) -> bool:
-        while self.active_loop:
+        while self.active:
             self._refresh()
             self.feedback_callback()
             self.n += 1
@@ -251,14 +223,14 @@ class KortexClient:
             try:
                 self.feedback = self.base_cyclic.Refresh(self.command)
             except KServerException:
-                Logger.log("Robot control lost.")
+                self.log("Robot control lost.")
                 self.controller_connected = False
         else:
             self.feedback = self.base_cyclic.RefreshFeedback()
 
     def _rate_check_loop(self) -> None:
         """Define te rate check loop."""
-        while self.active_loop:
+        while self.active:
             self.rate = self.n
             self.n = 0
             self.sleep_time *= self.rate / self.frequency
@@ -278,7 +250,7 @@ class KortexClient:
         self.servoing_mode = self.base.GetServoingMode().servoing_mode
         actuator_modes = []
         for n in range(self.actuator_count):
-            _id = n if self.mock else actuator_ids[n]
+            _id = n if self.simulate else actuator_ids[n]
             actuator_modes.append(self.actuator_config.GetControlMode(_id).control_mode)
         self.actuator_modes = actuator_modes
 
@@ -293,7 +265,7 @@ class KortexClient:
 
     def _high_level_move(self, position: Position) -> None:
         """Perform a high level move."""
-        Logger.log("Starting high level movement...")
+        self.log("Starting high level movement...")
         action = Base_pb2.Action()
         action.name = position.name
         action.application_data = ""
@@ -312,37 +284,20 @@ class KortexClient:
         )
 
         self.base.ExecuteAction(action)
-        finished = event.wait(self.time_out_duration)
+        finished = event.wait(3)
         self.base.Unsubscribe(notification_handle)
 
         if finished:
-            Logger.log(f"Position {action.name} reached")
+            self.log(f"Position {action.name} reached")
         else:
-            Logger.log("Timeout on action notification wait")
-            if self.mock:
-                Logger.log("Return successful for mock.")
-                return True
+            self.log("Timeout on action notification wait")
         return finished
-
-    def _active_controller(self, target: callable, args: list = []) -> None:
-        thread = Thread(target=target, args=args)
-        thread.start()
-        thread.join()
-        self.active = False
-
-    def _start_control(self, target: callable, args: list = []) -> None:
-        if not self.active:
-            self.active = True
-            active_controller = Thread(
-                target=self._active_controller, args=[target, args]
-            )
-            active_controller.start()
 
     def _check_for_end_or_abort(self, event: Event) -> callable:
         """Return a closure checking for END or ABORT notifications."""
 
         def check(notif: Base_pb2.ActionNotification, event: Event = event) -> None:
-            Logger.log("EVENT : " + Base_pb2.ActionEvent.Name(notif.action_event))
+            self.log("EVENT : " + Base_pb2.ActionEvent.Name(notif.action_event))
             if notif.action_event in [Base_pb2.ACTION_END, Base_pb2.ACTION_ABORT]:
                 event.set()
 

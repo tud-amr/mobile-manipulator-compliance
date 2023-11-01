@@ -39,13 +39,13 @@ class KinovaServiceNode(Node):
             case "Pref":
                 self.kortex_client.pref()
             case "Start LLC":
-                self.kortex_client._start_LLC()
+                self.kortex_client.start_LLC()
             case "Stop LLC":
-                self.kortex_client._stop_LLC()
+                self.kortex_client.stop_LLC()
             case "Start LLC Task":
-                self.kortex_client._connect_LLC()
+                self.kortex_client.connect_LLC()
             case "Stop LLC Task":
-                self.kortex_client._disconnect_LLC()
+                self.kortex_client.disconnect_LLC()
             case "Clear Faults":
                 self.kortex_client.clear_faults()
             case _ if request.name in [str(n) for n in range(JOINTS)]:
@@ -55,7 +55,7 @@ class KinovaServiceNode(Node):
 
         response.mode = self.kortex_client.mode
         response.servoing_mode = self.kortex_client.get_servoing_mode()
-        response.active = self.kortex_client.active
+        response.active = self.kortex_client.joint_active
         for n in range(self.kortex_client.actuator_count):
             response.control_mode.append(self.kortex_client.get_control_mode(n))
         return response

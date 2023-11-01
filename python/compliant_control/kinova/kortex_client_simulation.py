@@ -25,7 +25,6 @@ class KortexClientSimulation(KortexClient, Node):
             base=self.base,
             base_cyclic=self.base_cyclic,
             actuator_config=self.actuator_config,
-            mock=True,
             simulate=True,
         )
         self.create_subscription(SimFdbk, "/sim/fdbk", self.sim_fdbk, 10)
