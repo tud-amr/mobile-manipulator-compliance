@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 import os
-from compliant_control.mujoco.viewer import Viewer
+from compliant_control.mujoco.visualization import Visualization
 from threading import Thread
 from kinova_driver_msg.msg import KinFdbk, KinTar
 from simulation_msg.srv import SimSrv
@@ -18,7 +18,7 @@ class VisualizationNode(Node):
         self.create_service(SimSrv, "/sim/srv", self.srv)
         self.tar_pub = self.create_publisher(KinTar, "/kinova/tar", 10)
         self.spin_thread = Thread(target=self.start_spin_loop)
-        self.vis = Viewer("visualization", self.step_callback)
+        self.vis = Visualization(self.step_callback)
         self.spin_thread.start()
         self.vis.start()
 

@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 import os
-from compliant_control.mujoco.viewer import Viewer
+from compliant_control.mujoco.simulation import Simulation
 from kinova_driver_msg.msg import KinTar
 from simulation_msg.msg import SimFdbk, SimCmd, SimCmdInc
 from simulation_msg.srv import SimSrv
@@ -19,7 +19,7 @@ class SimulationNode(Node):
         self.pub = self.create_publisher(SimFdbk, "/sim/fdbk", 10)
         self.tar_pub = self.create_publisher(KinTar, "/kinova/tar", 10)
         self.spin_thread = Thread(target=self.start_spin_loop)
-        self.sim = Viewer("simulation", self.step_callback)
+        self.sim = Simulation(self.step_callback)
         self.spin_thread.start()
         self.sim.start()
 
