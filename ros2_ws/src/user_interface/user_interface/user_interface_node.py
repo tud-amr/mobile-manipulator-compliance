@@ -11,6 +11,7 @@ from simulation_msg.srv import SimSrv
 from controller_msg.srv import ConSrv
 from compliant_control.interface.user_interface import UserInterface
 from compliant_control.interface.templates import Widget, Group
+from compliant_control.dingo.utilities import direction_to_wheel_torques
 from threading import Thread
 
 
@@ -113,7 +114,7 @@ class UserInterfaceNode(Node):
     def command_dingo(self, direction: list) -> None:
         """Send a command to Dingo."""
         command = DinCmd()
-        command.direction = direction
+        command.wheel_command = direction_to_wheel_torques(direction)
         self.dingo_pub.publish(command)
 
     def kin_fdbk(self, msg: KinFdbk) -> None:

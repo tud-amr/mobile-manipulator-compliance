@@ -11,6 +11,7 @@ from simulation_msg.srv import SimSrv
 
 from compliant_control.control.state import State
 from compliant_control.control.controller import Controller
+from compliant_control.dingo.utilities import direction_to_wheel_torques
 
 
 class TargetClient(Node):
@@ -93,7 +94,8 @@ class ControllerNode(Node):
         cmd.joint_command = list(self.controller.joint_commands)
         self.kinova_cmd.publish(cmd)
         cmd = DinCmd()
-        cmd.direction = list(self.controller.base_command)
+        direction = list(self.controller.base_command)
+        cmd.wheel_command = direction_to_wheel_torques(direction)
         self.dingo_cmd.publish(cmd)
 
     def kinova_fdbk(self, msg: KinFdbk) -> None:
