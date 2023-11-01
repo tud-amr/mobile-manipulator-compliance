@@ -2,6 +2,8 @@ from typing import Literal
 import numpy as np
 from .state import State
 
+JOINTS = 6
+
 
 class Controller:
     """General controller template."""
@@ -62,7 +64,7 @@ class Controller:
 
     def command(self) -> None:
         """Update the command of the robot."""
-        self.commands = np.zeros(6)
+        self.commands = np.zeros(JOINTS)
         self.x_d = self.state.target
         self.define_errors()
         if self.comp_grav:
@@ -71,6 +73,8 @@ class Controller:
             self.joint_impedance()
         if self.imp_cart:
             self.cartesian_impedance()
+        if self.comp_fric and not (self.imp_joint or self.imp_cart):
+            self.compensate_friction_when_moving()
 
     def compensate_gravity(self) -> None:
         """Compensate gravity."""
@@ -95,7 +99,7 @@ class Controller:
             + (self.Kd @ self.x_e + self.Dd @ self.dx_e)
         )
         tau = self.state.JT @ f
-        current = np.reshape(tau * self.state.ratios, 6)
+        current = np.reshape(tau * self.state.ratios, JOINTS)
 
         if self.comp_fric:
             current = self.compensate_friction(current)
@@ -114,7 +118,7 @@ class Controller:
 
     def compensate_friction_when_moving(self) -> None:
         """Compensate friction when moving."""
-        for n, command in enumerate(self.commands):
+        for n in range(JOINTS):
             vel = self.state.dq[n]
             abs_vel = abs(vel)
             if abs_vel > 0:
@@ -124,5 +128,4 @@ class Controller:
                     if abs_vel < self.friction_threshold
                     else 1
                 )
-                command += comp
-        self.commands[n] = command
+                self.commands[n] += comp
