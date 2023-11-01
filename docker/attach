@@ -1,0 +1,4 @@
+#!/bin/bash
+
+CONTAINER_ID="$(sudo docker ps -aq)"
+sudo docker exec -it ${CONTAINER_ID} bash
