@@ -26,12 +26,19 @@ def parseConnectionArguments(parser = argparse.ArgumentParser()):
     parser.add_argument("-p", "--password", type=str, help="password to login", default="admin")
     return parser.parse_args()
 
+class Args:
+    def __init__(self) -> None:
+        self.ip = DEFAULT_IP
+        self.username = "admin"
+        self.password = "admin"
+
 class DeviceConnection:
     
     TCP_PORT = 10000
     UDP_PORT = 10001
     
-    args = parseConnectionArguments()
+    # args = parseConnectionArguments()
+    args = Args()
 
     @staticmethod
     def createTcpConnection(args = None): 
