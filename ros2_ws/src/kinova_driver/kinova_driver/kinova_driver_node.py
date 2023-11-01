@@ -36,6 +36,8 @@ class KinovaServiceNode(Node):
                 self.kortex_client.zero()
             case "Retract":
                 self.kortex_client.retract()
+            case "Pref":
+                self.kortex_client.pref()
             case "Start LLC":
                 self.kortex_client._start_LLC()
             case "Stop LLC":

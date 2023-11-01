@@ -9,6 +9,7 @@ from compliant_control.interface.window_commands import WindowCommands
 import glfw
 import numpy as np
 from threading import Thread
+from compliant_control.kinova.specifications import Position
 
 SYNC_RATE = 60
 MODEL = "arm_and_base.xml"
@@ -30,6 +31,11 @@ class Viewer:
         self.active = True
         self.default_biasprm = self.model.actuator_biasprm.copy()
         self.default_gainprm = self.model.actuator_gainprm.copy()
+
+        pref = [np.deg2rad(pos) for pos in Position.pref.position]
+        self.set_ctrl_value("Kinova", "position", pref)
+        self.set_qpos_value("Kinova", "position", pref)
+
         move_target_thread = Thread(target=self.move_target_loop)
         move_target_thread.start()
 

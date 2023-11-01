@@ -4,7 +4,7 @@ from rclpy.node import Node
 import numpy as np
 
 from kinova_driver_msg.msg import KinFdbk, KinCmd, KinTar
-from dingo_driver_msg.msg import DinFdbk
+from dingo_driver_msg.msg import DinFdbk, DinCmd
 from controller_msg.srv import ConSrv
 from simulation_msg.srv import SimSrv
 
@@ -49,6 +49,7 @@ class ControllerServiceNode(Node):
                 pass
             case "Start LLC Task":
                 self.target_client.reset_target()
+                self.controller.reset()
                 self.controller.active = True
             case "Stop LLC Task":
                 self.controller.active = False
@@ -78,6 +79,7 @@ class ControllerNode(Node):
         self.create_subscription(KinTar, "/kinova/tar", self.kinova_tar, 10)
         self.create_subscription(DinFdbk, "/dingo/fdbk", self.dingo_fdbk, 10)
         self.kinova_cmd = self.create_publisher(KinCmd, "/kinova/cmd", 10)
+        self.dingo_cmd = self.create_publisher(DinCmd, "/dingo/cmd", 10)
 
         self.state = state
         self.controller = controller
@@ -87,8 +89,11 @@ class ControllerNode(Node):
         """Send a command."""
         self.controller.command()
         cmd = KinCmd()
-        cmd.joint_command = list(self.controller.commands)
+        cmd.joint_command = list(self.controller.joint_commands)
         self.kinova_cmd.publish(cmd)
+        cmd = DinCmd()
+        cmd.direction = list(self.controller.base_command)
+        self.dingo_cmd.publish(cmd)
 
     def kinova_fdbk(self, msg: KinFdbk) -> None:
         """Process the feedback from the kinova arm."""

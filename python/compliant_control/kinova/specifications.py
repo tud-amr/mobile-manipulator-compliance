@@ -26,6 +26,7 @@ class Position:
     home: "Position"
     zero: "Position"
     retract: "Position"
+    pref: "Position"
 
     def __init__(self, name: str, position: list[float]) -> None:
         self.name = name
@@ -35,3 +36,4 @@ class Position:
 Position.home = Position("home", [0, -16, 75, 0, -60, 0])
 Position.zero = Position("zero", [0, 0, 0, 0, 0, 0])
 Position.retract = Position("retract", [0, 20, 150, -90, -40, -90])
+Position.pref = Position("pref", [0, -20, 100, -90, -60, 0])

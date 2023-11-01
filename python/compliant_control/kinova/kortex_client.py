@@ -44,7 +44,7 @@ class KortexClient:
         self.simulate = simulate
         self.time_out_duration = 3 if self.mock else 20
         self.actuator_count = self.base.GetActuatorCount().count
-        self.active = [True] * self.actuator_count
+        self.active = [n % 2 == 0 for n in range(self.actuator_count)]
         self.calibrating = False
         self.changing_servoing_mode = False
         self.controller_connected = False
@@ -137,6 +137,10 @@ class KortexClient:
     def retract(self) -> bool:
         """Move the arm to the retract position."""
         self._high_level_move(Position.retract)
+
+    def pref(self) -> bool:
+        """Move the arm to the pref position."""
+        self._high_level_move(Position.pref)
 
     def get_position(self, joint: int, as_percentage: bool) -> float:
         """Get the position of a joint."""

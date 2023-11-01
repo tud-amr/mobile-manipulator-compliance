@@ -54,6 +54,8 @@ class Controller:
         self.dx_d = np.zeros(3)
         self.ddx_d = np.zeros(3)
 
+        self.pref_x = self.state.x.copy()
+
     def define_errors(self) -> None:
         """Define the errors."""
         x = self.state.x
@@ -64,7 +66,8 @@ class Controller:
 
     def command(self) -> None:
         """Update the command of the robot."""
-        self.commands = np.zeros(JOINTS)
+        self.joint_commands = np.zeros(JOINTS)
+        self.base_command = [0.0, 0.0]
         self.x_d = self.state.target
         self.define_errors()
         if self.comp_grav:
@@ -73,12 +76,13 @@ class Controller:
             self.joint_impedance()
         if self.imp_cart:
             self.cartesian_impedance()
+            self.command_base()
         if self.comp_fric and not (self.imp_joint or self.imp_cart):
             self.compensate_friction_when_moving()
 
     def compensate_gravity(self) -> None:
         """Compensate gravity."""
-        self.commands += self.state.g * self.state.ratios
+        self.joint_commands += self.state.g * self.state.ratios
 
     def joint_impedance(self) -> None:
         """Joint impedance."""
@@ -89,7 +93,7 @@ class Controller:
 
         if self.comp_fric:
             current = self.compensate_friction(current)
-        self.commands += np.array(current)
+        self.joint_commands += np.array(current)
 
     def cartesian_impedance(self) -> None:
         """Cartesian impedance."""
@@ -103,7 +107,7 @@ class Controller:
 
         if self.comp_fric:
             current = self.compensate_friction(current)
-        self.commands += np.array(current)
+        self.joint_commands += np.array(current)
 
     def compensate_friction(self, current: np.ndarray) -> np.ndarray:
         """Compensate friction."""
@@ -128,4 +132,13 @@ class Controller:
                     if abs_vel < self.friction_threshold
                     else 1
                 )
-                self.commands[n] += comp
+                self.joint_commands[n] += comp
+
+    def command_base(self) -> None:
+        """Create a command for the base."""
+        error = (self.state.x - self.pref_x)[:-1]
+        magnitude = np.linalg.norm(error)
+        direction = error / magnitude
+        gain = min(magnitude / 0.15, 0.5)
+        direction *= gain
+        self.base_command = [-direction[1], direction[0]]

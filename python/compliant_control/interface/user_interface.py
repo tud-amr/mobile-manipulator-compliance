@@ -45,11 +45,6 @@ class UserInterface:
         """Returns the list of wheel names."""
         return [wheel.name for wheel in self.wheels]
 
-    @property
-    def wheel_torques(self) -> list:
-        """Returns the list of wheel torques based on the joystick."""
-        return Wheel.calculate_torques(self.joystick.direction)
-
     def reset_wheels(self) -> None:
         """Reset the wheels."""
         for wheel in self.wheels:
@@ -119,6 +114,7 @@ class UserInterface:
                     Button("Home", "Kin"),
                     Button("Zero", "Kin"),
                     Button("Retract", "Kin"),
+                    Button("Pref", "Kin"),
                     Button("Start LLC", "Kin"),
                 ],
                 enabled=self.state.HLC,

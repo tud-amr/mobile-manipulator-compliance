@@ -109,10 +109,10 @@ class UserInterfaceNode(Node):
             joint.mode = response.control_mode[joint.index][:3]
             joint.active = response.active[joint.index]
 
-    def command_dingo(self) -> None:
+    def command_dingo(self, direction: list) -> None:
         """Send a command to Dingo."""
         command = DinCmd()
-        command.wheel_command = self.interface.wheel_torques
+        command.direction = direction
         self.dingo_pub.publish(command)
 
     def kin_fdbk(self, msg: KinFdbk) -> None:
