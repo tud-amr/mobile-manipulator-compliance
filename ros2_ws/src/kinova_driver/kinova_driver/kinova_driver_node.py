@@ -97,6 +97,8 @@ def start(kortex_client: KortexClient, sim: bool = False) -> None:
     feedback = KinovaDriverNode(kortex_client)
     service = KinovaServiceNode(kortex_client)
 
+    kortex_client.log = feedback.get_logger().info
+
     if sim:
         executor.add_node(kortex_client)
     executor.add_node(feedback)

@@ -234,6 +234,7 @@ class KortexClient:
             self.rate = self.n
             self.n = 0
             self.sleep_time *= self.rate / self.frequency
+            self.log(f"{self.rate}")
             time.sleep(1)
 
     def _set_servoing_mode(self, value: int) -> None:
