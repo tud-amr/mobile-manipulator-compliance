@@ -7,14 +7,6 @@ def generate_launch_description() -> None:
     return LaunchDescription(
         [
             Node(
-                package="visualization",
-                executable="visualization_node",
-            ),
-            Node(
-                package="user_interface",
-                executable="user_interface_node",
-            ),
-            Node(
                 package="kinova_driver",
                 executable="kinova_driver_node",
             ),
