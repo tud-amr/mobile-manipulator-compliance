@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for i in *.c; do
+
+    gcc -fPIC -shared $i -o "${i%.*}.so"
+done

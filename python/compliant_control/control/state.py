@@ -1,19 +1,18 @@
 import importlib.resources as pkg_resources
+import os
 import numpy as np
 import casadi
-import pinocchio
-import pinocchio.casadi as cpin
-import compliant_control.mujoco.models as models
+import compliant_control.control.symbolics as symbolics
 
 JOINTS = 6
+DIM = 3
 
 
 class State:
     """Contains the state of the robot."""
 
     def __init__(self) -> None:
-        self.load_robot()
-        self.define_matrices()
+        self.load_symbolics()
         self.q = np.zeros(JOINTS)
         self.dq = np.zeros(JOINTS)
         self.target = self.x
@@ -50,88 +49,41 @@ class State:
     @property
     def g(self) -> np.ndarray:
         """Gravity vector."""
-        return self.robot.gravity(self.q)
+        return np.reshape(self.casadi_g(self.q), JOINTS)
 
     @property
     def x(self) -> np.ndarray:
         """Location of the end-effector."""
-        self.robot.framesForwardKinematics(self.q)
-        gripper_frame_id = self.robot.model.getFrameId("END_EFFECTOR")
-        return self.robot.data.oMf[gripper_frame_id].translation
+        return np.reshape(self.casadi_x(self.q), DIM)
 
     @property
     def J(self) -> np.ndarray:
         """Jacobian."""
-        return self.casadi_jacobian(self.q)
+        return np.reshape(self.casadi_J(self.q), (DIM, JOINTS))
 
     @property
     def JT(self) -> np.ndarray:
         """Transposed Jacobian."""
-        return self.casadi_jacobian_transposed(self.q)
+        return np.reshape(self.casadi_JT(self.q), (JOINTS, DIM))
 
     @property
     def lam(self) -> np.ndarray:
         """Lambda."""
-        return self.casadi_lambda(self.q)
+        return np.reshape(self.casadi_lam(self.q), (DIM, DIM))
 
     @property
     def mu(self) -> np.ndarray:
         """Mu."""
-        return self.casadi_mu(self.q, self.dq)
+        return np.reshape(self.casadi_mu(self.q, self.dq), (DIM, DIM))
 
-    def load_robot(self) -> None:
-        """Load the pinocchio robot."""
-        urdf_package = str(pkg_resources.files(models))
-        urdf = urdf_package + "/GEN3-LITE.urdf"
-        self.robot = pinocchio.RobotWrapper.BuildFromURDF(urdf, urdf_package)
-        frame_id = self.robot.model.getFrameId("GRIPPER_FRAME")
-        joint_id = self.robot.model.getJointId("5")
-        location = pinocchio.SE3(1)
-        location.translation = np.array([0, 0, 0.09])
-        frame = pinocchio.Frame(
-            "END_EFFECTOR",
-            joint_id,
-            frame_id,
-            location,
-            pinocchio.OP_FRAME,
-        )
-        self.robot.model.addFrame(frame)
-        self.robot.data = self.robot.model.createData()
-
-    def define_matrices(self) -> None:
-        """Create the symbolic matrices using Casadi."""
-        model = cpin.Model(self.robot.model)
-        data = model.createData()
-
-        q = casadi.SX.sym("q", model.nq, 1)
-        dq = casadi.SX.sym("dq", model.nq, 1)
-
-        M = cpin.crba(model, data, q)
-        Minv = casadi.solve(M, casadi.SX.eye(M.size1()))
-
-        C = cpin.computeCoriolisMatrix(model, data, q, dq)
-
-        frame_id = self.robot.model.getFrameId("END_EFFECTOR")
-        J = cpin.getFrameJacobian(
-            model,
-            data,
-            frame_id,
-            pinocchio.LOCAL_WORLD_ALIGNED,
-        )[:3, :]
-
-        dJ = cpin.getFrameJacobianTimeVariation(
-            model,
-            data,
-            frame_id,
-            pinocchio.LOCAL_WORLD_ALIGNED,
-        )[:3, :]
-
-        Jinv = Minv @ J.T @ casadi.solve((J @ Minv @ J.T), casadi.SX.eye(3))
-
-        lam = Jinv.T @ M @ Jinv
-        mu = Jinv.T @ (C - M @ Jinv @ dJ) @ Jinv
-
-        self.casadi_jacobian = casadi.Function("J", [q], [J])
-        self.casadi_jacobian_transposed = casadi.Function("JT", [q], [J.T])
-        self.casadi_lambda = casadi.Function("lam", [q], [lam])
-        self.casadi_mu = casadi.Function("mu", [q, dq], [mu])
+    def load_symbolics(self) -> None:
+        """Load the symbolics."""
+        input_dir = str(pkg_resources.files(symbolics))
+        current_dir = os.getcwd()
+        os.chdir(input_dir)
+        for file_name in os.listdir(input_dir):
+            if file_name.endswith(".so"):
+                name = file_name.replace(".so", "")
+                f = casadi.external(name, file_name)
+                setattr(self, f"casadi_{name}", f)
+        os.chdir(current_dir)

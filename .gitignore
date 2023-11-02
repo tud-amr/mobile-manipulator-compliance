@@ -8,3 +8,4 @@ imgui.ini
 **/install
 **/log
 .old/
+**/*.so

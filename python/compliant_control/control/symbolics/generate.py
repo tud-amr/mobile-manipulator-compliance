@@ -1,0 +1,96 @@
+import importlib.resources as pkg_resources
+import os
+import numpy as np
+import casadi
+import pinocchio
+import pinocchio.casadi as cpin
+import compliant_control.mujoco.models as models
+import compliant_control.control.symbolics as symbolics
+
+
+def load_robot() -> pinocchio.RobotWrapper:
+    """Load the pinocchio robot."""
+    urdf_package = str(pkg_resources.files(models))
+    urdf = urdf_package + "/GEN3-LITE.urdf"
+    robot = pinocchio.RobotWrapper.BuildFromURDF(urdf, urdf_package)
+    frame_id = robot.model.getFrameId("GRIPPER_FRAME")
+    joint_id = robot.model.getJointId("5")
+    location = pinocchio.SE3(1)
+    location.translation = np.array([0, 0, 0.09])
+    frame = pinocchio.Frame(
+        "END_EFFECTOR",
+        joint_id,
+        frame_id,
+        location,
+        pinocchio.OP_FRAME,
+    )
+    robot.model.addFrame(frame)
+    robot.data = robot.model.createData()
+    return robot
+
+
+def define_matrices(robot: pinocchio.RobotWrapper) -> None:
+    """Create the symbolic matrices using Casadi."""
+    model = cpin.Model(robot.model)
+    data = model.createData()
+
+    q = casadi.SX.sym("q", model.nq, 1)
+    dq = casadi.SX.sym("dq", model.nq, 1)
+
+    g = cpin.computeGeneralizedGravity(model, data, q)
+
+    M = cpin.crba(model, data, q)
+    Minv = casadi.solve(M, casadi.SX.eye(M.size1()))
+
+    C = cpin.computeCoriolisMatrix(model, data, q, dq)
+
+    frame_id = robot.model.getFrameId("END_EFFECTOR")
+    cpin.framesForwardKinematics(model, data, q)
+    x = data.oMf[frame_id].translation
+
+    J = cpin.getFrameJacobian(
+        model,
+        data,
+        frame_id,
+        pinocchio.LOCAL_WORLD_ALIGNED,
+    )[:3, :]
+
+    dJ = cpin.getFrameJacobianTimeVariation(
+        model,
+        data,
+        frame_id,
+        pinocchio.LOCAL_WORLD_ALIGNED,
+    )[:3, :]
+
+    Jinv = Minv @ J.T @ casadi.solve((J @ Minv @ J.T), casadi.SX.eye(3))
+
+    lam = Jinv.T @ M @ Jinv
+    mu = Jinv.T @ (C - M @ Jinv @ dJ) @ Jinv
+
+    functions: list[casadi.Function] = [
+        casadi.Function("g", [q], [g]),
+        casadi.Function("x", [q], [x]),
+        casadi.Function("J", [q], [J]),
+        casadi.Function("JT", [q], [J.T]),
+        casadi.Function("lam", [q], [lam]),
+        casadi.Function("mu", [q, dq], [mu]),
+    ]
+
+    current_dir = os.getcwd()
+    output_dir = str(pkg_resources.files(symbolics))
+    os.chdir(output_dir)
+
+    for function in functions:
+        function.generate(function.name())
+
+    os.chdir(current_dir)
+
+
+def main() -> None:
+    """Generate symbolics."""
+    robot = load_robot()
+    define_matrices(robot)
+
+
+if __name__ == "__main__":
+    main()
