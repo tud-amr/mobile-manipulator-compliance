@@ -138,7 +138,10 @@ class Controller:
         """Create a command for the base."""
         error = (self.state.x - self.pref_x)[:-1]
         magnitude = np.linalg.norm(error)
-        direction = error / magnitude
-        gain = min(magnitude / 0.15, 0.5)
-        direction *= gain
-        self.base_command = [-direction[1], direction[0]]
+        if magnitude > 0:
+            direction = error / magnitude
+            gain = min(magnitude / 0.15, 0.5)
+            direction *= gain
+            self.base_command = [-direction[1], direction[0]]
+        else:
+            self.base_command = [0.0, 0.0]
