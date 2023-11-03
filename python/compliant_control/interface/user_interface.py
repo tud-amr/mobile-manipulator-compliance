@@ -101,7 +101,7 @@ class UserInterface:
         self.load_control(w2, int(h3 * 0.85), [0, h3])
         self.load_info(w2, int(h3 * 0.15), [0, int(h3 * 1.85)])
         self.load_state(w2, h6, [w2, h3])
-        # self.joystick = Joystick(w2, h6, [w2, h3 + h6], self.cb_din)
+        self.joystick = Joystick(w2, h6, [w2, h3 + h6], Widget.general_callback)
 
         create_plot("pos", w3, h3, [0, 2 * h3], self.wheel_names, 10)
         create_plot("vel", w3, h3, [w3, 2 * h3], self.wheel_names, 5)
@@ -169,7 +169,7 @@ class UserInterface:
         """Load info."""
         with window(width, height, pos, tag="window_info"):
             headers = self.rates.names
-            widgets = [[Text("", lambda _x=x: self.rates.value(_x))] for x in headers]
+            widgets = [[Text("", lambda _x=x: self.rates.value(_x)) for x in headers]]
             self.info = Table(headers, widgets)
 
     def load_state(self, width: int, height: int, pos: list) -> None:

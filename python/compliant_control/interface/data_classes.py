@@ -77,11 +77,12 @@ class Rates:
     """Object to collect update rate."""
 
     kin: int = 0
+    din: int = 0
 
     @property
     def names(self) -> list[str]:
         """Get the names."""
-        return ["kin"]
+        return ["kin", "din"]
 
     def value(self, name: str) -> str:
         """Get the value."""

@@ -6,6 +6,7 @@ from threading import Thread
 
 from compliant_control.control.state import State
 from compliant_control.mujoco.simulation import Simulation
+from compliant_control.dingo.dingo_driver_simulation import DingoDriverSimulation
 from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.kortex_client_simulation import KortexClientSimulation
 
@@ -46,6 +47,7 @@ class ControlInterfaceNode(Node):
     def start_simulation(self) -> None:
         """Start the simulation."""
         self.simulation = Simulation(self.state)
+        self.dingo = DingoDriverSimulation(self.state, self.simulation)
         self.kinova = KortexClientSimulation(self.state, self.simulation)
         self.kinova.log = self.get_logger().warn
         self.start_threads()
@@ -60,10 +62,14 @@ class ControlInterfaceNode(Node):
     def publish_feedback(self) -> None:
         """Publish feedback."""
         feedback = Ufdbk()
-        feedback.kinova_pos = list(self.state.feedback.q)
-        feedback.kinova_vel = list(self.state.feedback.dq)
-        feedback.kinova_tor = list(self.state.feedback.c)
+        feedback.kinova_pos = list(self.state.kinova_feedback.q)
+        feedback.kinova_vel = list(self.state.kinova_feedback.dq)
+        feedback.kinova_tor = list(self.state.kinova_feedback.c)
         feedback.kinova_rate = self.kinova.rate
+        feedback.dingo_pos = list(self.state.dingo_feedback.q)
+        feedback.dingo_vel = list(self.state.dingo_feedback.dq)
+        feedback.dingo_tor = list(self.state.dingo_feedback.c)
+        feedback.dingo_rate = self.dingo.rate
         self.pub_fdbk.publish(feedback)
 
     def handle_input(self, msg: Ucmd) -> None:
@@ -96,6 +102,8 @@ class ControlInterfaceNode(Node):
             case _ if cmd in ["gravity", "friction", "joint", "cartesian"]:
                 self.state.controller.toggle(cmd)
                 self.reset_target()
+            case "Move Dingo":
+                self.state.controller.command_base_direction(msg.args)
             case _:
                 print(f"Service call {cmd} is unknown.")
         self.publish_state()

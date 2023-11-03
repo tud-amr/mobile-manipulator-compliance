@@ -62,7 +62,7 @@ class Joystick:
         self.point_x = 0.0
         self.point_y = 0.0
         self.update_drawing()
-        self.callback([self.point_x, self.point_y])
+        self.callback("Move Dingo", [self.point_x, self.point_y])
 
     def mouse_down(self) -> None:
         """Handle mouse down input."""
@@ -73,4 +73,4 @@ class Joystick:
             self.point_x = x / np.linalg.norm([x, y])
             self.point_y = y / np.linalg.norm([x, y])
             self.update_drawing()
-        self.callback([self.point_x, -self.point_y])
+        self.callback("Move Dingo", [self.point_x, -self.point_y])

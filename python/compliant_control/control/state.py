@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 
 JOINTS = 6
+WHEELS = 4
 DIM = 3
 
 
@@ -15,9 +16,13 @@ DIM = 3
 class JointData:
     """Dataclass containing the position, velocity and current/torque of joints."""
 
-    q = np.zeros(JOINTS)
-    dq = np.zeros(JOINTS)
-    c = np.zeros(JOINTS)
+    n: int
+
+    def __post_init__(self) -> None:
+        """Initialize vectors."""
+        self.q = np.zeros(self.n)
+        self.dq = np.zeros(self.n)
+        self.c = np.zeros(self.n)
 
 
 class State:
@@ -25,8 +30,11 @@ class State:
 
     def __init__(self) -> None:
         self.load_symbolics()
-        self.feedback = JointData()
-        self.command = JointData()
+        self.kinova_feedback = JointData(JOINTS)
+        self.dingo_feedback = JointData(WHEELS)
+        self.kinova_command = JointData(JOINTS)
+        self.dingo_command = JointData(WHEELS)
+
         self.target = self.x
 
         self.controller = Controller(self)
@@ -64,32 +72,34 @@ class State:
     @property
     def g(self) -> np.ndarray:
         """Gravity vector."""
-        return np.reshape(self.casadi_g(self.feedback.q), JOINTS)
+        return np.reshape(self.casadi_g(self.kinova_feedback.q), JOINTS)
 
     @property
     def x(self) -> np.ndarray:
         """Location of the end-effector."""
-        return np.reshape(self.casadi_x(self.feedback.q), DIM)
+        return np.reshape(self.casadi_x(self.kinova_feedback.q), DIM)
 
     @property
     def J(self) -> np.ndarray:
         """Jacobian."""
-        return np.reshape(self.casadi_J(self.feedback.q), (DIM, JOINTS))
+        return np.reshape(self.casadi_J(self.kinova_feedback.q), (DIM, JOINTS))
 
     @property
     def JT(self) -> np.ndarray:
         """Transposed Jacobian."""
-        return np.reshape(self.casadi_JT(self.feedback.q), (JOINTS, DIM))
+        return np.reshape(self.casadi_JT(self.kinova_feedback.q), (JOINTS, DIM))
 
     @property
     def lam(self) -> np.ndarray:
         """Lambda."""
-        return np.reshape(self.casadi_lam(self.feedback.q), (DIM, DIM))
+        return np.reshape(self.casadi_lam(self.kinova_feedback.q), (DIM, DIM))
 
     @property
     def mu(self) -> np.ndarray:
         """Mu."""
-        return np.reshape(self.casadi_mu(self.feedback.q, self.feedback.dq), (DIM, DIM))
+        return np.reshape(
+            self.casadi_mu(self.kinova_feedback.q, self.kinova_feedback.dq), (DIM, DIM)
+        )
 
     def load_symbolics(self) -> None:
         """Load the symbolics."""

@@ -25,11 +25,13 @@ class UserInterfaceNode(Node):
 
         self.interface.start()
 
-    def command(self, command: str) -> None:
+    def command(self, command: str, args: list = None) -> None:
         """Send a command to the control interface."""
         self.interface.update_state("waiting")
         msg = Ucmd()
         msg.command = command
+        if args is not None:
+            msg.args = args
         self.publisher.publish(msg)
 
     def feedback(self, msg: Ufdbk) -> None:
@@ -67,6 +69,7 @@ class UserInterfaceNode(Node):
             wheel.encoder_position = msg.dingo_pos[wheel.index]
             wheel.vel = wheel.pos - last_position
             wheel.eff = msg.dingo_tor[wheel.index]
+        self.interface.rates.din = msg.dingo_rate
         self.interface.update_bars("Dingo")
 
     def start_spin_loop(self) -> None:

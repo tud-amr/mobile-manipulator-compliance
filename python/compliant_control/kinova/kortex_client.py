@@ -221,9 +221,9 @@ class KortexClient:
     def update_state(self) -> None:
         """Update the state."""
         for n in range(self.actuator_count):
-            self.state.feedback.q[n] = self.get_position(n, False)
-            self.state.feedback.dq[n] = self.get_velocity(n, False)
-            self.state.feedback.c[n] = self.get_current(n, False)
+            self.state.kinova_feedback.q[n] = self.get_position(n, False)
+            self.state.kinova_feedback.dq[n] = self.get_velocity(n, False)
+            self.state.kinova_feedback.c[n] = self.get_current(n, False)
 
     def _refresh_loop(self) -> bool:
         while self.active:
@@ -253,7 +253,6 @@ class KortexClient:
             self.rate = self.n
             self.n = 0
             self.sleep_time *= self.rate / self.frequency
-            self.log(f"{self.rate}")
             time.sleep(1)
 
     def _set_servoing_mode(self, value: int) -> None:
