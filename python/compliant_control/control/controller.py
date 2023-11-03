@@ -71,7 +71,6 @@ class Controller:
     def command(self) -> None:
         """Update the command of the robot."""
         self.joint_commands = np.zeros(JOINTS)
-        self.base_command = [0.0, 0.0]
         self.x_d = self.state.target
         self.define_errors()
         if self.comp_grav:
@@ -148,9 +147,10 @@ class Controller:
             direction = error / magnitude
             gain = min(magnitude / 0.15, 0.5)
             direction *= gain
-            self.base_command = [-direction[1], direction[0]]
+            direction = [-direction[1], direction[0]]
         else:
-            self.base_command = [0.0, 0.0]
+            direction = [0.0, 0.0]
+        self.command_base_direction(direction)
 
     def command_base_direction(self, direction: list[float]) -> None:
         """Command the base with a direction."""

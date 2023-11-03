@@ -101,7 +101,8 @@ class ControlInterfaceNode(Node):
                 self.kinova.toggle_active(int(cmd))
             case _ if cmd in ["gravity", "friction", "joint", "cartesian"]:
                 self.state.controller.toggle(cmd)
-                self.reset_target()
+                if cmd in ["joint", "cartesian"]:
+                    self.reset_target()
             case "Move Dingo":
                 self.state.controller.command_base_direction(msg.args)
             case _:
