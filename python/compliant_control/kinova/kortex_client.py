@@ -12,12 +12,15 @@ from kortex_api.Exceptions.KServerException import KServerException
 
 from .specifications import Position, actuator_ids, ranges
 
+from compliant_control.control.state import State
+
 
 class KortexClient:
     """Class that uses the Kortex API to communicate with the robot."""
 
     def __init__(
         self,
+        state: State,
         base: BaseClient = None,
         base_cyclic: BaseCyclicClient = None,
         actuator_config: ActuatorConfigClient = None,
@@ -36,6 +39,8 @@ class KortexClient:
 
         self.log = lambda msg: print(msg)
 
+        self.state = state
+
         self.simulate = simulate
         self.actuator_count = self.base.GetActuatorCount().count
         self.joint_active = [n % 2 == 0 for n in range(self.actuator_count)]
@@ -50,21 +55,23 @@ class KortexClient:
         self.n = self.frequency
         self.sleep_time = 1 / self.frequency
 
-        self.feedback_callback = lambda: None
-
         self.mode = "HLC"
 
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         self._refresh()
         self._initialize_command()
+        self.start()
 
     def get_mode(self) -> str:
         """Get the general mode."""
         return "calibrating" if self.calibrating else self.mode
 
-    def get_control_mode(self, joint: int) -> str:
+    def get_control_modes(self) -> list[str]:
         """Get the control mode of an actuator."""
-        return ActuatorConfig_pb2.ControlMode.Name(self.actuator_modes[joint])
+        return [
+            ActuatorConfig_pb2.ControlMode.Name(self.actuator_modes[n])
+            for n in range(self.actuator_count)
+        ]
 
     def get_servoing_mode(self) -> str:
         """Get the servoing mode of the robot."""
@@ -80,10 +87,11 @@ class KortexClient:
 
     def start(self) -> None:
         """Start the refresh loop."""
-        self.rate_check_thread = Thread(target=self._rate_check_loop)
+        rate_check_thread = Thread(target=self._rate_check_loop)
+        refresh_loop_thread = Thread(target=self._refresh_loop)
         self.active = True
-        self.rate_check_thread.start()
-        self._refresh_loop()
+        rate_check_thread.start()
+        refresh_loop_thread.start()
 
     def stop(self, *args: any) -> None:
         """Stop the update loop."""
@@ -209,10 +217,20 @@ class KortexClient:
         """Toggle active state of joint."""
         self.joint_active[joint] = not self.joint_active[joint]
 
+    def update_state(self) -> None:
+        """Update the state."""
+        for n in range(self.actuator_count):
+            self.state.feedback.q[n] = self.get_position(n, False)
+            self.state.feedback.dq[n] = self.get_velocity(n, False)
+            self.state.feedback.c[n] = self.get_current(n, False)
+
     def _refresh_loop(self) -> bool:
         while self.active:
             self._refresh()
-            self.feedback_callback()
+            self.update_state()
+            if self.mode == "LLC_task":
+                self.state.controller.command()
+                self.set_command(self.state.controller.joint_commands)
             self.n += 1
             if self.simulate:
                 time.sleep(self.sleep_time)

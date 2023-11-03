@@ -30,7 +30,7 @@ class Joint:
 
     def get_mode(self) -> str:
         """Return the mode of the joint."""
-        return self.mode
+        return self.mode[:3]
 
     def get_ratio(self) -> str:
         """Return the ratio of the joint."""
@@ -73,24 +73,19 @@ class Wheel:
 
 
 @dataclass
-class Rate:
+class Rates:
     """Object to collect update rate."""
 
-    n: int = 0
-    last: int = 0
+    kin: int = 0
 
-    def inc(self) -> str:
-        """Increment n."""
-        self.n += 1
+    @property
+    def names(self) -> list[str]:
+        """Get the names."""
+        return ["kin"]
 
-    def get_rate(self) -> str:
-        """Get the last rate."""
-        return str(self.last)
-
-    def update(self) -> None:
-        """Update the rate."""
-        self.last = self.n
-        self.n = 0
+    def value(self, name: str) -> str:
+        """Get the value."""
+        return str(getattr(self, name))
 
 
 @dataclass

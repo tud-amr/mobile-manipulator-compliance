@@ -1,26 +1,21 @@
 import itertools
 import dearpygui.dearpygui as dpg
-from typing import Callable, Literal
+from typing import Callable
 
 
 class Widget:
     """Create a dearpygui widget."""
 
-    callback_link: callable
+    general_callback: callable
 
-    def __init__(
-        self,
-        label: str | Callable[[], str],
-        cb_group: Literal["Kin", "Din", "Sim", "Con", "UI"] = None,
-    ) -> None:
+    def __init__(self, label: str | Callable[[], str]) -> None:
         self.label = label
-        self.cb_group = cb_group
         self.enabled: bool
         self.tag = dpg.generate_uuid()
 
     def callback(self) -> None:
         """Link to the general callback with objects callback string."""
-        Widget.callback_link([self.cb_group, self.label])
+        Widget.general_callback(self.label)
 
     def create(self) -> None:
         """Create the widget."""
@@ -33,7 +28,7 @@ class Text(Widget):
     """Create a dearpygui text."""
 
     def __init__(self, pre_label: str, label: Callable[[], str] = "") -> None:
-        super().__init__(label, True)
+        super().__init__(label)
         self.pre_label = pre_label
 
     def create(self) -> None:
@@ -49,12 +44,8 @@ class Text(Widget):
 class Button(Widget):
     """Create a dearpygui button."""
 
-    def __init__(
-        self,
-        label: str,
-        cb_group: Literal["Kin", "Din", "Sim", "Con", "UI"] = None,
-    ) -> None:
-        super().__init__(label, cb_group)
+    def __init__(self, label: str) -> None:
+        super().__init__(label)
 
     def create(self) -> None:
         """Create the widget."""
@@ -68,14 +59,9 @@ class Button(Widget):
 class Checkbox(Widget):
     """Create a dearpygui button."""
 
-    def __init__(
-        self,
-        label: str,
-        value: Callable[[], bool],
-        cb_group: Literal["Kin", "Din", "Sim", "Con", "UI"] = None,
-    ) -> None:
+    def __init__(self, label: str, value: Callable[[], bool]) -> None:
         self.value = value
-        super().__init__(label, cb_group)
+        super().__init__(label)
 
     def create(self) -> None:
         """Create the widget."""

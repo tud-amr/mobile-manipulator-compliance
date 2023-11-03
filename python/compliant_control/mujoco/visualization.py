@@ -17,8 +17,7 @@ MODEL = "arm_and_base.xml"
 class Visualization:
     """Provides the mujoco visualization of the robot."""
 
-    def __init__(self, step_cb: callable = None) -> None:
-        self.step_cb = step_cb
+    def __init__(self) -> None:
         xml = str(pkg_resources.files(models) / MODEL)
         self.model = MjModel.from_xml_path(xml)
         self.data = MjData(self.model)
@@ -87,7 +86,6 @@ class Visualization:
         while self.active:
             step_start = time.time()
             self.step()
-            self.step_cb()
             if time.time() > sync + (1 / SYNC_RATE):
                 viewer.sync()
                 sync = time.time()

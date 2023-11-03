@@ -5,38 +5,28 @@ from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.messages import Base, BaseCyclic, ActuatorConfig
 from compliant_control.kinova.specifications import Position
 
-from rclpy.node import Node
-from simulation_msg.msg import SimFdbk, SimCmd, SimCmdInc
-from simulation_msg.srv import SimSrv
+from compliant_control.control.state import State
+from compliant_control.mujoco.simulation import Simulation
 
 JOINTS = 6
 
 
-class KortexClientSimulation(KortexClient, Node):
+class KortexClientSimulation(KortexClient):
     """A simulation of the Kortex Client class."""
 
-    def __init__(self) -> None:
-        Node.__init__(self, "kortex_simulation_node")
+    def __init__(self, state: State, simulation: Simulation) -> None:
         self.base = BaseClientSimulation()
-        self.base_cyclic = BaseCyclicClientSimulation(self)
-        self.actuator_config = ActuatorConfigClientSimulation(self)
-        KortexClient.__init__(
-            self,
+        self.simulation = simulation
+        self.base_cyclic = BaseCyclicClientSimulation(state, simulation)
+        self.actuator_config = ActuatorConfigClientSimulation(simulation)
+        super().__init__(
+            state=state,
             base=self.base,
             base_cyclic=self.base_cyclic,
             actuator_config=self.actuator_config,
             simulate=True,
         )
-        self.create_subscription(SimFdbk, "/sim/fdbk", self.sim_fdbk, 10)
-        self.pub = self.create_publisher(SimCmdInc, "/sim/cmd_inc", 10)
         self.define_HLC_parameters()
-
-    def sim_fdbk(self, msg: SimFdbk) -> None:
-        """Process the feedback from the simulation."""
-        for n in range(JOINTS):
-            self.base_cyclic.feedback.actuators[n].position = msg.joint_pos[n]
-            self.base_cyclic.feedback.actuators[n].velocity = msg.joint_vel[n]
-            self.base_cyclic.feedback.actuators[n].current_motor = msg.joint_tor[n]
 
     def define_HLC_parameters(self) -> None:
         """Define the HLC parameters."""
@@ -61,15 +51,9 @@ class KortexClientSimulation(KortexClient, Node):
             time.sleep(1 / self.frequency)
 
     def _execute_action(self, joint: int, error: float) -> bool:
-        step = min(abs(error) / self.nearby_goal_divider, self.step_size)
-        msg = SimCmdInc()
-        msg.joint = joint
-        msg.type = "position"
-        if error > 0:
-            msg.increment = step
-        elif error < 0:
-            msg.increment = -step
-        self.pub.publish(msg)
+        increment = min(abs(error) / self.nearby_goal_divider, self.step_size)
+        increment *= error / abs(error)
+        self.simulation.ctrl_increment("Kinova", "position", joint, increment)
 
 
 class BaseClientSimulation:
@@ -96,31 +80,46 @@ class BaseClientSimulation:
 class BaseCyclicClientSimulation:
     """https://github.com/Kinovarobotics/kortex/blob/master/api_python/doc/markdown/summary_pages/BaseCyclic.md."""
 
-    def __init__(self, node: Node) -> None:
-        self.pub = node.create_publisher(SimCmd, "/sim/cmd", 10)
+    def __init__(self, state: State, simulation: Simulation) -> None:
+        self.state = state
+        self.sim = simulation
         self.feedback = BaseCyclic.Feedback(JOINTS)
 
     def Refresh(self, command: BaseCyclic.Command) -> BaseCyclic.Feedback:
         """Send a command to actuators and interface and returns feedback from base, actuators, and interface on actual status."""
-        command_msg = SimCmd()
-        command_msg.robot = "Kinova"
-        for actuator in command.actuators:
-            command_msg.joint_pos.append(actuator.position)
-            command_msg.joint_vel.append(actuator.velocity)
-            command_msg.joint_tor.append(actuator.current_motor)
-        self.pub.publish(command_msg)
+        self.sim.set_ctrl_value(
+            "Kinova",
+            "position",
+            [command.actuators[n].position for n in range(JOINTS)],
+        )
+        self.sim.set_ctrl_value(
+            "Kinova",
+            "velocity",
+            [command.actuators[n].velocity for n in range(JOINTS)],
+        )
+        self.sim.set_ctrl_value(
+            "Kinova",
+            "torque",
+            [command.actuators[n].current_motor for n in range(JOINTS)],
+        )
         return self.RefreshFeedback()
 
     def RefreshFeedback(self) -> BaseCyclic.Feedback:
         """Obtain feedback from base, actuators, and interface on their status."""
+        for n, pos in enumerate(self.sim.get_sensor_feedback("Kinova", "position")):
+            self.feedback.actuators[n].position = pos
+        for n, vel in enumerate(self.sim.get_sensor_feedback("Kinova", "velocity")):
+            self.feedback.actuators[n].velocity = vel
+        for n, tor in enumerate(self.sim.get_sensor_feedback("Kinova", "torque")):
+            self.feedback.actuators[n].current_motor = tor
         return self.feedback
 
 
 class ActuatorConfigClientSimulation:
     """https://github.com/Kinovarobotics/kortex/blob/master/api_python/doc/markdown/summary_pages/ActuatorConfig.md."""
 
-    def __init__(self, node: Node) -> None:
-        self.client = node.create_client(SimSrv, "/sim/srv")
+    def __init__(self, simulation: Simulation) -> None:
+        self.simulation = simulation
         self.control_modes = [
             ActuatorConfig.ControlModeInformation(1) for _ in range(JOINTS)
         ]
@@ -136,14 +135,8 @@ class ActuatorConfigClientSimulation:
     ) -> None:
         """Set actuator control mode."""
         mode_value = control_mode_information.control_mode
-        request = SimSrv.Request()
-        request.arg = device_id
         if mode_value == ActuatorConfig_pb2.POSITION:
-            request.name = "KinovaPositionMode"
+            self.simulation.change_mode("position", device_id)
         elif mode_value == ActuatorConfig_pb2.CURRENT:
-            request.name = "KinovaTorqueMode"
-        future = self.client.call_async(request)
-        while not future.done():
-            time.sleep(0.1)
-        if future.result().success:
-            self.control_modes[device_id].control_mode = mode_value
+            self.simulation.change_mode("torque", device_id)
+        self.control_modes[device_id].control_mode = mode_value

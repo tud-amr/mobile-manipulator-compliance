@@ -1,154 +1,79 @@
 import os
 import rclpy
-import time
-import signal
 from rclpy.node import Node
-from kinova_driver_msg.msg import KinFdbk, KinCmd
-from dingo_driver_msg.msg import DinFdbk, DinCmd
-from kinova_driver_msg.srv import KinSrv
-from simulation_msg.msg import SimFdbk
-from simulation_msg.srv import SimSrv
-from controller_msg.srv import ConSrv
-from compliant_control.interface.user_interface import UserInterface
-from compliant_control.interface.templates import Widget, Group
-from compliant_control.dingo.utilities import direction_to_wheel_torques
 from threading import Thread
 
+from user_interface_msg.msg import Ufdbk, Ustate, Ucmd
 
-class RateCounterNode(Node):
-    """A node that counts the update rates."""
-
-    def __init__(self, interface: UserInterface) -> None:
-        super().__init__("rate_counter_node")
-        self.create_subscription(
-            KinFdbk, "/kinova/fdbk", lambda _: interface.rates["kin"].inc(), 10
-        )
-        self.create_subscription(
-            DinFdbk, "/dingo/fdbk", lambda _: interface.rates["din"].inc(), 10
-        )
-        self.create_subscription(
-            KinCmd, "/kinova/cmd", lambda _: interface.rates["con"].inc(), 10
-        )
-        self.create_subscription(
-            SimFdbk, "/sim/fdbk", lambda _: interface.rates["sim"].inc(), 10
-        )
+from compliant_control.interface.user_interface import UserInterface
 
 
 class UserInterfaceNode(Node):
     """A node that starts the user interface."""
 
-    def __init__(self, interface: UserInterface) -> None:
+    def __init__(self) -> None:
         super().__init__("user_interface_node")
-        self.create_subscription(KinFdbk, "/kinova/fdbk", self.kin_fdbk, 10)
-        self.create_subscription(DinFdbk, "/dingo/fdbk", self.din_fdbk, 10)
-        self.kinova_client = self.create_client(KinSrv, "/kinova/srv")
-        self.sim_client = self.create_client(SimSrv, "/sim/srv")
-        self.dingo_pub = self.create_publisher(DinCmd, "/dingo/cmd", 10)
-        self.con_client = self.create_client(ConSrv, "/control/srv")
+        self.create_subscription(Ufdbk, "/feedback", self.feedback, 10)
+        self.create_subscription(Ustate, "/state", self.state, 10)
+        self.publisher = self.create_publisher(Ucmd, "/command", 10)
 
-        self.interface = interface
-        self.interface.cb_din = self.command_dingo
-        Widget.callback_link = self.callback
+        self.interface = UserInterface(self.command)
         self.interface.create_ui()
 
-    def callback(self, info: list[str]) -> None:
-        """Callback."""
-        print(info)
-        match info[0]:
-            case "Kin":
-                self.call_kinova(info[1])
-            case "Sim":
-                self.call_sim(info[1])
-            case "Con":
-                self.call_con(info[1])
-            case None:
-                self.call_con(info[1])
-                self.call_kinova(info[1])
-        Group.update_all()
+        spin_thread = Thread(target=self.start_spin_loop)
+        spin_thread.start()
 
-    def call_UI(self, name: str) -> None:
-        """Call a UI method."""
-        match name:
-            case "Reset wheels":
-                self.interface.reset_wheels()
+        self.interface.start()
 
-    def call_con(self, name: str) -> None:
-        """Call a controller service."""
-        print(name)
-        request = ConSrv.Request()
-        request.name = name
-        future = self.con_client.call_async(request)
-        while not future.done():
-            time.sleep(0.1)
-        response: ConSrv.Response = future.result()
+    def command(self, command: str) -> None:
+        """Send a command to the control interface."""
+        self.interface.update_state("waiting")
+        msg = Ucmd()
+        msg.command = command
+        self.publisher.publish(msg)
+
+    def feedback(self, msg: Ufdbk) -> None:
+        """Process the feedback."""
+        if len(msg.kinova_pos) > 0:
+            self.kinova_feedback(msg)
+        if len(msg.dingo_pos) > 0:
+            self.dingo_feedback(msg)
+
+    def state(self, msg: Ustate) -> None:
+        """Update the state."""
+        self.interface.state.mode = msg.mode
+        for n, joint in enumerate(self.interface.joints):
+            joint.active = msg.joint_active[n]
+            joint.mode = msg.joint_mode[n]
+        self.interface.update_state()
+
+    def kinova_feedback(self, msg: Ufdbk) -> None:
+        """Process the Kinova feedback."""
         for joint in self.interface.joints:
-            joint.ratio = response.joint_ratio[joint.index]
-            joint.fric_d = response.joint_fric_d[joint.index]
-            joint.fric_s = response.joint_fric_s[joint.index]
-        self.interface.state.comp_grav = response.comp_grav
-        self.interface.state.comp_fric = response.comp_fric
-        self.interface.state.imp_joint = response.imp_joint
-        self.interface.state.imp_cart = response.imp_cart
-
-    def call_sim(self) -> None:
-        """Call a simulation service."""
-        request = SimSrv.Request()
-        request.name = "ToggleAutomove"
-        self.sim_client.call(request)
-
-    def call_kinova(self, name: str) -> None:
-        """Call a kinova service."""
-        self.interface.state.mode = "waiting"
-        request = KinSrv.Request()
-        request.name = name
-        future = self.kinova_client.call_async(request)
-        while not future.done():
-            time.sleep(0.1)
-        response: KinSrv.Response = future.result()
-        self.interface.state.mode = response.mode
-        self.interface.state.servoing = response.servoing_mode
-        for joint in self.interface.joints:
-            joint.mode = response.control_mode[joint.index][:3]
-            joint.active = response.active[joint.index]
-
-    def command_dingo(self, direction: list) -> None:
-        """Send a command to Dingo."""
-        command = DinCmd()
-        command.wheel_command = direction_to_wheel_torques(direction)
-        self.dingo_pub.publish(command)
-
-    def kin_fdbk(self, msg: KinFdbk) -> None:
-        """Update the Kinova feedback."""
-        for n in range(len(msg.joint_pos)):
-            joint = self.interface.joints[n]
-            joint.pos = msg.joint_pos[joint.index]
-            joint.vel = msg.joint_vel[joint.index]
-            joint.eff = msg.joint_tor[joint.index]
-        self.interface.state.update_rate = msg.update_rate
+            joint.pos = msg.kinova_pos[joint.index]
+            joint.vel = msg.kinova_vel[joint.index]
+            joint.eff = msg.kinova_tor[joint.index]
+        self.interface.rates.kin = msg.kinova_rate
         self.interface.update_bars("Kinova")
 
-    def din_fdbk(self, msg: DinFdbk) -> None:
-        """Update the Dingo feedback."""
-        for n in range(len(msg.wheel_pos)):
-            wheel = self.interface.wheels[n]
+    def dingo_feedback(self, msg: Ufdbk) -> None:
+        """Process the Dingo feedback."""
+        for wheel in self.interface.wheels:
             last_position = wheel.pos
-            wheel.encoder_position = msg.wheel_pos[n]
+            wheel.encoder_position = msg.dingo_pos[wheel.index]
             wheel.vel = wheel.pos - last_position
-            wheel.eff = msg.wheel_tor[n]
+            wheel.eff = msg.dingo_tor[wheel.index]
         self.interface.update_bars("Dingo")
+
+    def start_spin_loop(self) -> None:
+        """Start node spinning."""
+        rclpy.spin(self)
 
 
 def main(args: any = None) -> None:
     """Main."""
     rclpy.init(args=args)
-    executor: rclpy.Executor = rclpy.executors.MultiThreadedExecutor()
-    interface = UserInterface()
-    executor.add_node(RateCounterNode(interface))
-    executor.add_node(UserInterfaceNode(interface))
-    spin_thread = Thread(target=executor.spin)
-    spin_thread.start()
-    signal.signal(signal.SIGINT, interface.stop)
-    interface.start()
+    UserInterfaceNode()
     rclpy.shutdown()
     os._exit(0)
 

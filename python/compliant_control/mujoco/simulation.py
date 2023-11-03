@@ -9,8 +9,8 @@ from compliant_control.kinova.specifications import Position
 class Simulation(Visualization):
     """Provides the mujoco simulation of the robot."""
 
-    def __init__(self, step_cb: callable = None) -> None:
-        super().__init__(step_cb)
+    def __init__(self) -> None:
+        super().__init__()
 
         self.default_biasprm = self.model.actuator_biasprm.copy()
         self.default_gainprm = self.model.actuator_gainprm.copy()

@@ -1,15 +1,16 @@
 import glfw
 import time
 from threading import Thread
-from typing import Literal
+from typing import Literal, Callable
 import dearpygui.dearpygui as dpg
-from compliant_control.interface.data_classes import Joint, Wheel, State, Rate
+from compliant_control.interface.data_classes import Joint, Wheel, State, Rates
 from compliant_control.interface.joystick import Joystick
 from compliant_control.interface.templates import (
     window,
     create_plot,
     update_plot,
     Group,
+    Widget,
     Row,
     Table,
     Button,
@@ -24,15 +25,15 @@ WHEELS = 4
 class UserInterface:
     """Used to tune the PID controller of the Dingo."""
 
-    def __init__(self) -> None:
+    def __init__(self, callback: Callable) -> None:
         self.joints = [Joint(n) for n in range(JOINTS)]
         self.wheels = [Wheel(n) for n in range(WHEELS)]
         self.state = State()
-        self.rates = {"kin": Rate(), "din": Rate(), "sim": Rate(), "con": Rate()}
+        self.rates = Rates()
         thread = Thread(target=self.update_rates_loop)
         thread.start()
 
-        self.cb_din = lambda: None
+        Widget.general_callback = callback
         self.define_ui_parameters()
 
     @property
@@ -50,12 +51,15 @@ class UserInterface:
         for wheel in self.wheels:
             wheel.reset()
 
+    def update_state(self, mode: str = None) -> None:
+        """Update the state."""
+        self.state.mode = mode if mode is not None else self.state.mode
+        Group.update_all()
+
     def update_rates_loop(self) -> None:
         """Update the rates."""
         while True:
-            for rate in self.rates.values():
-                rate.update()
-                Group.update_all()
+            Group.update_all()
             time.sleep(1)
 
     def define_ui_parameters(self) -> None:
@@ -97,7 +101,7 @@ class UserInterface:
         self.load_control(w2, int(h3 * 0.85), [0, h3])
         self.load_info(w2, int(h3 * 0.15), [0, int(h3 * 1.85)])
         self.load_state(w2, h6, [w2, h3])
-        self.joystick = Joystick(w2, h6, [w2, h3 + h6], self.cb_din)
+        # self.joystick = Joystick(w2, h6, [w2, h3 + h6], self.cb_din)
 
         create_plot("pos", w3, h3, [0, 2 * h3], self.wheel_names, 10)
         create_plot("vel", w3, h3, [w3, 2 * h3], self.wheel_names, 5)
@@ -111,18 +115,18 @@ class UserInterface:
             dpg.add_text("High Level:")
             Row(
                 [
-                    Button("Home", "Kin"),
-                    Button("Zero", "Kin"),
-                    Button("Retract", "Kin"),
-                    Button("Pref", "Kin"),
-                    Button("Start LLC", "Kin"),
+                    Button("Home"),
+                    Button("Zero"),
+                    Button("Retract"),
+                    Button("Pref"),
+                    Button("Start LLC"),
                 ],
                 enabled=self.state.HLC,
             )
 
             dpg.add_text("Switch:")
             Row(
-                [Button("Stop LLC", "Kin"), Button("Start LLC Task")],
+                [Button("Stop LLC"), Button("Start LLC Task")],
                 self.state.LLC,
             )
             Row([Button("Stop LLC Task")], self.state.LLC_task)
@@ -133,13 +137,13 @@ class UserInterface:
                 [
                     [
                         Text("Compensate:"),
-                        Checkbox("gravity", self.state.get_comp_grav, "Con"),
-                        Checkbox("friction", self.state.get_comp_fric, "Con"),
+                        Checkbox("gravity", self.state.get_comp_grav),
+                        Checkbox("friction", self.state.get_comp_fric),
                     ],
                     [
                         Text("Impedance:"),
-                        Checkbox("joint", self.state.get_imp_joint, "Con"),
-                        Checkbox("cartesian", self.state.get_imp_cart, "Con"),
+                        Checkbox("joint", self.state.get_imp_joint),
+                        Checkbox("cartesian", self.state.get_imp_cart),
                     ],
                 ],
                 self.state.LLC_task,
@@ -154,8 +158,8 @@ class UserInterface:
             )
             Row(
                 [
-                    Button("Clear Faults", "Kin"),
-                    Button("Reset wheels", "UI"),
+                    Button("Clear Faults"),
+                    Button("Reset wheels"),
                     Button("Refresh"),
                 ],
                 True,
@@ -164,8 +168,8 @@ class UserInterface:
     def load_info(self, width: int, height: int, pos: list) -> None:
         """Load info."""
         with window(width, height, pos, tag="window_info"):
-            headers = list(self.rates.keys())
-            widgets = [[Text("", x.get_rate) for x in self.rates.values()]]
+            headers = self.rates.names
+            widgets = [[Text("", lambda _x=x: self.rates.value(_x))] for x in headers]
             self.info = Table(headers, widgets)
 
     def load_state(self, width: int, height: int, pos: list) -> None:
@@ -173,7 +177,7 @@ class UserInterface:
         headers = ["#", "Mode:", "Ratio:", "fric_D:", "fric_S:"]
         widgets = [
             [
-                Checkbox(str(joint.index), joint.is_active, "Kin"),
+                Checkbox(str(joint.index), joint.is_active),
                 Text("", joint.get_mode),
                 Text("", joint.get_ratio),
                 Text("", joint.get_fric_d),

@@ -1,6 +1,8 @@
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
 import numpy as np
-from .state import State
+
+if TYPE_CHECKING:
+    from compliant_control.control.state import State
 
 JOINTS = 6
 
@@ -8,9 +10,8 @@ JOINTS = 6
 class Controller:
     """General controller template."""
 
-    def __init__(self, state: State) -> None:
+    def __init__(self, state: "State") -> None:
         self.state = state
-        self.active = False
         self.comp_grav = True
         self.comp_fric = False
         self.imp_joint = False
@@ -47,8 +48,8 @@ class Controller:
 
     def reset(self) -> None:
         """Reset self to prepare for connection."""
-        self.q_d = self.state.q.copy()
-        self.dq_d = self.state.dq.copy()
+        self.q_d = self.state.feedback.q.copy()
+        self.dq_d = self.state.feedback.dq.copy()
 
         self.x_d = self.state.x.copy()
         self.dx_d = np.zeros(3)
@@ -59,7 +60,7 @@ class Controller:
     def define_errors(self) -> None:
         """Define the errors."""
         x = self.state.x
-        dx = self.state.J @ self.state.dq
+        dx = self.state.J @ self.state.feedback.dq
 
         self.x_e = self.x_d - x
         self.dx_e = self.dx_d - dx
@@ -86,8 +87,8 @@ class Controller:
 
     def joint_impedance(self) -> None:
         """Joint impedance."""
-        q_e = self.q_d - self.state.q
-        dq_e = self.dq_d - self.state.dq
+        q_e = self.q_d - self.state.feedback.q
+        dq_e = self.dq_d - self.state.feedback.dq
         tau = self.S * q_e + self.D * dq_e
         current = tau * self.state.ratios
 
@@ -113,7 +114,7 @@ class Controller:
         """Compensate friction."""
         for n in range(len(current)):
             if current[n] != 0 and np.linalg.norm(self.x_e) > self.tolerance:
-                factor = min(abs(self.state.dq[n]) / self.thr_dynamic, 1)
+                factor = min(abs(self.state.feedback.dq[n]) / self.thr_dynamic, 1)
                 sign = current[n] / abs(current[n])
                 static_part = (1 - factor) * self.state.static_frictions[n]
                 dynamic_part = factor * self.state.dynamic_frictions[n]
@@ -123,7 +124,7 @@ class Controller:
     def compensate_friction_when_moving(self) -> None:
         """Compensate friction when moving."""
         for n in range(JOINTS):
-            vel = self.state.dq[n]
+            vel = self.state.feedback.dq[n]
             abs_vel = abs(vel)
             if abs_vel > 0:
                 comp = vel / abs_vel * self.state.dynamic_frictions[n]
