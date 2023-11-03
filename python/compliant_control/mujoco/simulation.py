@@ -4,13 +4,15 @@ import numpy as np
 from typing import Literal
 from compliant_control.mujoco.visualization import Visualization
 from compliant_control.kinova.specifications import Position
+from compliant_control.control.state import State
 
 
 class Simulation(Visualization):
     """Provides the mujoco simulation of the robot."""
 
-    def __init__(self) -> None:
+    def __init__(self, state: State) -> None:
         super().__init__()
+        self.state = state
 
         self.default_biasprm = self.model.actuator_biasprm.copy()
         self.default_gainprm = self.model.actuator_gainprm.copy()
@@ -22,6 +24,7 @@ class Simulation(Visualization):
     def step(self) -> None:
         """Perform a simulation step."""
         mujoco.mj_step(self.model, self.data)
+        self.state.target = self.relative_target
 
     def change_mode(self, mode: Literal["position", "torque"], joint: int) -> None:
         """Change the control mode of the Kinova arm."""

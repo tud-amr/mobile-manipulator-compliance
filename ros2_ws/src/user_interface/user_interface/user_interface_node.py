@@ -42,6 +42,10 @@ class UserInterfaceNode(Node):
     def state(self, msg: Ustate) -> None:
         """Update the state."""
         self.interface.state.mode = msg.mode
+        self.interface.state.comp_grav = msg.comp_grav
+        self.interface.state.comp_fric = msg.comp_fric
+        self.interface.state.imp_joint = msg.imp_joint
+        self.interface.state.imp_cart = msg.imp_cart
         for n, joint in enumerate(self.interface.joints):
             joint.active = msg.joint_active[n]
             joint.mode = msg.joint_mode[n]

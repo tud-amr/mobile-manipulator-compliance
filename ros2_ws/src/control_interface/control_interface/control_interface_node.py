@@ -22,11 +22,11 @@ class ControlInterfaceNode(Node):
         self.pub_fdbk = self.create_publisher(Ufdbk, "/feedback", 10)
         self.pub_state = self.create_publisher(Ustate, "/state", 10)
         self.create_subscription(Ucmd, "/command", self.handle_input, 10)
-        simulation = True
+        self.simulate = True
 
         self.state = State()
 
-        if simulation:
+        if self.simulate:
             self.start_simulation()
         else:
             self.start_robot()
@@ -45,11 +45,11 @@ class ControlInterfaceNode(Node):
 
     def start_simulation(self) -> None:
         """Start the simulation."""
-        simulation = Simulation()
-        self.kinova = KortexClientSimulation(self.state, simulation)
+        self.simulation = Simulation(self.state)
+        self.kinova = KortexClientSimulation(self.state, self.simulation)
         self.kinova.log = self.get_logger().warn
         self.start_threads()
-        simulation.start()
+        self.simulation.start()
 
     def start_publish_loop(self) -> None:
         """Start a loop that publishes the feedback."""
@@ -86,12 +86,16 @@ class ControlInterfaceNode(Node):
                 self.kinova.stop_LLC()
             case "Start LLC Task":
                 self.kinova.connect_LLC()
+                self.reset_target()
             case "Stop LLC Task":
                 self.kinova.disconnect_LLC()
             case "Clear Faults":
                 self.kinova.clear_faults()
             case _ if cmd in [str(n) for n in range(self.kinova.actuator_count)]:
                 self.kinova.toggle_active(int(cmd))
+            case _ if cmd in ["gravity", "friction", "joint", "cartesian"]:
+                self.state.controller.toggle(cmd)
+                self.reset_target()
             case _:
                 print(f"Service call {cmd} is unknown.")
         self.publish_state()
@@ -102,7 +106,16 @@ class ControlInterfaceNode(Node):
         state.mode = self.kinova.mode
         state.joint_active = self.kinova.joint_active
         state.joint_mode = self.kinova.get_control_modes()
+        state.comp_grav = self.state.controller.comp_grav
+        state.comp_fric = self.state.controller.comp_fric
+        state.imp_joint = self.state.controller.imp_joint
+        state.imp_cart = self.state.controller.imp_cart
         self.pub_state.publish(state)
+
+    def reset_target(self) -> None:
+        """Reset the target."""
+        if self.simulate:
+            self.simulation.update_target(self.simulation.end_effector)
 
     def start_spin_loop(self) -> None:
         """Start node spinning."""

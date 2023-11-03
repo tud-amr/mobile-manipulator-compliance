@@ -209,6 +209,7 @@ class KortexClient:
 
     def set_command(self, commands: list) -> None:
         """Set the command."""
+        self.copy_feedback_to_command()
         for n, command in enumerate(commands):
             if self.joint_active[n]:
                 self.command.actuators[n].current_motor = command
