@@ -1,4 +1,0 @@
-string name
-int32 arg
----
-bool success
