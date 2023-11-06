@@ -23,10 +23,12 @@ class ControlInterfaceNode(Node):
 
     def __init__(self) -> None:
         super().__init__("control_interface_node")
+        self.declare_parameter("simulate", True)
+        self.simulate = self.get_parameter("simulate").get_parameter_value().bool_value
+
         self.pub_fdbk = self.create_publisher(Ufdbk, "/feedback", 10)
         self.pub_state = self.create_publisher(Ustate, "/state", 10)
         self.create_subscription(Ucmd, "/command", self.handle_input, 10)
-        self.simulate = True
 
         self.state = State()
 

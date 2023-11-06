@@ -9,10 +9,7 @@ def generate_launch_description() -> None:
             Node(
                 package="control_interface",
                 executable="control_interface_node",
-            ),
-            Node(
-                package="user_interface",
-                executable="user_interface_node",
-            ),
+                parameters=[{"simulate": False}],
+            )
         ]
     )

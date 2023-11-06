@@ -6,6 +6,7 @@ from threading import Thread
 from user_interface_msg.msg import Ufdbk, Ustate, Ucmd
 
 from compliant_control.interface.user_interface import UserInterface
+from compliant_control.mujoco.visualization import Visualization
 
 
 class UserInterfaceNode(Node):
@@ -13,6 +14,7 @@ class UserInterfaceNode(Node):
 
     def __init__(self) -> None:
         super().__init__("user_interface_node")
+        self.declare_parameter("visualize", True)
         self.create_subscription(Ufdbk, "/feedback", self.feedback, 10)
         self.create_subscription(Ustate, "/state", self.state, 10)
         self.publisher = self.create_publisher(Ucmd, "/command", 10)
@@ -22,6 +24,14 @@ class UserInterfaceNode(Node):
 
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
+
+        self.visualize = (
+            self.get_parameter("visualize").get_parameter_value().bool_value
+        )
+        if self.visualize:
+            self.visualization = Visualization()
+            visualize_thread = Thread(target=self.visualization.start)
+            visualize_thread.start()
 
         self.interface.start()
 
@@ -61,6 +71,8 @@ class UserInterfaceNode(Node):
             joint.eff = msg.kinova_tor[joint.index]
         self.interface.rates.kin = msg.kinova_rate
         self.interface.update_bars("Kinova")
+        if self.visualize:
+            self.visualization.set_qpos_value("Kinova", "position", msg.kinova_pos)
 
     def dingo_feedback(self, msg: Ufdbk) -> None:
         """Process the Dingo feedback."""
@@ -71,6 +83,8 @@ class UserInterfaceNode(Node):
             wheel.eff = msg.dingo_tor[wheel.index]
         self.interface.rates.din = msg.dingo_rate
         self.interface.update_bars("Dingo")
+        if self.visualize:
+            self.visualization.set_qpos_value("Dingo", "position", msg.dingo_pos)
 
     def start_spin_loop(self) -> None:
         """Start node spinning."""
