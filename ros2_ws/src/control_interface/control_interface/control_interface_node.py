@@ -6,7 +6,10 @@ from threading import Thread
 
 from compliant_control.control.state import State
 from compliant_control.mujoco.simulation import Simulation
+
+from compliant_control.dingo.dingo_driver import DingoDriver
 from compliant_control.dingo.dingo_driver_simulation import DingoDriverSimulation
+
 from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.kortex_client_simulation import KortexClientSimulation
 
@@ -42,7 +45,10 @@ class ControlInterfaceNode(Node):
 
     def start_robot(self) -> None:
         """Start the robot."""
+        self.dingo = DingoDriver(self.state)
         self.kinova = KortexClient(self.state)
+        self.start_threads()
+        self.keep_alive_loop()
 
     def start_simulation(self) -> None:
         """Start the simulation."""
@@ -125,6 +131,11 @@ class ControlInterfaceNode(Node):
         """Reset the target."""
         if self.simulate:
             self.simulation.update_target(self.simulation.end_effector)
+
+    def keep_alive_loop(self) -> None:
+        """Keep alive."""
+        while True:
+            time.sleep(1)
 
     def start_spin_loop(self) -> None:
         """Start node spinning."""
