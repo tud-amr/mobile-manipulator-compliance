@@ -60,7 +60,6 @@ class KortexClient:
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         self._refresh()
         self._initialize_command()
-        self.start()
 
     def get_mode(self) -> str:
         """Get the general mode."""
@@ -85,13 +84,20 @@ class KortexClient:
         """Clear the faults."""
         self.base.ClearFaults()
 
-    def start(self) -> None:
-        """Start the refresh loop."""
+    def start_in_new_thread(self) -> None:
+        """Start the refresh loop in a new thread."""
         rate_check_thread = Thread(target=self._rate_check_loop)
         refresh_loop_thread = Thread(target=self._refresh_loop)
         self.active = True
         rate_check_thread.start()
         refresh_loop_thread.start()
+
+    def start(self) -> None:
+        """Start the refresh loop."""
+        rate_check_thread = Thread(target=self._rate_check_loop)
+        self.active = True
+        rate_check_thread.start()
+        self._refresh_loop()
 
     def stop(self, *args: any) -> None:
         """Stop the update loop."""
@@ -200,18 +206,18 @@ class KortexClient:
             return (abs(torque) - lower_bound) / (upper_bound - lower_bound)
         return getattr(self.feedback.actuators[joint], "torque")
 
-    def copy_feedback_to_command(self) -> None:
+    def copy_feedback_to_command(self, joint: int = None) -> None:
         """Copy the feedback to the command message."""
         for prop in ["position", "velocity", "current_motor"]:
-            for n in range(self.actuator_count):
+            for n in range(self.actuator_count) if joint is None else [joint]:
                 value = getattr(self.feedback.actuators[n], prop)
                 setattr(self.command.actuators[n], prop, value)
 
     def set_command(self, commands: list) -> None:
         """Set the command."""
-        self.copy_feedback_to_command()
         for n, command in enumerate(commands):
             if self.joint_active[n]:
+                self.copy_feedback_to_command(n)
                 self.command.actuators[n].current_motor = command
 
     def toggle_active(self, joint: int) -> None:

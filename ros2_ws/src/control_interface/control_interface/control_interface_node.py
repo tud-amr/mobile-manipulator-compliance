@@ -1,6 +1,7 @@
 import rclpy
 import os
 import time
+import signal
 from rclpy.node import Node
 from threading import Thread
 
@@ -12,6 +13,7 @@ from compliant_control.dingo.dingo_driver_simulation import DingoDriverSimulatio
 
 from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.kortex_client_simulation import KortexClientSimulation
+from compliant_control.kinova.utilities import DeviceConnection
 
 from user_interface_msg.msg import Ufdbk, Ucmd, Ustate
 
@@ -31,6 +33,7 @@ class ControlInterfaceNode(Node):
         self.create_subscription(Ucmd, "/command", self.handle_input, 10)
 
         self.state = State()
+        self.state.simulation = self.simulate
 
         if self.simulate:
             self.start_simulation()
@@ -48,9 +51,15 @@ class ControlInterfaceNode(Node):
     def start_robot(self) -> None:
         """Start the robot."""
         self.dingo = DingoDriver(self.state)
-        self.kinova = KortexClient(self.state)
+        self.dingo.log = self.get_logger().info
         self.start_threads()
-        self.keep_alive_loop()
+        with DeviceConnection.createTcpConnection() as router, DeviceConnection.createUdpConnection() as real_time_router:
+            self.kinova = KortexClient(
+                self.state, router=router, real_time_router=real_time_router
+            )
+            self.kinova.log = self.get_logger().info
+            signal.signal(signal.SIGINT, self.kinova.stop)
+            self.kinova.start()
 
     def start_simulation(self) -> None:
         """Start the simulation."""
@@ -63,6 +72,9 @@ class ControlInterfaceNode(Node):
 
     def start_publish_loop(self) -> None:
         """Start a loop that publishes the feedback."""
+        while not hasattr(self, "kinova"):
+            time.sleep(0.5)
+        self.get_logger().info("READY!")
         while True:
             self.publish_feedback()
             time.sleep(1 / PUBLISH_RATE)
@@ -120,19 +132,25 @@ class ControlInterfaceNode(Node):
     def publish_state(self) -> None:
         """Publish the state of the robot."""
         state = Ustate()
-        state.mode = self.kinova.mode
-        state.joint_active = self.kinova.joint_active
-        state.joint_mode = self.kinova.get_control_modes()
+        state.servoing_mode = self.kinova.mode
         state.comp_grav = self.state.controller.comp_grav
         state.comp_fric = self.state.controller.comp_fric
         state.imp_joint = self.state.controller.imp_joint
         state.imp_cart = self.state.controller.imp_cart
+
+        state.active = self.kinova.joint_active
+        state.mode = self.kinova.get_control_modes()
+        state.ratio = list(self.state.ratios)
+        state.fric_s = self.state.static_frictions
+        state.fric_d = self.state.dynamic_frictions
+
         self.pub_state.publish(state)
 
     def reset_target(self) -> None:
         """Reset the target."""
         if self.simulate:
             self.simulation.update_target(self.simulation.end_effector)
+        self.state.target = self.state.x.copy()
 
     def keep_alive_loop(self) -> None:
         """Keep alive."""

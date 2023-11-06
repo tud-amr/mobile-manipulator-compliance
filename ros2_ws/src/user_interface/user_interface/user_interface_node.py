@@ -22,9 +22,6 @@ class UserInterfaceNode(Node):
         self.interface = UserInterface(self.command)
         self.interface.create_ui()
 
-        spin_thread = Thread(target=self.start_spin_loop)
-        spin_thread.start()
-
         self.visualize = (
             self.get_parameter("visualize").get_parameter_value().bool_value
         )
@@ -32,6 +29,9 @@ class UserInterfaceNode(Node):
             self.visualization = Visualization()
             visualize_thread = Thread(target=self.visualization.start)
             visualize_thread.start()
+
+        spin_thread = Thread(target=self.start_spin_loop)
+        spin_thread.start()
 
         self.interface.start()
 
@@ -53,14 +53,17 @@ class UserInterfaceNode(Node):
 
     def state(self, msg: Ustate) -> None:
         """Update the state."""
-        self.interface.state.mode = msg.mode
+        self.interface.state.mode = msg.servoing_mode
         self.interface.state.comp_grav = msg.comp_grav
         self.interface.state.comp_fric = msg.comp_fric
         self.interface.state.imp_joint = msg.imp_joint
         self.interface.state.imp_cart = msg.imp_cart
         for n, joint in enumerate(self.interface.joints):
-            joint.active = msg.joint_active[n]
-            joint.mode = msg.joint_mode[n]
+            joint.active = msg.active[n]
+            joint.mode = msg.mode[n]
+            joint.ratio = msg.ratio[n]
+            joint.fric_s = msg.fric_s[n]
+            joint.fric_d = msg.fric_d[n]
         self.interface.update_state()
 
     def kinova_feedback(self, msg: Ufdbk) -> None:

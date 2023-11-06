@@ -11,10 +11,9 @@ PYBIND11_MODULE(dingo_driver, handle)
     py::class_<DriverManager>(handle, "DriverManager")
         .def(py::init<std::string>())
         .def("connect_gateway", &DriverManager::connect_gateway)
-        .def("add_actuator", &DriverManager::add_actuator)
-        .def("set_mode", &DriverManager::set_mode)
-        .def("initialize_encoders", &DriverManager::initialize_encoders)
-        .def("initialize_encoders", &DriverManager::command)
-        .def("canread", &DriverManager::canread)
-        .def("get_states", &DriverManager::get_states);
+        .def("start_canread_loop", &DriverManager::start_canread_loop)
+        .def("start_update_loop", &DriverManager::start_update_loop)
+        .def("set_command", &DriverManager::set_command)
+        .def_readonly("position", &DriverManager::pos_)
+        .def_readonly("torque", &DriverManager::tor_);
 }

@@ -74,39 +74,12 @@ namespace dingo_driver
         void initialize_encoders();
 
         /**
-         * @brief Get the states of all actuators.
-         *
-         * @return std::vector<State>
-         */
-        std::vector<State> get_states();
-
-        /**
-         * @brief Get the gain object
-         *
-         * @param name "The name of the actuator."
-         * @param mode "Cur", "Spd"
-         * @param gain "P", "I", "D"
-         * @return double
-         */
-        double get_gain(std::string name, std::string mode, std::string gain);
-
-        /**
          * @brief Set the mode of an actuator.
          *
          * @param name "The name of the actuator."
          * @param mode "Vol", "Cur", "Spd"
          */
         void set_mode(std::string name, std::string mode);
-
-        /**
-         * @brief Set the gain of an actuator.
-         *
-         * @param name "The name of the actuator."
-         * @param mode "Cur", "Spd"
-         * @param gain "P", "I", "D"
-         * @param value "Gain value."
-         */
-        void set_gain(std::string name, std::string mode, std::string gain, double value);
 
         /**
          * @brief Send a command.
@@ -121,12 +94,30 @@ namespace dingo_driver
          * @brief Reads the canbus for all actuators.
          *
          */
-        void canread();
+        void canread_loop();
+
+        void start_canread_loop();
+
+        void add_actuators();
+
+        void update_loop();
+
+        void start_update_loop();
+
+        void update_state();
+
+        void set_command(std::vector<float> commands);
+
+        std::vector<float> pos_;
+        std::vector<float> tor_;
 
     private:
         std::unique_ptr<puma_motor_driver::SocketCANGateway> gateway_;
         std::map<std::string, Actuator> actuators_;
-        bool canread_loop_;
+        std::thread canread_thread_;
+        std::thread update_thread_;
+
+        std::vector<float> command_ = {0.0, 0.0, 0.0, 0.0};
 
         Actuator *get_actuator_(std::string name);
     };

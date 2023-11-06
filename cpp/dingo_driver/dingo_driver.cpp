@@ -32,9 +32,24 @@ namespace dingo_driver
             {
                 std::cout << "Connection to motor driver gateway successful." << std::endl;
             }
-            return;
         }
-        std::cout << "Already connected to gateway." << std::endl;
+        else
+        {
+            std::cout << "Already connected to gateway." << std::endl;
+        }
+    }
+
+    void DriverManager::canread_loop()
+    {
+        while (true)
+        {
+            gateway_->canRead();
+        }
+    }
+
+    void DriverManager::start_canread_loop()
+    {
+        canread_thread_ = std::thread(&dingo_driver::DriverManager::canread_loop, this);
     }
 
     void DriverManager::add_actuator(int can_id, std::string name, bool flip)
@@ -43,60 +58,6 @@ namespace dingo_driver
         Actuator actuator(name, driver, flip);
         actuators_.insert({name, actuator});
         gateway_->addDriver(get_actuator_(name)->get_driver());
-    }
-
-    void DriverManager::initialize_encoders()
-    {
-        for (auto &[name, actuator] : actuators_)
-        {
-            actuator.get_driver()->setPosEncoderRef();
-            actuator.get_driver()->setSpdEncoderRef();
-        }
-    }
-
-    std::vector<State> DriverManager::get_states()
-    {
-        std::vector<State> states;
-        for (auto &[name, actuator] : actuators_)
-        {
-            State state;
-            puma_motor_driver::Driver *driver = actuator.get_driver();
-            driver->clearMsgCache();
-            driver->requestFeedbackPosition();
-            driver->requestFeedbackSpeed();
-            driver->requestFeedbackVoltOut();
-            driver->requestFeedbackCurrent();
-            std::chrono::time_point start = std::chrono::steady_clock::now();
-            while (!driver->lastPositionReceived() || !driver->lastSpeedReceived() || !driver->lastOutVoltageReceived() || !driver->lastCurrentReceived())
-            {
-                if (std::chrono::steady_clock::now() - start < std::chrono::milliseconds(50))
-                {
-                    continue;
-                std::cout << "Resend request." << std::endl;
-                }
-                if (!driver->lastPositionReceived())
-                    driver->requestFeedbackPosition();
-                if (!driver->lastSpeedReceived())
-                    driver->requestFeedbackSpeed();
-                if (!driver->lastOutVoltageReceived())
-                    driver->requestFeedbackVoltOut();
-                if (!driver->lastCurrentReceived())
-                    driver->requestFeedbackCurrent();
-                start = std::chrono::steady_clock::now();
-            }
-            state.name = driver->deviceName();
-            state.position = driver->lastPosition() * actuator.flip_value;
-            state.speed = driver->lastSpeed() * actuator.flip_value;
-            state.voltage = driver->lastOutVoltage() * actuator.flip_value;
-            state.current = driver->lastCurrent();
-            states.push_back(state);
-        }
-        return states;
-    }
-
-    double DriverManager::get_gain(std::string name, std::string mode, std::string gain)
-    {
-        return get_actuator_(name)->get_driver()->getGain(mode, gain);
     }
 
     void DriverManager::set_mode(std::string name, std::string mode)
@@ -132,53 +93,87 @@ namespace dingo_driver
         }
     }
 
-    void DriverManager::set_gain(std::string name, std::string mode, std::string gain, double value)
+    void DriverManager::initialize_encoders()
     {
-        std::cout << "Trying to set gain '" << mode + gain << "' of '" << name << "' to " << value << "..." << std::endl;
-        try
+        for (auto &[name, actuator] : actuators_)
         {
-            get_actuator_(name)->get_driver()->setGain(mode, gain, value);
-        }
-        catch (std::invalid_argument &exception)
-        {
-            std::cout << exception.what() << std::endl;
+            actuator.get_driver()->setPosEncoderRef();
+            actuator.get_driver()->setSpdEncoderRef();
         }
     }
 
-    void DriverManager::command(std::string name, std::string mode, double value)
+    void DriverManager::update_loop()
     {
-        puma_motor_driver::Driver *driver;
-        int flip_value;
-        try
+        add_actuators();
+        while (true)
         {
-            dingo_driver::Actuator* actuator = get_actuator_(name);
-            driver = actuator->get_driver();
-            flip_value = actuator->flip_value;
-        }
-        catch (std::invalid_argument &exception)
-        {
-            std::cout << exception.what() << std::endl;
-            return;
-        }
-
-        if (mode == "Vol")
-        {
-            driver->commandDutyCycle(value * flip_value);
-        }
-        else if (mode == "Cur")
-        {
-            driver->commandCurrent(value);
-        }
-        else if (mode == "Spd")
-        {
-            driver->commandSpeed(value);
+            update_state();
         }
     }
 
-    void DriverManager::canread()
+    void DriverManager::start_update_loop()
     {
-        gateway_->canRead();
+        update_thread_ = std::thread(&dingo_driver::DriverManager::update_loop, this);
     }
+
+    void DriverManager::add_actuators()
+    {
+        add_actuator(2, "front_left", false);
+        add_actuator(3, "front_right", true);
+        add_actuator(4, "rear_left", false);
+        add_actuator(5, "rear_right", true);
+        set_mode("front_left", "Vol");
+        set_mode("front_right", "Vol");
+        set_mode("rear_left", "Vol");
+        set_mode("rear_right", "Vol");
+        initialize_encoders();
+    }
+
+    void DriverManager::update_state()
+    {
+        std::vector<float> pos_vector;
+        std::vector<float> tor_vector;
+        int n = 0;
+        for (auto &[name, actuator] : actuators_)
+        {
+            puma_motor_driver::Driver *driver = actuator.get_driver();
+            driver->clearMsgCache();
+            driver->requestFeedbackPosition();
+            driver->requestFeedbackVoltOut();
+            driver->requestFeedbackCurrent();
+            std::chrono::time_point start = std::chrono::steady_clock::now();
+            while (!driver->lastPositionReceived() || !driver->lastSpeedReceived() || !driver->lastOutVoltageReceived() || !driver->lastCurrentReceived())
+            {
+                if (std::chrono::steady_clock::now() - start < std::chrono::milliseconds(50))
+                {
+                    continue;
+                    std::cout << "Resend request." << std::endl;
+                }
+                if (!driver->lastPositionReceived())
+                    driver->requestFeedbackPosition();
+                if (!driver->lastOutVoltageReceived())
+                    driver->requestFeedbackVoltOut();
+                if (!driver->lastCurrentReceived())
+                    driver->requestFeedbackCurrent();
+                start = std::chrono::steady_clock::now();
+            }
+            float pos = driver->lastPosition() * actuator.flip_value;
+            float vol = driver->lastOutVoltage() * actuator.flip_value;
+            float cur = driver->lastCurrent();
+            pos_vector.push_back(pos);
+            tor_vector.push_back(vol * cur);
+
+            driver->commandDutyCycle(command_[n] * actuator.flip_value);
+            n += 1;
+        }
+        pos_ = pos_vector;
+        tor_ = tor_vector;
+    }
+
+    void DriverManager::set_command(std::vector<float> command)
+    {
+        command_ = command;
+    };
 
     Actuator *DriverManager::get_actuator_(std::string name)
     {
