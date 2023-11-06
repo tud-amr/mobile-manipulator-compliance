@@ -17,10 +17,10 @@ RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano
 
 #Copy files to workspace:
 ADD python /home/dingo/compliant-control/python
+ADD cpp /home/dingo/compliant-control/cpp
 ADD docker/.bashrc /home/dingo
 ADD docker/kortex_api-2.6.0.post3-py3-none-any.whl /home/dingo
 ADD docker/requirements.txt /home/dingo
-ADD docker/requirements_flake8.txt /home/dingo
 WORKDIR /home/dingo
 
 #Install kortex wheel:
@@ -32,13 +32,12 @@ RUN pip install -e /home/dingo/compliant-control/python
 #Install required pip packages:
 RUN pip install -r requirements.txt
 
-#Install flake8:
-RUN pip install -r requirements_flake8.txt
-
-#Generate stubs:
-RUN pip install mypy
-WORKDIR /usr/local/lib/python3.10/dist-packages/mujoco
-RUN stubgen -p mujoco -o ../.
+#Build cpp:
+WORKDIR /home/dingo/compliant-control/cpp
+RUN mkdir build
+WORKDIR /home/dingo/compliant-control/cpp/build
+RUN cmake ..
+RUN make install
 
 #Run Container as nonroot
 USER dingo
