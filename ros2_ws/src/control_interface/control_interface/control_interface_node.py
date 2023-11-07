@@ -66,7 +66,8 @@ class ControlInterfaceNode(Node):
         self.simulation = Simulation(self.state)
         self.dingo = DingoDriverSimulation(self.state, self.simulation)
         self.kinova = KortexClientSimulation(self.state, self.simulation)
-        self.kinova.log = self.get_logger().warn
+        self.kinova.log = self.get_logger().info
+        self.kinova.start_in_new_thread()
         self.start_threads()
         self.simulation.start()
 
