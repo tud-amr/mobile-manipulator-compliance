@@ -1,4 +1,3 @@
 dearpygui
 dearpygui_ext
 pin3x-jnrh2023
-mujoco
