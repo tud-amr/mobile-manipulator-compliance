@@ -165,6 +165,12 @@ class KortexClient:
         """Move the arm to the pref position."""
         self._high_level_move(Position.pref)
 
+    def high_level_move(self, position: Position) -> None:
+        """Perform a high level movement."""
+        self.mode = "high_level_moving"
+        self._high_level_move(position)
+        self.mode = "HLC"
+
     def get_position(self, joint: int, as_percentage: bool) -> float:
         """Get the position of a joint."""
         position = getattr(self.feedback.actuators[joint], "position")
@@ -290,7 +296,6 @@ class KortexClient:
 
     def _high_level_move(self, position: Position) -> None:
         """Perform a high level move."""
-        self.log("Starting high level movement...")
         action = Base_pb2.Action()
         action.name = position.name
         action.application_data = ""

@@ -19,7 +19,10 @@ class Controller:
         self.comp_fric = False
         self.imp_joint = False
         self.imp_cart = False
+        self.calibrate = False
         self.mode: Literal["position", "velocity", "current"] = "current"
+
+        self.calibration_addition = np.zeros(JOINTS)
 
         # Joint impedance:
         self.S = [4.0, 6, 4.0, 2.00, 2.00, 1]
@@ -82,6 +85,8 @@ class Controller:
             self.command_base()
         if self.comp_fric and not (self.imp_joint or self.imp_cart):
             self.compensate_friction_when_moving()
+        if self.calibrate:
+            self.calibration_value()
 
     def compensate_gravity(self) -> None:
         """Compensate gravity."""
@@ -155,3 +160,7 @@ class Controller:
     def command_base_direction(self, direction: list[float]) -> None:
         """Command the base with a direction."""
         self.state.dingo_command.c = direction_to_wheel_torques(direction)
+
+    def calibration_value(self) -> None:
+        """Increase torque until joint moves."""
+        self.joint_commands += self.calibration_addition

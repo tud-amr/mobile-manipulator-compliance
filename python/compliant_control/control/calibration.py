@@ -1,188 +1,140 @@
 import numpy as np
 import pandas as pd
 import importlib.resources as pkg_resources
+from typing import Literal
 
-# import calibration_data
 from scipy.signal import savgol_filter
 from scipy.optimize import minimize
 
 from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.specifications import Position
 from compliant_control.control.state import State
-from compliant_control.control.controller import CompensateGravity
+from compliant_control.control import calibration_data
+
 import time
 from threading import Thread
 
+JOINTS = 6
 
-class Calibrations:
+
+class Calibration:
     """Contains all the calibrations."""
 
     def __init__(self, state: State, client: KortexClient) -> None:
-        self.low_level = LowLevelCalibration(state, client)
-        self.high_level = HighLevelCalibration(state, client)
-
-
-class LowLevelCalibration(CompensateGravity):
-    """Class used for calibration of static friction."""
-
-    def __init__(self, state: State, client: KortexClient) -> None:
-        super().__init__(client)
         self.state = state
         self.client = client
+        self.log = lambda msg: print(msg)
+
         self.tolerance = 0.01
+        self.increase = 0.001
 
-    def calibrate_all_joints(self) -> None:
+    def calibrate_all(self, mode: Literal["static", "dynamic"]) -> None:
         """Calibrate all joints."""
-        self.client.calibrating = True
-        self.calibrate(0, [0, 0, 0, 0, 0, 0])
-        self.calibrate(1, [0, 0, 0, 90, 0, 0])
-        self.calibrate(2, [0, 0, 0, 90, 0, 0])
-        self.calibrate(3, [0, 0, 0, 0, 0, 0])
-        self.calibrate(4, [0, 0, 90, 0, 0, 0])
-        self.calibrate(5, [0, 0, 0, 0, 0, 0])
-        self.client.calibrating = False
+        self.state.controller.calibrate = True
+        self.client.joint_active = [True] * self.client.actuator_count
+        if mode == "static":
+            self.static_friction(0, [0, 0, 0, 0, 0, 0])
+            self.static_friction(1, [0, 0, 0, 90, 0, 0])
+            self.static_friction(2, [0, 0, 0, 90, 0, 0])
+            self.static_friction(3, [0, 0, 0, 0, 0, 0])
+            self.static_friction(4, [0, 0, 90, 0, 0, 0])
+            self.static_friction(5, [0, 0, 0, 0, 0, 0])
+        if mode == "dynamic":
+            self.ratio_and_dynamic_friction(0)
+            self.ratio_and_dynamic_friction(1)
+            self.ratio_and_dynamic_friction(2)
+            self.ratio_and_dynamic_friction(3)
+            self.ratio_and_dynamic_friction(4)
+            self.ratio_and_dynamic_friction(5)
+        self.state.controller.calibrate = False
 
-    def calibrate(self, joint: int, start_pos: list) -> None:
-        """Calibrate the given joint."""
-        self.joint = joint
-        self.state.active = [n == joint for n in range(self.client.actuator_count)]
+    def static_friction(self, joint: int, start_pos: list) -> None:
+        """Determine the static friction of the joint."""
         position = start_pos
-        calibrations = 1 if self.client.mock else 4
-        angles = np.linspace(-90, 90, calibrations)
-
-        measured_frictions = []
+        angles = np.linspace(-45, 45, 1)
+        frictions = []
         for angle in angles:
-            self.torque = 0
-            self.moved = False
-            self.started = False
-            self.finished = False
             position[joint] = angle
+            self.state.controller.calibration_addition = np.zeros(JOINTS)
             self.client._high_level_move(Position("", position))
-            self.client._start_LLC()
-            self.client._connect_LLC(self)
+            self.client.start_LLC()
+            self.client.connect_LLC()
             time.sleep(1)
-            self.started = True
-            while not self.finished:
-                time.sleep(0.1)
-            measured_frictions.append(self.torque)
+            moved = False
+            self.state.controller.calibrate = True
+            while not moved:
+                moved = abs(self.state.kinova_feedback.dq[joint]) > self.tolerance
+                self.state.controller.calibration_addition[joint] += 0.001
+                time.sleep(0.01)
+            self.state.controller.calibrate = False
+            self.client.disconnect_LLC()
+            self.client.stop_LLC()
+            frictions.append(self.state.controller.calibration_addition[joint])
+        self.log(str(frictions))
 
-        average_friction = np.mean(measured_frictions)
-        measured_frictions = np.around(measured_frictions, 3)
-        print(f"Joint {joint}: {measured_frictions}, {average_friction}")
-
-    def command(self) -> None:
-        """Increase torque until it moves."""
-        super().command()
-
-        if not self.started:
-            return
-        if self.moved:
-            if abs(self.state.dq[self.joint]) < self.tolerance:
-                self.client._disconnect_LLC()
-                self.client._stop_LLC()
-                self.finished = True
-            return
-        if abs(self.state.dq[self.joint]) < self.tolerance:
-            self.torque += 0.0001
-        else:
-            self.moved = True
-
-        self.commands[0] += self.torque
-
-
-class HighLevelCalibration:
-    """Class used for calibration of torque/current ratio and dynamic friction."""
-
-    def __init__(self, state: State, client: KortexClient) -> None:
-        self.state = state
-        self.client = client
-
-    def calibrate_all_joints(self) -> None:
-        """Calibrate all joints."""
-        self.client.calibrating = True
-        for joint in range(self.client.actuator_count):
-            self.calibrate(joint)
-        self.client.calibrating = False
-
-    def calibrate(self, joint: int) -> None:
-        """Calibrate the given joint."""
-        self.client.calibrating = True
-        self.joint = joint
+    def ratio_and_dynamic_friction(self, joint: int) -> None:
+        """Determine the ratio and dynamic friction."""
+        while self.client.mode == "high_level_moving":
+            time.sleep(0.1)
         start = [0 if joint != n else -90 for n in range(self.client.actuator_count)]
         end = [0 if joint != n else 90 for n in range(self.client.actuator_count)]
-
-        # Joint 3 requires a modification of the pose:
-        if joint == 3:
-            start[2] = 90
-            end[2] = 90
-
+        start[2] = 90 if joint == 3 else start[2]
+        end[2] = 90 if joint == 3 else end[2]
         self.client._high_level_move(Position("", start))
-        self.start_calibration()
-        self.client._high_level_move(Position("", end))
-        self.stop_calibration()
-        self.client.calibrating = False
+        time.sleep(1)
 
-    def start_calibration(self) -> None:
-        """Start the calibration."""
-        self.velocity = []
-        self.gravity = []
-        self.torque = []
-        thread = Thread(target=self.record_data)
-        thread.start()
+        self.record_data(joint, end)
 
-    def stop_calibration(self) -> None:
-        """Stop the calibration."""
-        self.calibrating = False
-        # self.export_data()
-
-    def record_data(self) -> None:
-        """Record the data."""
-        self.calibrating = True
-        while self.calibrating:
-            self.velocity.append(self.state.dq[self.joint])
-            self.gravity.append((self.state.g[self.joint]))
-            if self.client.mock:
-                self.torque.append((self.client.get_torque(self.joint, False)))
-            else:
-                self.torque.append((self.client.get_current(self.joint, False)))
-            time.sleep(1 / self.client.frequency)
-
-    def export_data(self) -> None:
-        """Export the data."""
-        directory = str(pkg_resources.files(calibration_data))
-        p25 = int(len(self.velocity) * 0.25)
-
-        velocity = savgol_filter(self.velocity, 501, 2)[p25:-p25]
-        self.gravity = np.array(self.gravity[p25:-p25])
-        self.torque = savgol_filter(self.torque, 501, 2)[p25:-p25]
-
-        gravity = sum(abs(self.gravity)) > 1
-
-        if not gravity:
-            result = minimize(self._f_move, 0)
-            ratio = 1
-            friction = result.x[0]
-        else:
-            result = minimize(self._f_scale_and_move, [1, 0])
+        if sum(abs(self.model_torque)) > 1:
+            result = minimize(self.f_scale_and_move, [1, 0])
             ratio = result.x[0]
             friction = result.x[1]
+        else:
+            result = minimize(self.f_move, 0)
+            ratio = 1
+            friction = result.x[0]
 
-        print(f"Joint {self.joint}: {1/ratio, friction}")
+        self.log(f"Joint {joint}: {1/ratio, friction}")
+        self.export_data(joint, ratio, friction)
 
+    def record_data(self, joint: int, end: list) -> None:
+        """Record the data."""
+        velocity = []
+        model_torque = []
+        real_torque = []
+        thread = Thread(target=self.client.high_level_move, args=[Position("", end)])
+        thread.start()
+        while np.rad2deg(self.state.kinova_feedback.q[joint]) < -70:
+            time.sleep(1 / self.client.frequency)
+        while np.rad2deg(self.state.kinova_feedback.q[joint]) < 70:
+            velocity.append(self.state.kinova_feedback.dq[joint])
+            model_torque.append((self.state.g[joint]))
+            real_torque.append((self.client.get_current(joint, False)))
+            time.sleep(1 / self.client.frequency)
+
+        self.velocity = savgol_filter(velocity, 501, 2)
+        self.model_torque = np.array(model_torque)
+        self.real_torque = savgol_filter(real_torque, 501, 2)
+
+    def f_scale_and_move(self, params: list) -> None:
+        """Function that scales and moves."""
+        a, b = params
+        return np.sqrt(np.sum((self.model_torque - (a * self.real_torque + b)) ** 2))
+
+    def f_move(self, b: float) -> None:
+        """Function that scales."""
+        return np.sqrt(np.sum((self.model_torque - (self.real_torque + b)) ** 2))
+
+    def export_data(self, joint: int, ratio: float, friction: float) -> None:
+        """Export the data."""
         data = {
-            "Velocity": velocity,
-            "Gravity": self.gravity,
-            "Torque": self.torque,
-            "Scaled": ratio * self.torque,
-            "Transformed": ratio * self.torque + friction,
+            "Velocity": self.velocity,
+            "Model torque": self.model_torque,
+            "Real torque": self.real_torque,
+            "Scaled": ratio * self.real_torque,
+            "Transformed": ratio * self.real_torque + friction,
         }
         df = pd.DataFrame(data)
-        pre = "mock_" if self.client.mock else ""
-        df.to_csv(directory + f"/{pre}calibration_{self.joint}.csv", index=False)
-
-    def _f_scale_and_move(self, params: list) -> None:
-        a, b = params
-        return np.sqrt(np.sum((self.gravity - (a * self.torque + b)) ** 2))
-
-    def _f_move(self, b: float) -> None:
-        return np.sqrt(np.sum((self.gravity - (self.torque + b)) ** 2))
+        pre = "simulate_" if self.client.simulate else ""
+        directory = str(pkg_resources.files(calibration_data))
+        df.to_csv(directory + f"/{pre}calibration_{joint}.csv", index=False)

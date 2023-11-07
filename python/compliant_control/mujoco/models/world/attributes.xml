@@ -1,6 +1,6 @@
 <mujoco>
     <compiler angle="radian" meshdir="meshes/" autolimits="true"/>
-    <!-- <option integrator="RK4" noslip_iterations="10"/> -->
+    <option integrator="RK4" noslip_iterations="0"/>
     <asset>
         <texture type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="512" height="512"/>
         <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>

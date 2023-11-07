@@ -15,6 +15,8 @@ from compliant_control.kinova.kortex_client import KortexClient
 from compliant_control.kinova.kortex_client_simulation import KortexClientSimulation
 from compliant_control.kinova.utilities import DeviceConnection
 
+from compliant_control.control.calibration import Calibration
+
 from user_interface_msg.msg import Ufdbk, Ucmd, Ustate
 
 PUBLISH_RATE = 100
@@ -68,6 +70,8 @@ class ControlInterfaceNode(Node):
         self.kinova = KortexClientSimulation(self.state, self.simulation)
         self.kinova.log = self.get_logger().info
         self.kinova.start_in_new_thread()
+        self.calibration = Calibration(self.state, self.kinova)
+        self.calibration.log = self.get_logger().info
         self.start_threads()
         self.simulation.start()
 
@@ -126,6 +130,10 @@ class ControlInterfaceNode(Node):
                     self.reset_target()
             case "Move Dingo":
                 self.state.controller.command_base_direction(msg.args)
+            case "Static":
+                self.calibration.calibrate_all("static")
+            case "Dynamic":
+                self.calibration.calibrate_all("dynamic")
             case _:
                 print(f"Service call {cmd} is unknown.")
         self.publish_state()

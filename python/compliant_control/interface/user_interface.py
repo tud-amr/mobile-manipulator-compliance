@@ -131,6 +131,9 @@ class UserInterface:
             )
             Row([Button("Stop LLC Task")], self.state.LLC_task)
 
+            dpg.add_text("Calibrate:")
+            Row([Button("Static"), Button("Dynamic")], self.state.HLC)
+
             dpg.add_text("Low Level:")
             Table(
                 None,
@@ -149,8 +152,6 @@ class UserInterface:
                 self.state.LLC_task,
             )
 
-            dpg.add_spacer(height=30)
-            dpg.add_text("Settings:")
             Row(
                 [
                     Checkbox("Automove target", self.state.move_tar),

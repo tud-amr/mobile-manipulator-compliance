@@ -26,34 +26,29 @@ class KortexClientSimulation(KortexClient):
             actuator_config=self.actuator_config,
             simulate=True,
         )
-        self.define_HLC_parameters()
-
-    def define_HLC_parameters(self) -> None:
-        """Define the HLC parameters."""
-        self.reached_error = 10**-5  # deg
-        self.nearby_goal_divider = 100
-
-        moving_speed = 20  # deg/s
-        step_deg = moving_speed / self.frequency
-        self.step_size = np.deg2rad(step_deg)
 
     def _high_level_move(self, position: Position) -> None:
-        pose = np.deg2rad(position.position)
-        reached = [False] * self.actuator_count
-        while not all(reached):
-            for joint in [n for n, done in enumerate(reached) if not done]:
-                position = self.get_position(joint, False)
-                error = pose[joint] - position
-                if abs(error) < self.reached_error:
-                    reached[joint] = True
-                else:
-                    self._execute_action(joint, error)
-            time.sleep(1 / self.frequency)
+        max_attempts = 100
+        divider = 100
+        moving_speed = 20  # deg/s
+        step_deg = moving_speed / self.frequency
+        step_size = np.deg2rad(step_deg)
 
-    def _execute_action(self, joint: int, error: float) -> bool:
-        increment = min(abs(error) / self.nearby_goal_divider, self.step_size)
-        increment *= error / abs(error)
-        self.simulation.ctrl_increment("Kinova", "position", joint, increment)
+        pose = np.deg2rad(position.position)
+        reached = np.full(self.actuator_count, False)
+        no_improve = np.zeros(self.actuator_count)
+        min_error = np.absolute(pose - self.state.kinova_feedback.q)
+        while not reached.all():
+            error = pose - self.state.kinova_feedback.q
+            abs_error = np.absolute(error)
+            improved = abs_error < min_error
+            min_error = np.where(improved, abs_error, min_error)
+            no_improve += np.invert(improved)
+            no_improve *= np.invert(improved)
+            reached = no_improve > max_attempts
+            increment = np.minimum(abs_error / divider, step_size)
+            self.simulation.ctrl_increment(np.sign(error) * increment)
+            time.sleep(1 / self.frequency)
 
 
 class BaseClientSimulation:

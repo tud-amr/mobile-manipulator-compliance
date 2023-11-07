@@ -75,11 +75,11 @@ class Simulation(Visualization):
 
     def ctrl_increment(
         self,
-        robot: Literal["Kinova", "Dingo"],
-        prop: Literal["position", "velocity", "torque"],
-        joint: int,
-        increment: float,
+        increments: list[float],
+        robot: Literal["Kinova", "Dingo"] = "Kinova",
+        prop: Literal["position", "velocity", "torque"] = "position",
     ) -> None:
         """Control increment."""
-        idx = mj_name2id(self.model, mjtObj.mjOBJ_ACTUATOR, f"{robot}_{prop}_{joint}")
-        self.data.ctrl[idx] += increment
+        for n, increment in enumerate(increments):
+            idx = mj_name2id(self.model, mjtObj.mjOBJ_ACTUATOR, f"{robot}_{prop}_{n}")
+            self.data.ctrl[idx] += increment
