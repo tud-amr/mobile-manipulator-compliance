@@ -314,7 +314,7 @@ class KortexClient:
         )
 
         self.base.ExecuteAction(action)
-        finished = event.wait(3)
+        finished = event.wait(30)
         self.base.Unsubscribe(notification_handle)
 
         if finished:
