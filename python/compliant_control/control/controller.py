@@ -157,9 +157,9 @@ class Controller:
             direction = [0.0, 0.0]
         self.command_base_direction(direction)
 
-    def command_base_direction(self, direction: list[float]) -> None:
+    def command_base_direction(self, direction: list[float], gain: float = 1) -> None:
         """Command the base with a direction."""
-        self.state.dingo_command.c = direction_to_wheel_torques(direction)
+        self.state.dingo_command.c = direction_to_wheel_torques(direction) * gain
 
     def calibration_value(self) -> None:
         """Increase torque until joint moves."""

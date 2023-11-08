@@ -119,7 +119,13 @@ class UserInterface:
                     Button("Zero"),
                     Button("Retract"),
                     Button("Pref"),
+                ],
+                enabled=self.state.HLC,
+            )
+            Row(
+                [
                     Button("Start LLC"),
+                    Button("Calibrate"),
                 ],
                 enabled=self.state.HLC,
             )
@@ -130,9 +136,6 @@ class UserInterface:
                 self.state.LLC,
             )
             Row([Button("Stop LLC Task")], self.state.LLC_task)
-
-            dpg.add_text("Calibrate:")
-            Row([Button("Static"), Button("Dynamic")], self.state.HLC)
 
             dpg.add_text("Low Level:")
             Table(

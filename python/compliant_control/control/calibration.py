@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import importlib.resources as pkg_resources
-from typing import Literal
 
 from scipy.signal import savgol_filter
 from scipy.optimize import minimize
@@ -24,93 +23,89 @@ class Calibration:
         self.state = state
         self.client = client
         self.log = lambda msg: print(msg)
+        self.ratios = {}
 
-        self.tolerance = 0.01
-        self.increase = 0.001
-
-    def calibrate_all(self, mode: Literal["static", "dynamic"]) -> None:
+    def calibrate_all(self) -> None:
         """Calibrate all joints."""
         self.state.controller.calibrate = True
-        self.client.joint_active = [True] * self.client.actuator_count
-        if mode == "static":
-            self.static_friction(0, [0, 0, 0, 0, 0, 0])
-            self.static_friction(1, [0, 0, 0, 90, 0, 0])
-            self.static_friction(2, [0, 0, 0, 90, 0, 0])
-            self.static_friction(3, [0, 0, 0, 0, 0, 0])
-            self.static_friction(4, [0, 0, 90, 0, 0, 0])
-            self.static_friction(5, [0, 0, 0, 0, 0, 0])
-        if mode == "dynamic":
-            self.ratio_and_dynamic_friction(0)
-            self.ratio_and_dynamic_friction(1)
-            self.ratio_and_dynamic_friction(2)
-            self.ratio_and_dynamic_friction(3)
-            self.ratio_and_dynamic_friction(4)
-            self.ratio_and_dynamic_friction(5)
+
+        # Joint 1, 2, 3, 4:
+        for n in [1, 2, 3, 4]:
+            self.calibrate_joint_with_gravity(n)
+
+        # Joint 0
+        avg_medium_joint_ratio = self.ratios[2]
+        self.calibrate_joint_with_given_ratio(0, avg_medium_joint_ratio)
+
+        # Joint 5:
+        small_joint_ratios = [self.ratios[3], self.ratios[4]]
+        avg_small_joint_ratio = sum(small_joint_ratios) / len(small_joint_ratios)
+        self.calibrate_joint_with_given_ratio(5, avg_small_joint_ratio)
+
         self.state.controller.calibrate = False
 
-    def static_friction(self, joint: int, start_pos: list) -> None:
-        """Determine the static friction of the joint."""
-        position = start_pos
-        angles = np.linspace(-45, 45, 1)
-        frictions = []
-        for angle in angles:
-            position[joint] = angle
-            self.state.controller.calibration_addition = np.zeros(JOINTS)
-            self.client._high_level_move(Position("", position))
-            self.client.start_LLC()
-            self.client.connect_LLC()
-            time.sleep(1)
-            moved = False
-            self.state.controller.calibrate = True
-            while not moved:
-                moved = abs(self.state.kinova_feedback.dq[joint]) > self.tolerance
-                self.state.controller.calibration_addition[joint] += 0.001
-                time.sleep(0.01)
-            self.state.controller.calibrate = False
-            self.client.disconnect_LLC()
-            self.client.stop_LLC()
-            frictions.append(self.state.controller.calibration_addition[joint])
-        self.log(str(frictions))
+    def calibrate_joint_with_given_ratio(self, joint: int, ratio: float) -> None:
+        """Determine the dynamic friction of a joint, given the ratio."""
+        start, end = self.define_start_and_end(joint)
 
-    def ratio_and_dynamic_friction(self, joint: int) -> None:
-        """Determine the ratio and dynamic friction."""
-        while self.client.mode == "high_level_moving":
-            time.sleep(0.1)
+        frictions = []
+        for _ in range(2):
+            self.client._high_level_move(Position("", start))
+            time.sleep(1)
+            self.record_data(joint, start, end)
+
+            result = minimize(self.f_move, 0)
+            frictions.append(abs(result.x[0]))
+            start, end = end, start
+        friction = (sum(frictions) / len(frictions)) / ratio
+        self.log(f"\nJoint {joint}: {(ratio):.2f} {friction:.2f}")
+
+    def calibrate_joint_with_gravity(self, joint: int) -> None:
+        """Determine the ratio and dynamic friction using gravity."""
+        start, end = self.define_start_and_end(joint)
+
+        ratios = []
+        frictions = []
+        for _ in range(2):
+            self.client._high_level_move(Position("", start))
+            time.sleep(1)
+            self.record_data(joint, start, end)
+
+            result = minimize(self.f_scale_and_move, [1, 0])
+            ratios.append(result.x[0])
+            frictions.append(result.x[1])
+            start, end = end, start
+
+        ratio = 1 / (sum(ratios) / len(ratios))
+        self.ratios[joint] = ratio
+        friction = abs(sum(frictions))
+        self.log(f"\nJoint {joint}: {(ratio):.2f} {friction:.2f}")
+
+    def define_start_and_end(self, joint: int) -> tuple[list, list]:
+        """Define the start and end position."""
         start = [0 if joint != n else -90 for n in range(self.client.actuator_count)]
         end = [0 if joint != n else 90 for n in range(self.client.actuator_count)]
         start[2] = 90 if joint == 3 else start[2]
         end[2] = 90 if joint == 3 else end[2]
-        self.client._high_level_move(Position("", start))
-        time.sleep(1)
+        return start, end
 
-        self.record_data(joint, end)
-
-        if sum(abs(self.model_torque)) > 1:
-            result = minimize(self.f_scale_and_move, [1, 0])
-            ratio = result.x[0]
-            friction = result.x[1]
-        else:
-            result = minimize(self.f_move, 0)
-            ratio = 1
-            friction = result.x[0]
-
-        self.log(f"Joint {joint}: {1/ratio, friction}")
-        self.export_data(joint, ratio, friction)
-
-    def record_data(self, joint: int, end: list) -> None:
+    def record_data(self, joint: int, start: list, end: list) -> None:
         """Record the data."""
         velocity = []
         model_torque = []
         real_torque = []
         thread = Thread(target=self.client.high_level_move, args=[Position("", end)])
         thread.start()
-        while np.rad2deg(self.state.kinova_feedback.q[joint]) < -70:
+        edge = abs(0.9 * start[joint])
+        while abs(np.rad2deg(self.state.kinova_feedback.q[joint])) > edge:
             time.sleep(1 / self.client.frequency)
-        while np.rad2deg(self.state.kinova_feedback.q[joint]) < 70:
+        while abs(np.rad2deg(self.state.kinova_feedback.q[joint])) < edge:
             velocity.append(self.state.kinova_feedback.dq[joint])
             model_torque.append((self.state.g[joint]))
             real_torque.append((self.client.get_current(joint, False)))
             time.sleep(1 / self.client.frequency)
+        while self.client.mode == "high_level_moving":
+            time.sleep(0.1)
 
         self.velocity = savgol_filter(velocity, 501, 2)
         self.model_torque = np.array(model_torque)

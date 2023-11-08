@@ -60,6 +60,8 @@ class ControlInterfaceNode(Node):
                 self.state, router=router, real_time_router=real_time_router
             )
             self.kinova.log = self.get_logger().info
+            self.calibration = Calibration(self.state, self.kinova)
+            self.calibration.log = self.get_logger().info
             signal.signal(signal.SIGINT, self.kinova.stop)
             self.kinova.start()
 
@@ -129,11 +131,9 @@ class ControlInterfaceNode(Node):
                 if cmd in ["joint", "cartesian"]:
                     self.reset_target()
             case "Move Dingo":
-                self.state.controller.command_base_direction(msg.args)
-            case "Static":
-                self.calibration.calibrate_all("static")
-            case "Dynamic":
-                self.calibration.calibrate_all("dynamic")
+                self.state.controller.command_base_direction(msg.args, 0.6)
+            case "Calibrate":
+                self.calibration.calibrate_all()
             case _:
                 print(f"Service call {cmd} is unknown.")
         self.publish_state()
