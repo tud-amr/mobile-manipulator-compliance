@@ -62,8 +62,7 @@ class UserInterfaceNode(Node):
             joint.active = msg.active[n]
             joint.mode = msg.mode[n]
             joint.ratio = msg.ratio[n]
-            joint.fric_s = msg.fric_s[n]
-            joint.fric_d = msg.fric_d[n]
+            joint.friction = msg.frictions[n]
         self.interface.update_state()
 
     def kinova_feedback(self, msg: Ufdbk) -> None:

@@ -48,25 +48,16 @@ class State:
         return (
             np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
             if self.simulation
-            else np.array([1, 0.316, 1.02, 2.58, 2.02, 1])
+            else np.array([1, 0.31, 1.01, 2.38, 1.88, 1])
         )
 
     @property
-    def static_frictions(self) -> list:
-        """Return the static frictions."""
+    def frictions(self) -> list:
+        """Return the frictions."""
         return (
             [0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
             if self.simulation
-            else [0.55, 1.1, 0.55, 0.11, 0.13, 0.33]
-        )
-
-    @property
-    def dynamic_frictions(self) -> list:
-        """Return the dynamic frictions."""
-        return (
-            [0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
-            if self.simulation
-            else [0.622, 0.875, 0.747, 0.551, 0.694, 0.565]
+            else [0.61, 1.62, 0.728, 0.306, 0.437, 0.50]
         )
 
     @property

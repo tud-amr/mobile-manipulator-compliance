@@ -1,8 +1,7 @@
 string[] mode
 bool[] active
-float32[] ratio
-float32[] fric_s
-float32[] fric_d
+float64[] ratio
+float64[] frictions
 
 string servoing_mode
 bool comp_grav

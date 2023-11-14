@@ -2,11 +2,19 @@
   <mujoco>
     <compiler meshdir="meshes/" balanceinertia="true" discardvisual="false"/>
   </mujoco>
+  <!-- ENABLE ONLY WHEN GENERATING MUJOCO XML: -->
+  <!-- <link name="WORLD" />
+  <joint name="world_link" type="revolute">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="WORLD" />
+    <child link="BASE" />
+    <limit lower="-0.0001" upper="0.00001"/>
+  </joint> -->
   <link name="BASE">
     <inertial>
       <origin xyz="0.00244324 0.00015573 0.08616742" rpy="0 0 0" />
       <mass value="1.14608471" />
-      <inertia ixx="0.00335854" ixy="3.9E-07" ixz="0.00010989" iyy="0.003311" iyz="1.91E-06" izz="0.00077158" />
+      <inertia ixx="0.00335854" ixy="0.00000039" ixz="-0.00010989" iyy="0.003311" iyz="-0.00000191" izz="0.00077158" />
     </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -27,9 +35,9 @@
   </joint>
   <link name="SHOULDER">
     <inertial>
-      <origin xyz="2.477E-05 0.02213531 0.09937686" rpy="0 0 0" />
+      <origin xyz="-0.00002477 -0.02213531 0.09937686" rpy="0 0 0" />
       <mass value="0.95974404" />
-      <inertia ixx="0.00165947" ixy="2E-08" ixz="3.6E-07" iyy="0.00140355" iyz="0.00034927" izz="0.00089493" />
+      <inertia ixx="0.00165947" ixy="-0.00000002" ixz="0.00000036" iyy="0.00140355" iyz="-0.00034927" izz="0.00089493" />
     </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -52,7 +60,7 @@
     <inertial>
       <origin xyz="0 0.21154808 0.0453031" rpy="0 0 0" />
       <mass value="1.17756164" />
-      <inertia ixx="0.01149277" ixy="1E-06" ixz="1.6E-07" iyy="0.00102851" iyz="0.00140765" izz="0.01133492" />
+      <inertia ixx="0.01149277" ixy="0.000001" ixz="-0.00000016" iyy="0.00102851" iyz="-0.00140765" izz="0.01133492" />
     </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -73,9 +81,9 @@
   </joint>
   <link name="FOREARM">
     <inertial>
-      <origin xyz="0 -0.09502206 0.0073555" rpy="0 0 0" />
+      <origin xyz="0 -0.09502206 -0.0073555" rpy="0 0 0" />
       <mass value="0.59767669" />
-      <inertia ixx="0.00163256" ixy="7.11E-06" ixz="1.54E-06" iyy="0.00029798" iyz="9.587E-05" izz="0.00169091" />
+      <inertia ixx="0.00163256" ixy="-0.00000711" ixz="-0.00000154" iyy="0.00029798" iyz="0.00009587" izz="0.00169091" />
     </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -98,7 +106,7 @@
     <inertial>
       <origin xyz="0.00575149 0 0.08719207" rpy="0 0.785398 0" />
       <mass value="0.52693412" />
-      <inertia ixx="0.00069098" ixy="2.4E-07" ixz="0.00016483" iyy="0.00078519" iyz="7.4E-07" izz="0.00034115" />
+      <inertia ixx="0.00069098" ixy="-0.00000024" ixz="0.00016483" iyy="0.00078519" iyz="0.00000074" izz="0.00034115" />
     </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -121,7 +129,7 @@
     <inertial>
       <origin xyz="-0.08056517 0 0.01872799" rpy="0 0 0" />
       <mass value="0.58097325" />
-      <inertia ixx="0.00021268" ixy="5.21E-06" ixz="2.91E-06" iyy="0.00106371" iyz="1.1E-07" izz="0.00108465" />
+      <inertia ixx="0.00021268" ixy="0.00000521" ixz="-0.00000291" iyy="0.00106371" iyz="0.00000011" izz="0.00108465" />
     </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -142,9 +150,9 @@
   </joint>
   <link name="GRIPPER_FRAME">
     <inertial>
-      <origin xyz="4.03E-06 1.08E-05 0.04139748" rpy="0 0 0" />
+      <origin xyz="-0.00000403 0.0000108 0.04139748" rpy="0 0 0" />
       <mass value="0.1395" />
-      <inertia ixx="0.00011614" ixy="1E-08" ixz="4E-08" iyy="0.00010327" iyz="0" izz="9.707E-05" />
+      <inertia ixx="0.00011614" ixy="-0.00000001" ixz="-0.00000004" iyy="0.00010327" iyz="0" izz="0.00009707" />
     </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />

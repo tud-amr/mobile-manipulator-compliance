@@ -178,14 +178,13 @@ class UserInterface:
 
     def load_state(self, width: int, height: int, pos: list) -> None:
         """Load joint info window."""
-        headers = ["#", "Mode:", "Ratio:", "fric_D:", "fric_S:"]
+        headers = ["#", "Mode:", "Ratio:", "Friction:"]
         widgets = [
             [
                 Checkbox(str(joint.index), joint.is_active),
                 Text("", joint.get_mode),
                 Text("", joint.get_ratio),
-                Text("", joint.get_fric_d),
-                Text("", joint.get_fric_s),
+                Text("", joint.get_friction),
             ]
             for joint in self.joints
         ]

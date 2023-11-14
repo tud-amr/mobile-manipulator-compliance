@@ -150,8 +150,7 @@ class ControlInterfaceNode(Node):
         state.active = self.kinova.joint_active
         state.mode = self.kinova.get_control_modes()
         state.ratio = list(self.state.ratios)
-        state.fric_s = self.state.static_frictions
-        state.fric_d = self.state.dynamic_frictions
+        state.frictions = self.state.frictions
 
         self.pub_state.publish(state)
 

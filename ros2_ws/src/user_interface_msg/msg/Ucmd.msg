@@ -1,3 +1,3 @@
 string command
 
-float32[] args
+float64[] args

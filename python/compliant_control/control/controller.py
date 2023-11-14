@@ -34,7 +34,6 @@ class Controller:
 
         # General:
         self.tolerance = 0.01  # m
-        self.thr_dynamic = 0.3  # m/s
         self.friction_threshold = 0.1
 
     def toggle(self, name: str) -> None:
@@ -121,13 +120,8 @@ class Controller:
         """Compensate friction."""
         for n in range(len(current)):
             if current[n] != 0 and np.linalg.norm(self.x_e) > self.tolerance:
-                factor = min(
-                    abs(self.state.kinova_feedback.dq[n]) / self.thr_dynamic, 1
-                )
                 sign = current[n] / abs(current[n])
-                static_part = (1 - factor) * self.state.static_frictions[n]
-                dynamic_part = factor * self.state.dynamic_frictions[n]
-                current[n] += sign * (static_part + dynamic_part)
+                current[n] += sign * self.state.frictions[n]
         return current
 
     def compensate_friction_when_moving(self) -> None:
@@ -136,7 +130,7 @@ class Controller:
             vel = self.state.kinova_feedback.dq[n]
             abs_vel = abs(vel)
             if abs_vel > 0:
-                comp = vel / abs_vel * self.state.dynamic_frictions[n]
+                comp = vel / abs_vel * self.state.frictions[n]
                 comp *= (
                     abs_vel / self.friction_threshold
                     if abs_vel < self.friction_threshold

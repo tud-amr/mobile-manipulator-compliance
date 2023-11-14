@@ -16,8 +16,7 @@ class Joint:
     active: bool = False
     mode: str = "?"
     ratio: float = 0
-    fric_d: float = 0
-    fric_s: float = 0
+    friction: float = 0
 
     @property
     def name(self) -> str:
@@ -36,13 +35,9 @@ class Joint:
         """Return the ratio of the joint."""
         return str(self.ratio)
 
-    def get_fric_d(self) -> str:
-        """Return the dynamic friction of the joint."""
-        return str(round(self.fric_d, 3))
-
-    def get_fric_s(self) -> str:
-        """Return the static friction of the joint."""
-        return str(round(self.fric_s, 3))
+    def get_friction(self) -> str:
+        """Return the friction of the joint."""
+        return str(round(self.friction, 3))
 
 
 @dataclass
