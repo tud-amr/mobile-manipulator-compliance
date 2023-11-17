@@ -7,19 +7,19 @@
       <joint name="Kinova_0" pos="0 0 0" axis="0 0 1" range="-2.76 2.76" frictionloss="0.2" armature="0.1"/>
       <geom type="mesh" mesh="SHOULDER"/>
       <body name="ARM" pos="0 -0.03 0.115" quat="0.707105 0.707108 0 0">
-        <inertial pos="-0.029983 0.211548 0.0453031" quat="0.46336 0.529706 -0.534676 0.467794" mass="1.17756" diaginertia="0.0115237 0.0114928 0.000839712"/>
+        <inertial pos="0 0.211548 0.0453031" quat="0.46336 0.529706 -0.534676 0.467794" mass="1.17756" diaginertia="0.0115237 0.0114928 0.000839712"/>
         <joint name="Kinova_1" pos="0 0 0" axis="0 0 1" range="-2.76 2.76" frictionloss="0.2" armature="0.1"/>
         <geom type="mesh" mesh="ARM"/>
         <body name="FOREARM" pos="0 0.28 0" quat="-3.67321e-06 -1 0 0">
-          <inertial pos="-0.0301559 -0.0950221 -0.0073555" quat="0.50997 0.473675 -0.49139 0.523543" mass="0.597677" diaginertia="0.00169754 0.00163253 0.000291376"/>
+          <inertial pos="0 -0.0950221 -0.0073555" quat="0.50997 0.473675 -0.49139 0.523543" mass="0.597677" diaginertia="0.00169754 0.00163253 0.000291376"/>
           <joint name="Kinova_2" pos="0 0 0" axis="0 0 1" range="-2.76 2.76" frictionloss="0.2" armature="0.1"/>
           <geom type="mesh" mesh="FOREARM"/>
           <body name="LOWER_WRIST" pos="0 -0.14 0.02" quat="0.707105 0.707108 0 0">
-            <inertial pos="0.00575149 -0.0100044 0.0871921" quat="0.693187 0.143495 0.142688 0.691767" mass="0.526934" diaginertia="0.000785191 0.000756407 0.000275722"/>
+            <inertial pos="0.00575149 0 0.0871921" quat="0.693187 0.143495 0.142688 0.691767" mass="0.526934" diaginertia="0.000785191 0.000756407 0.000275722"/>
             <joint name="Kinova_3" pos="0 0 0" axis="0 0 1" range="-2.67 2.67" frictionloss="0.2" armature="0.05"/>
             <geom type="mesh" mesh="LOWER_WRIST"/>
             <body name="UPPER_WRIST" pos="0.0285 0 0.105" quat="0.707105 0 0.707108 0">
-              <inertial pos="-0.0805652 -0.00980409 0.018728" quat="0.00372858 0.705925 -0.000605285 0.708276" mass="0.580973" diaginertia="0.00108466 0.00106374 0.000212638"/>
+              <inertial pos="-0.0805652 0 0.018728" quat="0.00372858 0.705925 -0.000605285 0.708276" mass="0.580973" diaginertia="0.00108466 0.00106374 0.000212638"/>
               <joint name="Kinova_4" pos="0 0 0" axis="0 0 1" range="-2.67 2.67" frictionloss="0.2" armature="0.03"/>
               <geom type="mesh" mesh="UPPER_WRIST"/>
               <body name="GRIPPER_FRAME" pos="-0.105 0 0.0285" quat="0.707105 0 -0.707108 0">
