@@ -57,65 +57,65 @@ class Calibration:
             ratio, friction = self.estimate_ratio_and_friction(joint, q_bf, torque_bf)
             self.ratios[joint] = ratio
 
-        # Joint 3, Link 5Y:
-        joint = 3
-        start, end = self.define_start_and_end(joint)
-        start[4] = end[4] = 90
-        zero_pose = (np.deg2rad(start) + np.deg2rad(end)) / 2
-        q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
-        lag = self.estimate_lag(theta_bf, torque_bf)
-        link = 5
-        flip = False
-        axis = 0
-        self.update_model_to_match_lag(joint, zero_pose, flip, link, lag, axis)
+        # # Joint 3, Link 5Y:
+        # joint = 3
+        # start, end = self.define_start_and_end(joint)
+        # start[4] = end[4] = 90
+        # zero_pose = (np.deg2rad(start) + np.deg2rad(end)) / 2
+        # q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
+        # lag = self.estimate_lag(theta_bf, torque_bf)
+        # link = 5
+        # flip = False
+        # axis = 0
+        # self.update_model_to_match_lag(joint, zero_pose, flip, link, lag, axis)
 
-        # Joint 2, Link 5Z:
-        joint = 2
-        start, end = self.define_start_and_end(joint)
-        start[3] = end[3] = 0
-        zero_pose = (np.deg2rad(start) + np.deg2rad(end)) / 2
-        q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
-        lag = self.estimate_lag(theta_bf, torque_bf)
-        link = 5
-        flip = True
-        axis = 2
-        self.update_model_to_match_lag(joint, zero_pose, flip, link, lag, axis)
+        # # Joint 2, Link 5Z:
+        # joint = 2
+        # start, end = self.define_start_and_end(joint)
+        # start[3] = end[3] = 0
+        # zero_pose = (np.deg2rad(start) + np.deg2rad(end)) / 2
+        # q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
+        # lag = self.estimate_lag(theta_bf, torque_bf)
+        # link = 5
+        # flip = True
+        # axis = 2
+        # self.update_model_to_match_lag(joint, zero_pose, flip, link, lag, axis)
 
-        # Joint 2, Link 4Y:
-        joint = 2
-        start, end = self.define_start_and_end(joint)
-        start[3] = end[3] = 0
-        start[4] = end[4] = 90
-        zero_pose = (np.deg2rad(start) + np.deg2rad(end)) / 2
-        q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
-        lag = self.estimate_lag(theta_bf, torque_bf)
-        link = 4
-        flip = True
-        axis = 0
-        self.update_model_to_match_lag(joint, zero_pose, flip, link, lag, axis)
+        # # Joint 2, Link 4Y:
+        # joint = 2
+        # start, end = self.define_start_and_end(joint)
+        # start[3] = end[3] = 0
+        # start[4] = end[4] = 90
+        # zero_pose = (np.deg2rad(start) + np.deg2rad(end)) / 2
+        # q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
+        # lag = self.estimate_lag(theta_bf, torque_bf)
+        # link = 4
+        # flip = True
+        # axis = 0
+        # self.update_model_to_match_lag(joint, zero_pose, flip, link, lag, axis)
 
-        # Joint 1, Link 4Z:
-        joint = 1
-        start, end = self.define_start_and_end(joint)
-        start[3] = end[3] = 0
-        start[4] = end[4] = 90
-        zero_pose = (np.deg2rad(start) + np.deg2rad(end)) / 2
-        q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
-        lag = self.estimate_lag(theta_bf, torque_bf)
-        link = 4
-        flip = True
-        axis = 2
-        self.update_model_to_match_lag(joint, zero_pose, flip, link, lag, axis)
+        # # Joint 1, Link 4Z:
+        # joint = 1
+        # start, end = self.define_start_and_end(joint)
+        # start[3] = end[3] = 0
+        # start[4] = end[4] = 90
+        # zero_pose = (np.deg2rad(start) + np.deg2rad(end)) / 2
+        # q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
+        # lag = self.estimate_lag(theta_bf, torque_bf)
+        # link = 4
+        # flip = True
+        # axis = 2
+        # self.update_model_to_match_lag(joint, zero_pose, flip, link, lag, axis)
 
-        # # Joint 0, 5:
-        # for joint in [0, 5]:
-        #     if joint == 0:
-        #         ratio = self.ratios[2]
-        #     if joint == 5:
-        #         ratio = (self.ratios[3] + self.ratios[4]) / 2
-        #     start, end = self.define_start_and_end(joint)
-        #     q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
-        #     self.estimate_friction(joint, ratio, q_bf, torque_bf)
+        # Joint 0, 5:
+        for joint in [0, 5]:
+            if joint == 0:
+                ratio = self.ratios[2]
+            if joint == 5:
+                ratio = (self.ratios[3] + self.ratios[4]) / 2
+            start, end = self.define_start_and_end(joint)
+            q_bf, theta_bf, torque_bf = self.record_back_and_forth(joint, start, end)
+            self.estimate_friction(joint, ratio, q_bf, torque_bf)
 
         self.state.controller.calibrate = False
 
@@ -265,7 +265,7 @@ class Calibration:
         """Move the center of mass over the given axis by the given step to match the measured lag."""
         model_lag = self.model_lag(joint, pose, flip)
         error = abs(model_lag - lag)
-        self.log(f"step: {step}, model: {model_lag}, real: {lag}, error: {error}")
+        # self.log(f"step: {step}, model: {model_lag}, real: {lag}, error: {error}")
         improve = True
         while improve:
             self.robot.model.inertias[link].lever[axis] += step

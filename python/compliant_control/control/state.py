@@ -48,7 +48,7 @@ class State:
         return (
             np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
             if self.simulation
-            else np.array([1, 0.31, 1.01, 2.38, 1.88, 1])
+            else np.array([1, 0.31, 1.01, 1.75, 1.75, 1])
         )
 
     @property
@@ -57,7 +57,7 @@ class State:
         return (
             [0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
             if self.simulation
-            else [0.61, 1.62, 0.728, 0.306, 0.437, 0.50]
+            else [0.61, 1.71, 0.72, 0.29, 0.41, 0.56]
         )
 
     @property
