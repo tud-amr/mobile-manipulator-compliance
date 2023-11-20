@@ -327,7 +327,7 @@ class KortexClient:
         """Return a closure checking for END or ABORT notifications."""
 
         def check(notif: Base_pb2.ActionNotification, event: Event = event) -> None:
-            self.log("EVENT : " + Base_pb2.ActionEvent.Name(notif.action_event))
+            # self.log("EVENT : " + Base_pb2.ActionEvent.Name(notif.action_event))
             if notif.action_event in [Base_pb2.ACTION_END, Base_pb2.ACTION_ABORT]:
                 event.set()
 
