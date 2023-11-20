@@ -2,5 +2,6 @@ protobuf==3.20.0
 setuptools==58.2.0
 mujoco
 casadi
+pin
 pandas
 scipy
