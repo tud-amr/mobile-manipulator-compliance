@@ -1,10 +1,10 @@
 string[] mode
 bool[] active
 float64[] ratio
-float64[] frictions
+float64[] friction
 
 string servoing_mode
 bool comp_grav
 bool comp_fric
-bool imp_joint
-bool imp_cart
+bool imp_arm
+bool imp_base

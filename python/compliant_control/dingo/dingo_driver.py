@@ -1,8 +1,8 @@
 from compliant_control.dingo.lib.dingo_driver import DriverManager
-import time
 from threading import Thread
 
 from compliant_control.control.state import State
+from compliant_control.utilities.rate_counter import RateCounter
 
 GAIN = 0.4
 
@@ -14,10 +14,7 @@ class DingoDriver:
         self.state = state
         self.log = lambda msg: print(msg)
 
-        self.frequency = 100
-        self.rate = self.frequency
-        self.n = self.frequency
-        self.sleep_time = 1 / self.frequency
+        self.rate_counter = RateCounter(100)
 
         self.driver_manager = DriverManager("vcan0")
         self.driver_manager.connect_gateway()
@@ -33,5 +30,5 @@ class DingoDriver:
             self.state.dingo_feedback.q = list(self.driver_manager.position)
             self.state.dingo_feedback.c = list(self.driver_manager.torque)
             self.driver_manager.set_command(GAIN * self.state.dingo_command.c)
-            self.n += 1
-            time.sleep(self.sleep_time)
+            self.rate_counter.count()
+            self.rate_counter.sleep()

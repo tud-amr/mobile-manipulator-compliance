@@ -31,7 +31,8 @@ class KortexClientSimulation(KortexClient):
         max_attempts = 100
         divider = 100
         moving_speed = 20  # deg/s
-        step_deg = moving_speed / self.frequency
+        frequency = 1000
+        step_deg = moving_speed / frequency
         step_size = np.deg2rad(step_deg)
 
         pose = np.deg2rad(position.position)
@@ -48,7 +49,7 @@ class KortexClientSimulation(KortexClient):
             reached = no_improve > max_attempts
             increment = np.minimum(abs_error / divider, step_size)
             self.simulation.ctrl_increment(np.sign(error) * increment)
-            time.sleep(1 / self.frequency)
+            time.sleep(1 / frequency)
 
 
 class BaseClientSimulation:

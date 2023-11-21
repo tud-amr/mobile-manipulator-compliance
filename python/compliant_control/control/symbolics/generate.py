@@ -55,6 +55,8 @@ def define_matrices(robot: pinocchio.RobotWrapper) -> None:
         pinocchio.LOCAL_WORLD_ALIGNED,
     )[:3, :]
 
+    dx = J @ dq
+
     dJ = cpin.getFrameJacobianTimeVariation(
         model,
         data,
@@ -67,13 +69,18 @@ def define_matrices(robot: pinocchio.RobotWrapper) -> None:
     lam = Jinv.T @ M @ Jinv
     mu = Jinv.T @ (C - M @ Jinv @ dJ) @ Jinv
 
+    f = casadi.SX.sym("f", 3, 1)
+    T = J.T @ f
+
     functions: list[casadi.Function] = [
         casadi.Function("g", [q], [g]),
         casadi.Function("x", [q], [x]),
+        casadi.Function("dx", [q, dq], [dx]),
         casadi.Function("J", [q], [J]),
         casadi.Function("JT", [q], [J.T]),
         casadi.Function("lam", [q], [lam]),
         casadi.Function("mu", [q, dq], [mu]),
+        casadi.Function("T", [q, f], [T]),
     ]
 
     current_dir = os.getcwd()

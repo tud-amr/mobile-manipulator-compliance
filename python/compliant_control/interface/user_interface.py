@@ -148,8 +148,8 @@ class UserInterface:
                     ],
                     [
                         Text("Impedance:"),
-                        Checkbox("joint", self.state.get_imp_joint),
-                        Checkbox("cartesian", self.state.get_imp_cart),
+                        Checkbox("arm", self.state.get_imp_arm),
+                        Checkbox("base", self.state.get_imp_base),
                     ],
                 ],
                 self.state.LLC_task,

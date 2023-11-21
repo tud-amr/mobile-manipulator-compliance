@@ -1,4 +1,3 @@
-import time
 from threading import Thread, Event
 from typing import Literal
 import numpy as np
@@ -13,6 +12,7 @@ from kortex_api.Exceptions.KServerException import KServerException
 from .specifications import Position, actuator_ids, ranges
 
 from compliant_control.control.state import State
+from compliant_control.utilities.rate_counter import RateCounter
 
 
 class KortexClient:
@@ -50,10 +50,7 @@ class KortexClient:
         self.controller_connected = False
         self.active = False
 
-        self.frequency = 1000
-        self.rate = self.frequency
-        self.n = self.frequency
-        self.sleep_time = 1 / self.frequency
+        self.rate_counter = RateCounter(1200)
 
         self.mode = "HLC"
 
@@ -76,27 +73,18 @@ class KortexClient:
         """Get the servoing mode of the robot."""
         return Base_pb2.ServoingMode.Name(self.servoing_mode)
 
-    def get_update_rate(self) -> int:
-        """Get the update rate."""
-        return self.rate
-
     def clear_faults(self) -> None:
         """Clear the faults."""
         self.base.ClearFaults()
 
     def start_in_new_thread(self) -> None:
         """Start the refresh loop in a new thread."""
-        rate_check_thread = Thread(target=self._rate_check_loop)
-        refresh_loop_thread = Thread(target=self._refresh_loop)
-        self.active = True
-        rate_check_thread.start()
-        refresh_loop_thread.start()
+        thread = Thread(target=self.start)
+        thread.start()
 
     def start(self) -> None:
         """Start the refresh loop."""
-        rate_check_thread = Thread(target=self._rate_check_loop)
         self.active = True
-        rate_check_thread.start()
         self._refresh_loop()
 
     def stop(self, *args: any) -> None:
@@ -132,6 +120,7 @@ class KortexClient:
 
     def connect_LLC(self) -> None:
         """Connect a controller to the LLC of the robot."""
+        self.state.controller.start_control_loop()
         self.copy_feedback_to_command()
         for n in range(self.actuator_count):
             if self.joint_active[n]:
@@ -146,6 +135,7 @@ class KortexClient:
         self.controller_connected = False
         for joint in range(self.actuator_count):
             self.set_control_mode(joint, "position")
+        self.state.controller.stop_control_loop()
         self.mode = "LLC"
         self.log("Controller disconnected.")
 
@@ -242,11 +232,10 @@ class KortexClient:
             self._refresh()
             self.update_state()
             if self.mode == "LLC_task":
-                self.state.controller.command()
                 self.set_command(self.state.controller.joint_commands)
-            self.n += 1
+            self.rate_counter.count()
             if self.simulate:
-                time.sleep(self.sleep_time)
+                self.rate_counter.sleep()
 
     def _refresh(self) -> None:
         """Refresh."""
@@ -258,14 +247,6 @@ class KortexClient:
                 self.controller_connected = False
         else:
             self.feedback = self.base_cyclic.RefreshFeedback()
-
-    def _rate_check_loop(self) -> None:
-        """Define te rate check loop."""
-        while self.active:
-            self.rate = self.n
-            self.n = 0
-            self.sleep_time *= self.rate / self.frequency
-            time.sleep(1)
 
     def _set_servoing_mode(self, value: int) -> None:
         """Set the servoing mode of the robot."""
@@ -327,7 +308,6 @@ class KortexClient:
         """Return a closure checking for END or ABORT notifications."""
 
         def check(notif: Base_pb2.ActionNotification, event: Event = event) -> None:
-            # self.log("EVENT : " + Base_pb2.ActionEvent.Name(notif.action_event))
             if notif.action_event in [Base_pb2.ACTION_END, Base_pb2.ACTION_ABORT]:
                 event.set()
 

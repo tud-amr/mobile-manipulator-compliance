@@ -46,6 +46,7 @@ class UserInterfaceNode(Node):
 
     def feedback(self, msg: Ufdbk) -> None:
         """Process the feedback."""
+        self.interface.rates.con = msg.controller_rate
         if len(msg.kinova_pos) > 0:
             self.kinova_feedback(msg)
         if len(msg.dingo_pos) > 0:
@@ -56,13 +57,13 @@ class UserInterfaceNode(Node):
         self.interface.state.mode = msg.servoing_mode
         self.interface.state.comp_grav = msg.comp_grav
         self.interface.state.comp_fric = msg.comp_fric
-        self.interface.state.imp_joint = msg.imp_joint
-        self.interface.state.imp_cart = msg.imp_cart
+        self.interface.state.imp_arm = msg.imp_arm
+        self.interface.state.imp_base = msg.imp_base
         for n, joint in enumerate(self.interface.joints):
             joint.active = msg.active[n]
             joint.mode = msg.mode[n]
             joint.ratio = msg.ratio[n]
-            joint.friction = msg.frictions[n]
+            joint.friction = msg.friction[n]
         self.interface.update_state()
 
     def kinova_feedback(self, msg: Ufdbk) -> None:

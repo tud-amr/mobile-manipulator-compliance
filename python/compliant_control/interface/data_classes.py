@@ -73,11 +73,12 @@ class Rates:
 
     kin: int = 0
     din: int = 0
+    con: int = 0
 
     @property
     def names(self) -> list[str]:
         """Get the names."""
-        return ["kin", "din"]
+        return ["kin", "din", "con"]
 
     def value(self, name: str) -> str:
         """Get the value."""
@@ -93,8 +94,8 @@ class State:
     servoing: str = "?"
     comp_grav: bool = False
     comp_fric: bool = False
-    imp_joint: bool = False
-    imp_cart: bool = False
+    imp_arm: bool = False
+    imp_base: bool = False
     move_tar: bool = False
 
     def HLC(self) -> bool:
@@ -125,10 +126,10 @@ class State:
         """Return whether friction compensation is enabled."""
         return self.comp_fric
 
-    def get_imp_joint(self) -> bool:
-        """Return whether joint impedance is enabled."""
-        return self.imp_joint
+    def get_imp_arm(self) -> bool:
+        """Return whether arm impedance is enabled."""
+        return self.imp_arm
 
-    def get_imp_cart(self) -> bool:
-        """Return whether cartesian impedance is enabled."""
-        return self.imp_cart
+    def get_imp_base(self) -> bool:
+        """Return whether base impedance is enabled."""
+        return self.imp_base

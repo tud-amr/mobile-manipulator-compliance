@@ -34,8 +34,7 @@ class ControlInterfaceNode(Node):
         self.pub_state = self.create_publisher(Ustate, "/state", 10)
         self.create_subscription(Ucmd, "/command", self.handle_input, 10)
 
-        self.state = State()
-        self.state.simulation = self.simulate
+        self.state = State(self.simulate)
 
         if self.simulate:
             self.start_simulation()
@@ -92,11 +91,12 @@ class ControlInterfaceNode(Node):
         feedback.kinova_pos = list(self.state.kinova_feedback.q)
         feedback.kinova_vel = list(self.state.kinova_feedback.dq)
         feedback.kinova_tor = list(self.state.kinova_feedback.c)
-        feedback.kinova_rate = self.kinova.rate
+        feedback.kinova_rate = self.kinova.rate_counter.rate
         feedback.dingo_pos = list(self.state.dingo_feedback.q)
         feedback.dingo_vel = list(self.state.dingo_feedback.dq)
         feedback.dingo_tor = list(self.state.dingo_feedback.c)
-        feedback.dingo_rate = self.dingo.rate
+        feedback.dingo_rate = self.dingo.rate_counter.rate
+        feedback.controller_rate = self.state.controller.rate_counter.rate
         self.pub_fdbk.publish(feedback)
 
     def handle_input(self, msg: Ucmd) -> None:
@@ -126,9 +126,9 @@ class ControlInterfaceNode(Node):
                 self.kinova.clear_faults()
             case _ if cmd in [str(n) for n in range(self.kinova.actuator_count)]:
                 self.kinova.toggle_active(int(cmd))
-            case _ if cmd in ["gravity", "friction", "joint", "cartesian"]:
+            case _ if cmd in ["gravity", "friction", "arm", "base"]:
                 self.state.controller.toggle(cmd)
-                if cmd in ["joint", "cartesian"]:
+                if cmd == "arm":
                     self.reset_target()
             case "Move Dingo":
                 self.state.controller.command_base_direction(msg.args, 0.6)
@@ -144,13 +144,13 @@ class ControlInterfaceNode(Node):
         state.servoing_mode = self.kinova.mode
         state.comp_grav = self.state.controller.comp_grav
         state.comp_fric = self.state.controller.comp_fric
-        state.imp_joint = self.state.controller.imp_joint
-        state.imp_cart = self.state.controller.imp_cart
+        state.imp_arm = self.state.controller.imp_arm
+        state.imp_base = self.state.controller.imp_base
 
         state.active = self.kinova.joint_active
         state.mode = self.kinova.get_control_modes()
         state.ratio = list(self.state.ratios)
-        state.frictions = self.state.frictions
+        state.friction = list(self.state.frictions)
 
         self.pub_state.publish(state)
 

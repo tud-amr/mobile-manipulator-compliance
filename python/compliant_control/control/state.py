@@ -28,7 +28,7 @@ class JointData:
 class State:
     """Contains the state of the robot."""
 
-    def __init__(self) -> None:
+    def __init__(self, simulate: bool) -> None:
         self.load_symbolics()
         self.kinova_feedback = JointData(JOINTS)
         self.dingo_feedback = JointData(WHEELS)
@@ -40,25 +40,12 @@ class State:
         self.controller = Controller(self)
         self.controller.reset()
 
-        self.simulation = True
-
-    @property
-    def ratios(self) -> np.ndarray:
-        """Return the current torque ratios."""
-        return (
-            np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-            if self.simulation
-            else np.array([1, 0.31, 1.01, 1.75, 1.75, 1])
-        )
-
-    @property
-    def frictions(self) -> list:
-        """Return the frictions."""
-        return (
-            [0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
-            if self.simulation
-            else [0.61, 1.71, 0.72, 0.29, 0.41, 0.56]
-        )
+        if simulate:
+            self.ratios = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+            self.frictions = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2])
+        else:
+            self.ratios = np.array([1, 0.31, 1.01, 1.75, 1.75, 1])
+            self.frictions = np.array([0.61, 1.71, 0.72, 0.29, 0.41, 0.56])
 
     @property
     def g(self) -> np.ndarray:
@@ -67,8 +54,15 @@ class State:
 
     @property
     def x(self) -> np.ndarray:
-        """Location of the end-effector."""
+        """Position of the end-effector."""
         return np.reshape(self.casadi_x(self.kinova_feedback.q), DIM)
+
+    @property
+    def dx(self) -> np.ndarray:
+        """Velocity of the end-effector."""
+        return np.reshape(
+            self.casadi_dx(self.kinova_feedback.q, self.kinova_feedback.dq), DIM
+        )
 
     @property
     def J(self) -> np.ndarray:
@@ -91,6 +85,10 @@ class State:
         return np.reshape(
             self.casadi_mu(self.kinova_feedback.q, self.kinova_feedback.dq), (DIM, DIM)
         )
+
+    def T(self, force: np.ndarray) -> np.ndarray:
+        """Joint torques."""
+        return np.reshape(self.casadi_T(self.kinova_feedback.q, force), (JOINTS))
 
     def load_symbolics(self) -> None:
         """Load the symbolics."""

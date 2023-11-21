@@ -6,18 +6,17 @@ def direction_to_wheel_torques(direction: list) -> np.ndarray:
     m = np.linalg.norm(direction)
     angle = np.arctan2(*direction)
 
-    orientations = ["l", "r", "r", "l"]
-    torques = []
-    for orientation in orientations:
-        torque = calculate_torque(angle, orientation) * m
-        torques.append(torque)
-    return np.array(torques)
+    torque_A = calculate_torque(angle)
+    torque_B = calculate_torque(-angle)
+    return np.array([torque_A, torque_B, torque_B, torque_A]) * m
 
 
-def calculate_torque(angle: float, orientation: str) -> float:
+def calculate_torque(angle: float) -> float:
     """Calculate the required wheel torque to match the given moving angle."""
-    torques = [-1, -1, -1, 0, 1, 1, 1, 0, -1]
-    angles = np.linspace(-np.pi, np.pi, 9)
-    if orientation == "r":
-        torques.reverse()
-    return np.interp(angle, angles, torques)
+    if angle < -np.pi / 2:
+        return -1
+    if angle < 0:
+        return 1 + angle * (4 / np.pi)
+    if angle < np.pi / 2:
+        return 1
+    return 3 - angle * (4 / np.pi)
