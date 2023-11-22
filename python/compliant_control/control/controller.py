@@ -25,7 +25,7 @@ class Controller:
         self.mode: Literal["position", "velocity", "current"] = "current"
 
         self.joint_commands = np.zeros(JOINTS)
-        self.rate_counter = RateCounter(1200)
+        self.rate_counter = RateCounter(1000)
 
         # Cartesian impedance:
         self.Kd = np.eye(3) * 25
