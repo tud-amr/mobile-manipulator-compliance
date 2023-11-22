@@ -4,6 +4,7 @@ import time
 import signal
 from rclpy.node import Node
 from threading import Thread
+import numpy as np
 
 from compliant_control.control.state import State
 from compliant_control.mujoco.simulation import Simulation
@@ -17,9 +18,10 @@ from compliant_control.kinova.utilities import DeviceConnection
 
 from compliant_control.control.calibration import Calibration
 
-from user_interface_msg.msg import Ufdbk, Ucmd, Ustate
+from user_interface_msg.msg import Ufdbk, Ucmd, Ustate, Utarget
 
 PUBLISH_RATE = 100
+D_MAX_RESET = 0.001
 
 
 class ControlInterfaceNode(Node):
@@ -33,6 +35,7 @@ class ControlInterfaceNode(Node):
         self.pub_fdbk = self.create_publisher(Ufdbk, "/feedback", 10)
         self.pub_state = self.create_publisher(Ustate, "/state", 10)
         self.create_subscription(Ucmd, "/command", self.handle_input, 10)
+        self.create_subscription(Utarget, "/target", self.update_target, 10)
 
         self.state = State(self.simulate)
 
@@ -118,8 +121,8 @@ class ControlInterfaceNode(Node):
             case "Stop LLC":
                 self.kinova.stop_LLC()
             case "Start LLC Task":
-                self.kinova.connect_LLC()
-                self.reset_target()
+                if self.target_is_at_end_effector():
+                    self.kinova.connect_LLC()
             case "Stop LLC Task":
                 self.kinova.disconnect_LLC()
             case "Clear Faults":
@@ -127,9 +130,10 @@ class ControlInterfaceNode(Node):
             case _ if cmd in [str(n) for n in range(self.kinova.actuator_count)]:
                 self.kinova.toggle_active(int(cmd))
             case _ if cmd in ["gravity", "friction", "arm", "base"]:
-                self.state.controller.toggle(cmd)
-                if cmd == "arm":
-                    self.reset_target()
+                if cmd == "arm" and not self.target_is_at_end_effector():
+                    pass
+                else:
+                    self.state.controller.toggle(cmd)
             case "Move Dingo":
                 self.state.controller.command_base_direction(msg.args, 0.6)
             case "Calibrate":
@@ -154,16 +158,20 @@ class ControlInterfaceNode(Node):
 
         self.pub_state.publish(state)
 
-    def reset_target(self) -> None:
+    def target_is_at_end_effector(self) -> None:
         """Reset the target."""
         if self.simulate:
-            self.simulation.update_target(self.simulation.end_effector)
-        self.state.target = self.state.x.copy()
+            self.simulation.reset_target()
+            self.state.target = self.state.x
+        return np.linalg.norm(self.state.target - self.state.x) < D_MAX_RESET
 
-    def keep_alive_loop(self) -> None:
-        """Keep alive."""
-        while True:
-            time.sleep(1)
+    def update_target(self, msg: Utarget) -> None:
+        """Update the target."""
+        self.state.target = np.array(msg.target)
+
+    def step_callback(self) -> None:
+        """Called every simulation step."""
+        self.state.target = self.simulation.relative_target
 
     def start_spin_loop(self) -> None:
         """Start node spinning."""

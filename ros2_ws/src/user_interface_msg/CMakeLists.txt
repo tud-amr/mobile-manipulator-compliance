@@ -13,6 +13,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Ufdbk.msg"
   "msg/Ucmd.msg"
   "msg/Ustate.msg"
+  "msg/Utarget.msg"
  )
 
 if(BUILD_TESTING)

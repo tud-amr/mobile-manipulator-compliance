@@ -103,9 +103,13 @@ class Visualization:
         self.active = False
 
     def update_target(self, pos: np.ndarray) -> None:
-        """Update the given marker."""
+        """Update the target."""
         body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target")
         self.data.mocap_pos[body_id - 1] = pos
+
+    def reset_target(self) -> None:
+        """Reset the target."""
+        self.update_target(self.end_effector)
 
     def move_target_loop(self) -> None:
         """A loop that automatically moves the target."""

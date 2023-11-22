@@ -2,11 +2,14 @@ import os
 import rclpy
 from rclpy.node import Node
 from threading import Thread
+import time
 
-from user_interface_msg.msg import Ufdbk, Ustate, Ucmd
+from user_interface_msg.msg import Ufdbk, Ustate, Ucmd, Utarget
 
 from compliant_control.interface.user_interface import UserInterface
 from compliant_control.mujoco.visualization import Visualization
+
+from compliant_control.utilities.rate_counter import RateCounter
 
 
 class UserInterfaceNode(Node):
@@ -17,7 +20,8 @@ class UserInterfaceNode(Node):
         self.declare_parameter("visualize", True)
         self.create_subscription(Ufdbk, "/feedback", self.feedback, 10)
         self.create_subscription(Ustate, "/state", self.state, 10)
-        self.publisher = self.create_publisher(Ucmd, "/command", 10)
+        self.pub_command = self.create_publisher(Ucmd, "/command", 10)
+        self.pub_target = self.create_publisher(Utarget, "/target", 10)
 
         self.interface = UserInterface(self.command)
         self.interface.create_ui()
@@ -29,6 +33,8 @@ class UserInterfaceNode(Node):
             self.visualization = Visualization()
             visualize_thread = Thread(target=self.visualization.start)
             visualize_thread.start()
+            target_thread = Thread(target=self.publish_target_loop)
+            target_thread.start()
 
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
@@ -38,11 +44,15 @@ class UserInterfaceNode(Node):
     def command(self, command: str, args: list = None) -> None:
         """Send a command to the control interface."""
         self.interface.update_state("waiting")
+        if command in ["Start LLC Task", "arm"] and hasattr(self, "visualization"):
+            self.visualization.reset_target()
+            self.publish_target()
+            time.sleep(0.1)
         msg = Ucmd()
         msg.command = command
         if args is not None:
             msg.args = args
-        self.publisher.publish(msg)
+        self.pub_command.publish(msg)
 
     def feedback(self, msg: Ufdbk) -> None:
         """Process the feedback."""
@@ -88,6 +98,20 @@ class UserInterfaceNode(Node):
         self.interface.update_bars("Dingo")
         if self.visualize:
             self.visualization.set_qpos_value("Dingo", "position", msg.dingo_pos)
+
+    def publish_target_loop(self) -> None:
+        """A loop that publishes the target."""
+        rate_counter = RateCounter(30)
+        while True:
+            self.publish_target()
+            rate_counter.count()
+            rate_counter.sleep()
+
+    def publish_target(self) -> None:
+        """Publish the target."""
+        msg = Utarget()
+        msg.target = list(self.visualization.relative_target)
+        self.pub_target.publish(msg)
 
     def start_spin_loop(self) -> None:
         """Start node spinning."""
