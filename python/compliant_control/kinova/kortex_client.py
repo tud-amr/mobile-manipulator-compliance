@@ -103,6 +103,15 @@ class KortexClient:
         self.actuator_config.SetControlMode(control_mode_information, _id)
         self._update_modes()
 
+    def start_HLT(self) -> None:
+        """Start high_level tracking."""
+        thread = Thread(target=self._high_level_tracking)
+        thread.start()
+
+    def stop_HLT(self) -> None:
+        """Stop high_level tracking."""
+        self.mode = "HLC"
+
     def start_LLC(self) -> None:
         """Start low_level control."""
         self.copy_feedback_to_command()
@@ -287,6 +296,30 @@ class KortexClient:
             joint_angle.value = pos
 
         return self._execute_action(action)
+
+    def _high_level_tracking(self) -> None:
+        self.mode = "HLT"
+        joint_speeds = Base_pb2.JointSpeeds()
+        gain = 5
+        lower_threshold = 0.001
+        upper_threshold = 0.05
+        while self.mode == "HLT":
+            dq = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+            error = self.state.target - self.state.x
+            m = np.linalg.norm(error)
+            if m > lower_threshold:
+                dx = error / m
+                dx *= min((m / upper_threshold), 1) * gain
+                dq = self.state.dq_inv(dx)
+            del joint_speeds.joint_speeds[:]
+            for n, speed in enumerate(dq):
+                joint_speed = joint_speeds.joint_speeds.add()
+                joint_speed.joint_identifier = n
+                joint_speed.value = speed
+                joint_speed.duration = 0
+
+            self.base.SendJointSpeedsCommand(joint_speeds)
+        self.base.Stop()
 
     def _execute_action(self, action: Base_pb2.Action = None) -> bool:
         event = Event()

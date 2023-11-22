@@ -98,6 +98,10 @@ class State:
     imp_base: bool = False
     move_tar: bool = False
 
+    def HLT(self) -> bool:
+        """Returns whether the current mode is HLT."""
+        return self.mode == "HLT"
+
     def HLC(self) -> bool:
         """Returns whether the current mode is HLC."""
         return self.mode == "HLC"

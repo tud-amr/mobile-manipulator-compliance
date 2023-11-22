@@ -123,11 +123,13 @@ class UserInterface:
                 enabled=self.state.HLC,
             )
             Row(
-                [
-                    Button("Start LLC"),
-                    Button("Calibrate"),
-                ],
+                [Button("Start LLC"), Button("Calibrate"), Button("Start HLT")],
                 enabled=self.state.HLC,
+            )
+
+            Row(
+                [Button("Stop HLT")],
+                enabled=self.state.HLT,
             )
 
             dpg.add_text("Switch:")

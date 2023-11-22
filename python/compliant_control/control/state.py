@@ -86,6 +86,10 @@ class State:
             self.casadi_mu(self.kinova_feedback.q, self.kinova_feedback.dq), (DIM, DIM)
         )
 
+    def dq_inv(self, dx: np.ndarray) -> np.ndarray:
+        """Joint velocities calculated using inverse kinematics."""
+        return np.reshape(self.casadi_dq(self.kinova_feedback.q, dx), (JOINTS))
+
     def T(self, force: np.ndarray) -> np.ndarray:
         """Joint torques."""
         return np.reshape(self.casadi_T(self.kinova_feedback.q, force), (JOINTS))
