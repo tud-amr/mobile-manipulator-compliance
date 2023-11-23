@@ -8,3 +8,4 @@ bool comp_grav
 bool comp_fric
 bool imp_arm
 bool imp_base
+bool automove_target

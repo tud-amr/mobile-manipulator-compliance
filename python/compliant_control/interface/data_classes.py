@@ -96,7 +96,7 @@ class State:
     comp_fric: bool = False
     imp_arm: bool = False
     imp_base: bool = False
-    move_tar: bool = False
+    automove_target: bool = False
 
     def HLT(self) -> bool:
         """Returns whether the current mode is HLT."""
@@ -137,3 +137,7 @@ class State:
     def get_imp_base(self) -> bool:
         """Return whether base impedance is enabled."""
         return self.imp_base
+    
+    def get_automove_target(self) -> bool:
+        """Return whether automove target is enabled."""
+        return self.automove_target

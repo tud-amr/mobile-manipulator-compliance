@@ -159,8 +159,10 @@ class UserInterface:
 
             Row(
                 [
-                    Checkbox("Automove target", self.state.move_tar),
-                ]
+                    Checkbox("Automove target", self.state.get_automove_target),
+                    Button("Reset target"),
+                ],
+                True,
             )
             Row(
                 [

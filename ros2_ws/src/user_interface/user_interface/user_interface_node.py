@@ -44,10 +44,16 @@ class UserInterfaceNode(Node):
     def command(self, command: str, args: list = None) -> None:
         """Send a command to the control interface."""
         self.interface.update_state("waiting")
-        if command in ["Start LLC Task", "arm"] and hasattr(self, "visualization"):
-            self.visualization.reset_target()
-            self.publish_target()
-            time.sleep(0.1)
+        if self.visualize:
+            match command:
+                case "Automove target":
+                    self.visualization.target_mover.toggle()
+                case "Reset target":
+                    self.visualization.reset_target()
+                case _ if command in ["Start LLC Task", "arm"]:
+                    self.visualization.reset_target()
+                    self.publish_target()
+                    time.sleep(0.1)
         msg = Ucmd()
         msg.command = command
         if args is not None:
@@ -69,6 +75,7 @@ class UserInterfaceNode(Node):
         self.interface.state.comp_fric = msg.comp_fric
         self.interface.state.imp_arm = msg.imp_arm
         self.interface.state.imp_base = msg.imp_base
+        self.interface.state.automove_target = msg.automove_target
         for n, joint in enumerate(self.interface.joints):
             joint.active = msg.active[n]
             joint.mode = msg.mode[n]

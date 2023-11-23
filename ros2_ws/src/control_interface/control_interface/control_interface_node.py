@@ -37,6 +37,7 @@ class ControlInterfaceNode(Node):
         self.create_subscription(Ucmd, "/command", self.handle_input, 10)
         self.create_subscription(Utarget, "/target", self.update_target, 10)
 
+        self.automove_target = False
         self.state = State(self.simulate)
 
         if self.simulate:
@@ -131,6 +132,11 @@ class ControlInterfaceNode(Node):
                 self.kinova.disconnect_LLC()
             case "Clear Faults":
                 self.kinova.clear_faults()
+            case "Automove target":
+                self.toggle_automove_target()
+            case "Reset target":
+                if self.simulate:
+                    self.simulation.reset_target()
             case _ if cmd in [str(n) for n in range(self.kinova.actuator_count)]:
                 self.kinova.toggle_active(int(cmd))
             case _ if cmd in ["gravity", "friction", "arm", "base"]:
@@ -159,6 +165,7 @@ class ControlInterfaceNode(Node):
         state.mode = self.kinova.get_control_modes()
         state.ratio = list(self.state.ratios)
         state.friction = list(self.state.frictions)
+        state.automove_target = self.automove_target
 
         self.pub_state.publish(state)
 
@@ -172,6 +179,14 @@ class ControlInterfaceNode(Node):
     def update_target(self, msg: Utarget) -> None:
         """Update the target."""
         self.state.target = np.array(msg.target)
+
+    def toggle_automove_target(self) -> None:
+        """Toggle automove of target."""
+        if self.simulate:
+            self.simulation.target_mover.toggle()
+            self.automove_target = self.simulation.target_mover.active
+        else:
+            self.automove_target = not self.automove_target
 
     def step_callback(self) -> None:
         """Called every simulation step."""

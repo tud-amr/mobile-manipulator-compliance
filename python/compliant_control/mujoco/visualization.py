@@ -8,7 +8,7 @@ import re
 from compliant_control.interface.window_commands import WindowCommands
 import glfw
 import numpy as np
-from threading import Thread
+from compliant_control.mujoco.target_mover import TargetMover
 
 SYNC_RATE = 60
 MODEL = "arm_and_base.xml"
@@ -24,9 +24,7 @@ class Visualization:
         self.define_robots()
 
         self.active = True
-
-        move_target_thread = Thread(target=self.move_target_loop)
-        move_target_thread.start()
+        self.target_mover = TargetMover(self.get_target, self.update_target)
 
     @property
     def end_effector(self) -> np.ndarray:
@@ -54,6 +52,10 @@ class Visualization:
     def relative_target(self) -> np.ndarray:
         """Get the target position in the arm frame."""
         return self.target - self.origin_arm
+
+    def get_target(self) -> None:
+        """Return the target position."""
+        return self.target
 
     def step(self) -> None:
         """Perform a visualization step."""
@@ -110,32 +112,6 @@ class Visualization:
     def reset_target(self) -> None:
         """Reset the target."""
         self.update_target(self.end_effector)
-
-    def move_target_loop(self) -> None:
-        """A loop that automatically moves the target."""
-        self.automove_target = False
-        frequency = 100
-        target_rate = 0.05  # m/s
-        target_step = target_rate / frequency
-        target_rot = 90
-        target_rot_rate = 30  # deg / s
-        target_rot_step = target_rot_rate / frequency
-        while self.active:
-            if not self.automove_target:
-                time.sleep(0.5)
-                continue
-            target_rot += target_rot_step
-            step_x = np.cos(np.deg2rad(target_rot)) * target_step
-            step_y = np.sin(np.deg2rad(target_rot)) * target_step
-            step_z = 0
-            new_target_pos = self.target + np.array([step_x, step_y, step_z])
-            self.update_target(new_target_pos)
-            time.sleep(1 / frequency)
-
-    def toggle_automove_target(self) -> None:
-        """Toggle automove of target."""
-        print("toggle")
-        self.automove_target = not self.automove_target
 
     def define_robots(self) -> None:
         """Define which robots are simulated."""
