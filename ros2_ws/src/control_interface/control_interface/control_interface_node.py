@@ -118,7 +118,8 @@ class ControlInterfaceNode(Node):
             case "Pref":
                 self.kinova.pref()
             case "Start HLT":
-                self.kinova.start_HLT()
+                if self.target_is_at_end_effector():
+                    self.kinova.start_HLT()
             case "Stop HLT":
                 self.kinova.stop_HLT()
             case "Start LLC":

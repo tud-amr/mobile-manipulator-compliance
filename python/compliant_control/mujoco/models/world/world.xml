@@ -1,5 +1,5 @@
 <worldbody>
-    <body name="target" pos="0.3 -0.3 0.5" mocap="true">
+    <body name="target" pos="0 0 0" mocap="true">
         <geom type="sphere" pos="0 0 0" size="0.01" contype="0" conaffinity="0" rgba="1 0 0 1"/>
     </body>
     <geom name="floor" size="0 0 .05" type="plane" material="grid"/>
