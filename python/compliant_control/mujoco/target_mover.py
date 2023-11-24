@@ -7,7 +7,7 @@ STEP_ANGLE = np.deg2rad(0.2)
 STEP_Z = 0.0005
 ANGLE_MAX = np.deg2rad(130)
 Z0 = 0.4
-Z_MAX = 0.2
+Z_MAX = 0.1
 
 
 class TargetMover:
