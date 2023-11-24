@@ -86,6 +86,11 @@ class State:
             self.casadi_mu(self.kinova_feedback.q, self.kinova_feedback.dq), (DIM, DIM)
         )
 
+    @property
+    def N(self) -> np.ndarray:
+        """Returns the null_space matrix."""
+        return np.reshape(self.casadi_N(self.kinova_feedback.q), (JOINTS, JOINTS))
+
     def dq_inv(self, dx: np.ndarray) -> np.ndarray:
         """Joint velocities calculated using inverse kinematics."""
         return np.reshape(self.casadi_dq(self.kinova_feedback.q, dx), (JOINTS))

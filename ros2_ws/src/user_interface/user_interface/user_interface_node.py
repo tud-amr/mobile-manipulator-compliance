@@ -74,6 +74,7 @@ class UserInterfaceNode(Node):
         self.interface.state.comp_grav = msg.comp_grav
         self.interface.state.comp_fric = msg.comp_fric
         self.interface.state.imp_arm = msg.imp_arm
+        self.interface.state.imp_null = msg.imp_null
         self.interface.state.imp_base = msg.imp_base
         self.interface.state.automove_target = msg.automove_target
         for n, joint in enumerate(self.interface.joints):

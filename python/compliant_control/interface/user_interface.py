@@ -144,13 +144,15 @@ class UserInterface:
                 None,
                 [
                     [
-                        Text("Compensate:"),
-                        Checkbox("gravity", self.state.get_comp_grav),
-                        Checkbox("friction", self.state.get_comp_fric),
+                        Text("Comp:"),
+                        Checkbox("grav", self.state.get_comp_grav),
+                        Checkbox("fric", self.state.get_comp_fric),
+                        Text(""),
                     ],
                     [
-                        Text("Impedance:"),
+                        Text("Imp:"),
                         Checkbox("arm", self.state.get_imp_arm),
+                        Checkbox("null", self.state.get_imp_null),
                         Checkbox("base", self.state.get_imp_base),
                     ],
                 ],

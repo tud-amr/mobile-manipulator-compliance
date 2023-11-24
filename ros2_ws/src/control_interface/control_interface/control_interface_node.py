@@ -140,7 +140,7 @@ class ControlInterfaceNode(Node):
                     self.simulation.reset_target()
             case _ if cmd in [str(n) for n in range(self.kinova.actuator_count)]:
                 self.kinova.toggle_active(int(cmd))
-            case _ if cmd in ["gravity", "friction", "arm", "base"]:
+            case _ if cmd in ["grav", "fric", "arm", "null", "base"]:
                 if cmd == "arm" and not self.target_is_at_end_effector():
                     pass
                 else:
@@ -160,6 +160,7 @@ class ControlInterfaceNode(Node):
         state.comp_grav = self.state.controller.comp_grav
         state.comp_fric = self.state.controller.comp_fric
         state.imp_arm = self.state.controller.imp_arm
+        state.imp_null = self.state.controller.imp_null
         state.imp_base = self.state.controller.imp_base
 
         state.active = self.kinova.joint_active

@@ -95,6 +95,7 @@ class State:
     comp_grav: bool = False
     comp_fric: bool = False
     imp_arm: bool = False
+    imp_null: bool = False
     imp_base: bool = False
     automove_target: bool = False
 
@@ -134,10 +135,14 @@ class State:
         """Return whether arm impedance is enabled."""
         return self.imp_arm
 
+    def get_imp_null(self) -> bool:
+        """Return whether null space impedance is enabled."""
+        return self.imp_null
+
     def get_imp_base(self) -> bool:
         """Return whether base impedance is enabled."""
         return self.imp_base
-    
+
     def get_automove_target(self) -> bool:
         """Return whether automove target is enabled."""
         return self.automove_target

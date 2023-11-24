@@ -75,6 +75,8 @@ def define_matrices(robot: pinocchio.RobotWrapper) -> None:
     f = casadi.SX.sym("f", 3, 1)
     T = J.T @ f
 
+    N = casadi.SX.eye(6) - J.T @ Jinv.T
+
     functions: list[casadi.Function] = [
         casadi.Function("g", [q], [g]),
         casadi.Function("x", [q], [x]),
@@ -85,6 +87,7 @@ def define_matrices(robot: pinocchio.RobotWrapper) -> None:
         casadi.Function("mu", [q, dq], [mu]),
         casadi.Function("T", [q, f], [T]),
         casadi.Function("dq", [q, dx_sym], [dq_inv]),
+        casadi.Function("N", [q], [N]),
     ]
 
     current_dir = os.getcwd()
