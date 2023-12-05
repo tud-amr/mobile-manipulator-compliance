@@ -39,7 +39,7 @@ class Controller:
 
         # Base
         self.percentage_max = 0.5
-        self.K = 15
+        self.K = 5
 
         # General:
         self.thr_error = 0.02  # m
@@ -58,6 +58,7 @@ class Controller:
             case "null":
                 self.imp_null = not self.imp_null
             case "base":
+                self.pref_x = self.state.x.copy()
                 self.imp_base = not self.imp_base
         self.reset()
 
