@@ -167,11 +167,7 @@ class UserInterface:
                 True,
             )
             Row(
-                [
-                    Button("Clear Faults"),
-                    Button("Reset wheels"),
-                    Button("Refresh"),
-                ],
+                [Button("Clear"), Button("Refresh"), Button("Open"), Button("Close")],
                 True,
             )
 

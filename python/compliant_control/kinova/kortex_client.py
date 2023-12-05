@@ -202,6 +202,10 @@ class KortexClient:
             return (abs(current) - lower_bound) / (upper_bound - lower_bound)
         return current
 
+    def get_gripper_position(self) -> float:
+        """Get the gripper position."""
+        return (self.feedback.interconnect.gripper_feedback.motor[0].position) / 100
+
     def get_torque(self, joint: int, as_percentage: bool) -> float:
         """Get the torque of a joint."""
         torque = getattr(self.feedback.actuators[joint], "torque")
@@ -296,6 +300,18 @@ class KortexClient:
             joint_angle.value = pos
 
         return self._execute_action(action)
+
+    def _move_gripper(self, close: bool) -> None:
+        gripper_command = Base_pb2.GripperCommand()
+        gripper_command.mode = Base_pb2.GRIPPER_POSITION
+        finger = gripper_command.gripper.finger.add()
+        finger.finger_identifier = 1
+        pos = self.get_gripper_position()
+        if close:
+            finger.value = min(1, pos + 0.1)
+        else:
+            finger.value = max(0, pos - 0.1)
+        self.base.SendGripperCommand(gripper_command)
 
     def _high_level_tracking(self) -> None:
         self.mode = "HLT"

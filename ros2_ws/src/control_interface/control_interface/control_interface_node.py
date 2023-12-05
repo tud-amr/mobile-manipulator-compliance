@@ -131,8 +131,12 @@ class ControlInterfaceNode(Node):
                     self.kinova.connect_LLC()
             case "Stop LLC Task":
                 self.kinova.disconnect_LLC()
-            case "Clear Faults":
+            case "Clear":
                 self.kinova.clear_faults()
+            case "Open":
+                self.kinova._move_gripper(close=False)
+            case "Close":
+                self.kinova._move_gripper(close=True)
             case "Automove target":
                 self.toggle_automove_target()
             case "Reset target":
