@@ -16,7 +16,7 @@ def load_robot() -> pinocchio.RobotWrapper:
     frame_id = robot.model.getFrameId("GRIPPER_FRAME")
     joint_id = robot.model.getJointId("5")
     location = pinocchio.SE3(1)
-    location.translation = np.array([0, 0, 0.09])
+    location.translation = np.array([0, 0, 0.156])
     frame = pinocchio.Frame(
         "END_EFFECTOR",
         joint_id,

@@ -31,10 +31,10 @@ class Controller:
 
         # Cartesian impedance:
         self.Kd = np.eye(3) * 40
-        self.Dd = np.eye(3) * 8
+        self.Dd = np.eye(3) * 3
 
         # Null space:
-        self.K_n = np.eye(6) * -0.4
+        self.K_n = np.eye(6) * 0.2
         self.D_n = np.eye(6) * 0.1
 
         # Base
@@ -103,7 +103,7 @@ class Controller:
         """Return the current due to the null space task."""
         qd = np.deg2rad(Position.pref.position)
         torque = (
-            self.K_n @ (self.state.kinova_feedback.q - qd)
+            self.K_n @ (qd - self.state.kinova_feedback.q)
             - self.D_n @ self.state.kinova_feedback.dq
         )
         current = torque * self.state.ratios
