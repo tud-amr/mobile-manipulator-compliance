@@ -161,13 +161,14 @@ class UserInterface:
 
             Row(
                 [
-                    Checkbox("Automove target", self.state.get_automove_target),
-                    Button("Reset target"),
+                    Text("Target:"),
+                    Checkbox("Automove", self.state.get_automove_target),
+                    Button("Reset"),
                 ],
                 True,
             )
             Row(
-                [Button("Clear"), Button("Refresh"), Button("Open"), Button("Close")],
+                [Button("Clear"), Button("Open"), Button("Close"), Button("Refresh")],
                 True,
             )
 

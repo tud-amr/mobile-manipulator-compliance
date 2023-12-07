@@ -137,9 +137,9 @@ class ControlInterfaceNode(Node):
                 self.kinova._move_gripper(close=False)
             case "Close":
                 self.kinova._move_gripper(close=True)
-            case "Automove target":
+            case "Automove":
                 self.toggle_automove_target()
-            case "Reset target":
+            case "Reset":
                 if self.simulate:
                     self.simulation.reset_target()
             case _ if cmd in [str(n) for n in range(self.kinova.actuator_count)]:

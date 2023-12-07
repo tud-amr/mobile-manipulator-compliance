@@ -46,9 +46,9 @@ class UserInterfaceNode(Node):
         self.interface.update_state("waiting")
         if self.visualize:
             match command:
-                case "Automove target":
+                case "Automove":
                     self.visualization.target_mover.toggle()
-                case "Reset target":
+                case "Reset":
                     self.visualization.reset_target()
                 case _ if command in ["Start LLC Task", "arm"]:
                     self.visualization.reset_target()
