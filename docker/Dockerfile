@@ -13,7 +13,7 @@ RUN mkdir -p /home/dingo/compliant-control
 Run chown dingo /home/dingo
 
 #Install GUI related packages:
-RUN apt install -y ffmpeg libsm6 libxext6 xdotool wmctrl
+RUN apt install -y ffmpeg libsm6 libxext6 xdotool wmctrl ros-$ROS_DISTRO-plotjuggler-ros libxcb-cursor0
 
 #Install project required packages:
 RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano

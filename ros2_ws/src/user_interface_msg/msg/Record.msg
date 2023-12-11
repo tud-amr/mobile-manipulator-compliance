@@ -1,0 +1,4 @@
+float64 end_effector_x
+float64 end_effector_y
+float64 target_x
+float64 target_y

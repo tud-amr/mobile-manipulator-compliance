@@ -18,7 +18,7 @@ from compliant_control.kinova.utilities import DeviceConnection
 
 from compliant_control.control.calibration import Calibration
 
-from user_interface_msg.msg import Ufdbk, Ucmd, Ustate, Utarget
+from user_interface_msg.msg import Ufdbk, Ucmd, Ustate, Utarget, Record
 
 PUBLISH_RATE = 100
 D_MAX_RESET = 0.001
@@ -34,6 +34,7 @@ class ControlInterfaceNode(Node):
 
         self.pub_fdbk = self.create_publisher(Ufdbk, "/feedback", 10)
         self.pub_state = self.create_publisher(Ustate, "/state", 10)
+        self.pub_record = self.create_publisher(Record, "/record", 10)
         self.create_subscription(Ucmd, "/command", self.handle_input, 10)
         self.create_subscription(Utarget, "/target", self.update_target, 10)
 
@@ -87,6 +88,7 @@ class ControlInterfaceNode(Node):
         self.get_logger().info("READY!")
         while True:
             self.publish_feedback()
+            self.publish_record()
             time.sleep(1 / PUBLISH_RATE)
 
     def publish_feedback(self) -> None:
@@ -102,6 +104,15 @@ class ControlInterfaceNode(Node):
         feedback.dingo_rate = self.dingo.rate_counter.rate
         feedback.controller_rate = self.state.controller.rate_counter.rate
         self.pub_fdbk.publish(feedback)
+
+    def publish_record(self) -> None:
+        """Publish data to record."""
+        msg = Record()
+        msg.end_effector_x = self.state.x[0]
+        msg.end_effector_y = self.state.x[1]
+        msg.target_x = self.state.target[0]
+        msg.target_y = self.state.target[1]
+        self.pub_record.publish(msg)
 
     def handle_input(self, msg: Ucmd) -> None:
         """Handle user input."""
