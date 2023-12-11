@@ -161,16 +161,14 @@ class UserInterface:
 
             Row(
                 [
-                    Text("Target:"),
                     Checkbox("Automove", self.state.get_automove_target),
                     Button("Reset"),
+                    Button("Clear"),
+                    Button("Refresh"),
                 ],
                 True,
             )
-            Row(
-                [Button("Clear"), Button("Open"), Button("Close"), Button("Refresh")],
-                True,
-            )
+            Row([Text("Gripper:"), Button("Open"), Button("Close")], self.state.HLC)
 
     def load_info(self, width: int, height: int, pos: list) -> None:
         """Load info."""
