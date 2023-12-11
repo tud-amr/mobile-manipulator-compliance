@@ -50,7 +50,7 @@ class UserInterfaceNode(Node):
                     self.visualization.target_mover.toggle()
                 case "Reset":
                     self.visualization.reset_target()
-                case _ if command in ["Start LLC Task", "arm"]:
+                case _ if command in ["Start LLC Task", "arm", "Start HLT"]:
                     self.visualization.reset_target()
                     self.publish_target()
                     time.sleep(0.1)

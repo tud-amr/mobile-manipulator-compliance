@@ -316,9 +316,12 @@ class KortexClient:
     def _high_level_tracking(self) -> None:
         self.mode = "HLT"
         joint_speeds = Base_pb2.JointSpeeds()
-        gain = 5
+        gain = 8
         lower_threshold = 0.001
         upper_threshold = 0.05
+        q_pref = np.deg2rad(Position.pref.position)
+        n_gain = 150
+        n_max = 30
         while self.mode == "HLT":
             dq = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
             error = self.state.target - self.state.x
@@ -327,6 +330,10 @@ class KortexClient:
                 dx = error / m
                 dx *= min((m / upper_threshold), 1) * gain
                 dq = self.state.dq_inv(dx)
+            dq_n = q_pref - self.state.kinova_feedback.q
+            dq_n = np.sign(dq_n) * np.minimum(n_max, n_gain * np.absolute(dq_n))
+            dq_n = self.state.Nv @ dq_n
+            dq += dq_n
             del joint_speeds.joint_speeds[:]
             for n, speed in enumerate(dq):
                 joint_speed = joint_speeds.joint_speeds.add()
