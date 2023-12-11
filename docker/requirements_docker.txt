@@ -1,0 +1,11 @@
+protobuf==3.20.0
+setuptools==58.2.0
+mujoco
+pandas
+scipy
+
+pin3x-jnrh2023
+dearpygui
+dearpygui_ext
+matplotlib
+PyQt6

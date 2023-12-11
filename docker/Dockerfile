@@ -22,8 +22,7 @@ RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano
 ADD python /home/dingo/compliant-control/python
 ADD docker/.bashrc /home/dingo
 ADD docker/kortex_api-2.6.0.post3-py3-none-any.whl /home/dingo
-ADD docker/requirements.txt /home/dingo
-ADD docker/requirements_gui.txt /home/dingo
+ADD docker/requirements_docker.txt /home/dingo
 ADD docker/requirements_flake8.txt /home/dingo
 WORKDIR /home/dingo
 
@@ -34,8 +33,7 @@ RUN pip install kortex_api-2.6.0.post3-py3-none-any.whl
 RUN pip install -e /home/dingo/compliant-control/python
 
 #Install required pip packages:
-RUN pip install -r requirements.txt
-RUN pip install -r requirements_gui.txt
+RUN pip install -r requirements_docker.txt
 
 #Install flake8:
 RUN pip install -r requirements_flake8.txt
