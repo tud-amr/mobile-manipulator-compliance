@@ -27,6 +27,9 @@ class Controller:
         self.mode: Literal["position", "velocity", "current"] = "current"
 
         self.joint_commands = np.zeros(JOINTS)
+        self.c_compliant = np.zeros(JOINTS)
+        self.c_nullspace = np.zeros(JOINTS)
+        self.c_compensate = np.zeros(JOINTS)
         self.rate_counter = RateCounter(1000)
 
         # Cartesian impedance:
@@ -74,10 +77,13 @@ class Controller:
         current = np.zeros(JOINTS)
         if self.imp_arm:
             current += self.cartesian_impedance()
+            self.c_compliant = current.copy()
             if self.imp_null:
                 current += self.null_space_task()
+                self.c_nullspace = current.copy()
             if self.comp_fric:
                 current += self.compensate_friction_in_impedance_mode(current)
+                self.c_compensate = current.copy()
             if self.imp_base:
                 self.command_base()
         else:

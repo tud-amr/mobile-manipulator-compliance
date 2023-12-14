@@ -108,10 +108,13 @@ class ControlInterfaceNode(Node):
     def publish_record(self) -> None:
         """Publish data to record."""
         msg = Record()
-        msg.end_effector_x = self.state.x[0]
-        msg.end_effector_y = self.state.x[1]
-        msg.target_x = self.state.target[0]
-        msg.target_y = self.state.target[1]
+        msg.pos_x = list(self.state.x)
+        msg.pos_t = list(self.state.target)
+        msg.pos_q = list(self.state.kinova_feedback.q)
+        msg.cur_comp = list(self.state.controller.c_compliant)
+        msg.cur_null = list(self.state.controller.c_nullspace)
+        msg.cur_fric = list(self.state.controller.c_compensate)
+        msg.cur_fb = list(self.state.kinova_feedback.c)
         self.pub_record.publish(msg)
 
     def handle_input(self, msg: Ucmd) -> None:
