@@ -16,6 +16,7 @@ import pinocchio
 import compliant_control.mujoco.models as models
 
 JOINTS = 6
+RATE = 1000
 
 
 class Calibration:
@@ -241,12 +242,12 @@ class Calibration:
         thread.start()
         thr = 0.1 * abs(end[joint] - start[joint])
         while abs(start[joint] - np.rad2deg(self.state.kinova_feedback.q[joint])) < thr:
-            time.sleep(1 / self.client.frequency)
+            time.sleep(1 / RATE)
         while abs(end[joint] - np.rad2deg(self.state.kinova_feedback.q[joint])) > thr:
             q.append(self.state.kinova_feedback.q.copy())
             theta.append(self.state.kinova_feedback.q[joint] + np.pi / 2)
             torque.append((self.client.get_current(joint, False)))
-            time.sleep(1 / self.client.frequency)
+            time.sleep(1 / RATE)
         while self.client.mode == "high_level_moving":
             time.sleep(0.1)
 

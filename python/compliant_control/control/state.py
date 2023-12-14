@@ -44,8 +44,8 @@ class State:
             self.ratios = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
             self.frictions = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2])
         else:
-            self.ratios = np.array([1, 0.31, 1.01, 1.75, 1.75, 1])
-            self.frictions = np.array([0.61, 1.71, 0.72, 0.29, 0.41, 0.56])
+            self.ratios = np.array([1.03, 0.31, 1.03, 1.90, 2.09, 1.99])
+            self.frictions = np.array([0.54, 1.75, 0.69, 0.31, 0.40, 0.59])
 
     @property
     def g(self) -> np.ndarray:
