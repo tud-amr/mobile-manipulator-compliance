@@ -18,7 +18,7 @@ from compliant_control.kinova.utilities import DeviceConnection
 
 from compliant_control.control.calibration import Calibration
 
-from user_interface_msg.msg import Ufdbk, Ucmd, Ustate, Utarget, Record
+from user_interface_msg.msg import Ufdbk, Ucmd, Ustate, Utarget, Record, Data
 
 PUBLISH_RATE = 100
 D_MAX_RESET = 0.001
@@ -35,6 +35,7 @@ class ControlInterfaceNode(Node):
         self.pub_fdbk = self.create_publisher(Ufdbk, "/feedback", 10)
         self.pub_state = self.create_publisher(Ustate, "/state", 10)
         self.pub_record = self.create_publisher(Record, "/record", 10)
+        self.pub_calibration = self.create_publisher(Data, "/calibration", 10)
         self.create_subscription(Ucmd, "/command", self.handle_input, 10)
         self.create_subscription(Utarget, "/target", self.update_target, 10)
 
@@ -64,7 +65,9 @@ class ControlInterfaceNode(Node):
                 self.state, router=router, real_time_router=real_time_router
             )
             self.kinova.log = self.get_logger().info
-            self.calibration = Calibration(self.state, self.kinova)
+            self.calibration = Calibration(
+                self.state, self.kinova, self.publish_calibration
+            )
             self.calibration.log = self.get_logger().info
             signal.signal(signal.SIGINT, self.kinova.stop)
             self.kinova.start()
@@ -76,7 +79,9 @@ class ControlInterfaceNode(Node):
         self.kinova = KortexClientSimulation(self.state, self.simulation)
         self.kinova.log = self.get_logger().info
         self.kinova.start_in_new_thread()
-        self.calibration = Calibration(self.state, self.kinova)
+        self.calibration = Calibration(
+            self.state, self.kinova, self.publish_calibration
+        )
         self.calibration.log = self.get_logger().info
         self.start_threads()
         self.simulation.start()
@@ -116,6 +121,12 @@ class ControlInterfaceNode(Node):
         msg.cur_fric = list(self.state.controller.c_compensate)
         msg.cur_fb = list(self.state.kinova_feedback.c)
         self.pub_record.publish(msg)
+
+    def publish_calibration(self, data: np.ndarray) -> None:
+        """Publish the data."""
+        msg = Data()
+        msg.data = list(data)
+        self.pub_calibration.publish(msg)
 
     def handle_input(self, msg: Ucmd) -> None:
         """Handle user input."""

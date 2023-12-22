@@ -30,7 +30,7 @@ class KortexClientSimulation(KortexClient):
     def _high_level_move(self, position: Position) -> None:
         max_attempts = 100
         divider = 100
-        moving_speed = 20  # deg/s
+        moving_speed = 40  # deg/s
         frequency = 1000
         step_deg = moving_speed / frequency
         step_size = np.deg2rad(step_deg)
