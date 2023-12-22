@@ -50,7 +50,7 @@ namespace dingo_driver
          *
          * @param canbus_name
          */
-        DriverManager(std::string canbus_name);
+        DriverManager(std::string canbus_name, std::string mode);
 
         /**
          * @brief Connect to the canbus gateway.
@@ -77,9 +77,8 @@ namespace dingo_driver
          * @brief Set the mode of an actuator.
          *
          * @param name "The name of the actuator."
-         * @param mode "Vol", "Cur", "Spd"
          */
-        void set_mode(std::string name, std::string mode);
+        void set_mode(std::string name);
 
         /**
          * @brief Send a command.
@@ -112,6 +111,7 @@ namespace dingo_driver
         std::vector<float> tor_;
 
     private:
+        std::string mode_;
         std::unique_ptr<puma_motor_driver::SocketCANGateway> gateway_;
         std::map<std::string, Actuator> actuators_;
         std::thread canread_thread_;

@@ -15,7 +15,7 @@ namespace dingo_driver
         return &driver_;
     }
 
-    DriverManager::DriverManager(std::string canbus_name)
+    DriverManager::DriverManager(std::string canbus_name, std::string mode) : mode_(mode)
     {
         gateway_.reset(new puma_motor_driver::SocketCANGateway(canbus_name));
     }
@@ -60,25 +60,21 @@ namespace dingo_driver
         gateway_->addDriver(get_actuator_(name)->get_driver());
     }
 
-    void DriverManager::set_mode(std::string name, std::string mode)
+    void DriverManager::set_mode(std::string name)
     {
         uint8_t mode_id;
 
-        if (mode == "Vol")
+        if (mode_ == "Vol")
         {
             mode_id = puma_motor_msgs::Status::MODE_VOLTAGE;
         }
-        else if (mode == "Cur")
+        else if (mode_ == "Vel")
         {
-            mode_id = puma_motor_msgs::Status::MODE_CURRENT;
-        }
-        else if (mode == "Pos")
-        {
-            mode_id = puma_motor_msgs::Status::MODE_POSITION;
+            mode_id = puma_motor_msgs::Status::MODE_SPEED;
         }
         else
         {
-            std::cout << "Mode not provided, please select 'Vol', 'Cur' or 'Pos' as mode." << std::endl;
+            std::cout << "Mode not provided, please select 'Vol' or 'Vel' as mode." << std::endl;
             return;
         }
 
@@ -122,10 +118,10 @@ namespace dingo_driver
         add_actuator(3, "front_right", true);
         add_actuator(4, "rear_left", false);
         add_actuator(5, "rear_right", true);
-        set_mode("front_left", "Vol");
-        set_mode("front_right", "Vol");
-        set_mode("rear_left", "Vol");
-        set_mode("rear_right", "Vol");
+        set_mode("front_left");
+        set_mode("front_right");
+        set_mode("rear_left");
+        set_mode("rear_right");
         initialize_encoders();
     }
 
@@ -163,7 +159,10 @@ namespace dingo_driver
             pos_vector.push_back(pos);
             tor_vector.push_back(vol * cur);
 
-            driver->commandDutyCycle(command_[n] * actuator.flip_value);
+            if (mode_ == "Vol")
+                driver->commandDutyCycle(command_[n] * actuator.flip_value);
+            else if (mode_ == "Vel")
+                driver->commandSpeed(command_[n] * actuator.flip_value);
             n += 1;
         }
         pos_ = pos_vector;

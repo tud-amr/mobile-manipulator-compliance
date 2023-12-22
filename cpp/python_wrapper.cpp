@@ -9,7 +9,7 @@ PYBIND11_MODULE(dingo_driver, handle)
 {
     handle.doc() = "Dingo driver.";
     py::class_<DriverManager>(handle, "DriverManager")
-        .def(py::init<std::string>())
+        .def(py::init<std::string, std::string>())
         .def("connect_gateway", &DriverManager::connect_gateway)
         .def("start_canread_loop", &DriverManager::start_canread_loop)
         .def("start_update_loop", &DriverManager::start_update_loop)

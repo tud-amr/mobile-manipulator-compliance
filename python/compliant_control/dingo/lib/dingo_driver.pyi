@@ -1,9 +1,10 @@
 from numpy import ndarray
+from typing import Literal
 
 class DriverManager:
     """Manages the canbus connections."""
 
-    def __init__(self, canbus_name: str) -> None:
+    def __init__(self, canbus_name: str, mode: Literal["Vol", "Vel"]) -> None:
         """Define the canbus name."""
     @property
     def position(self) -> ndarray:
