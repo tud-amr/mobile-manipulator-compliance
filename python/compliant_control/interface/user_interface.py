@@ -103,9 +103,9 @@ class UserInterface:
         self.load_state(w2, h6, [w2, h3])
         self.joystick = Joystick(w2, h6, [w2, h3 + h6], Widget.general_callback)
 
-        create_plot("pos", w3, h3, [0, 2 * h3], self.wheel_names, 10)
-        create_plot("vel", w3, h3, [w3, 2 * h3], self.wheel_names, 5)
-        create_plot("eff", w3, h3, [2 * w3, 2 * h3], self.wheel_names, 10)
+        create_plot("pos", w3, h3, [0, 2 * h3], self.wheel_names, 50)
+        create_plot("vel", w3, h3, [w3, 2 * h3], self.wheel_names, 1)
+        create_plot("eff", w3, h3, [2 * w3, 2 * h3], self.wheel_names, 50)
 
         dpg.show_viewport()
 

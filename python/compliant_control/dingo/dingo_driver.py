@@ -5,7 +5,7 @@ from compliant_control.control.state import State
 from compliant_control.utilities.rate_counter import RateCounter
 
 VOL_GAIN = 0.4  # Gain for voltage mode
-VEL_GAIN = 6  # Gain for velocity mode
+VEL_GAIN = 8  # Gain for velocity mode
 
 
 class DingoDriver:
