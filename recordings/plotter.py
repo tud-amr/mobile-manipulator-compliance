@@ -10,7 +10,10 @@ import compliant_control.control.symbolics as symbolics
 
 
 RATIOS = np.array([1.03, 0.31, 1.03, 1.90, 2.09, 1.99])
-L = 0.260
+L = 0.195
+D = 0.145
+R = 0.315
+K = 0.04
 
 
 class Plotter:
@@ -20,7 +23,7 @@ class Plotter:
         self.load_symbolics()
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        directory = "2023-12-14"
+        directory = "2024-01-05/4"
         name = "compliant"
         self.data = pd.read_csv(dir_path + "/" + directory + "/" + name + ".csv")
         self.data.columns = self.data.columns.str.replace("/record/", "")
@@ -30,11 +33,10 @@ class Plotter:
         self.process_data()
         # self.plot_xy()
         self.plot_force()
-        # self.plot_torques()
         # self.calculate_error()
 
         df = pd.DataFrame(self.processed_data)
-        df.to_csv("processed.csv", index=False)
+        # df.to_csv("processed.csv", index=False)
 
     def F(self, q: np.ndarray, torques: np.ndarray) -> np.ndarray:
         """End-effector force."""
@@ -56,9 +58,8 @@ class Plotter:
         plt.gca().set_aspect("equal")
         plt.plot(self.pos_x[:, 1], self.pos_x[:, 0])
         plt.plot(self.pos_t[:, 1], self.pos_t[:, 0])
-        origin = (0, 0.145)
-        l_rope = 0.260
-        circle = plt.Circle(origin, l_rope, fill=False)
+        origin = (0, D)
+        circle = plt.Circle(origin, L, fill=False)
         fig = plt.gcf()
         ax = fig.gca()
         ax.add_patch(circle)
@@ -66,31 +67,39 @@ class Plotter:
 
     def plot_force(self) -> None:
         """Plot force."""
-        error = self.pos_t - self.pos_x
-        abs_error = np.linalg.norm(error, axis=1)
-        abs_error *= 1000  # m -> mm
+        error = np.linalg.norm(self.pos_x[:, :2] - self.pos_t[:, :2], axis=1)
+        error *= 1000  # m -> mm
 
-        torques = self.cur_comp / RATIOS
-        force = np.array(
-            [self.F(self.pos_q[n], torques[n]) for n in range(len(self.pos_q))]
-        )
-        abs_force = np.linalg.norm(force, axis=1)
-        plt.scatter(abs_error, abs_force, s=1)
+        length = np.linalg.norm(self.pos_x[:, :2] - np.array([D, 0]), axis=1)
+        stretch = length - L
+        stretch *= 1000  # m -> mm
+        force = K * stretch
 
-        x = np.unique(abs_error)
-        y = np.poly1d(np.polyfit(abs_error, abs_force, 1))(x)
+        error_filtered = []
+        force_filtered = []
+        time = []
+
+        # Filter out negative stretch values, since the spring has no negative stretch:
+        for n in range(len(stretch)):
+            if stretch[n] > 0:
+                error_filtered.append(error[n])
+                force_filtered.append(force[n])
+                time.append(self.time[n])
+
+        plt.scatter(error_filtered, force_filtered, s=1)
+
+        print(np.poly1d(np.polyfit(error_filtered, force_filtered, 1)))
+
+        x = error_filtered
+        y = np.poly1d(np.polyfit(error_filtered, force_filtered, 1))(x)
         plt.plot(x, y, c="orange")
         plt.show()
 
-        self.processed_data["abs_error"] = abs_error
-        self.processed_data["abs_force"] = abs_force
+        self.processed_data["error"] = error_filtered
+        self.processed_data["force"] = force_filtered
         self.processed_data["fit_x"] = x
         self.processed_data["fit_y"] = y
-
-    def plot_torques(self) -> None:
-        """Plot torques."""
-        plt.plot(self.time, self.cur_fb)
-        plt.show()
+        self.processed_data["time"] = time
 
     def calculate_error(self) -> None:
         """Plot error."""

@@ -316,7 +316,7 @@ class KortexClient:
     def _high_level_tracking(self) -> None:
         self.mode = "HLT"
         joint_speeds = Base_pb2.JointSpeeds()
-        gain = 8
+        gain = 10
         lower_threshold = 0.001
         upper_threshold = 0.05
         q_pref = np.deg2rad(Position.pref.position)
