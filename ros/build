@@ -1,0 +1,11 @@
+#!/bin/bash
+
+cd $ROS_DISTRO
+
+if [ $ROS_DISTRO = "humble" ]; then
+    colcon build --symlink-install \
+    && source install/setup.bash;
+elif [ $ROS_DISTRO = "noetic" ]; then
+    catkin_make \
+    && source devel/setup.bash;
+fi

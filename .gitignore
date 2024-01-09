@@ -5,6 +5,7 @@ imgui.ini
 *.egg-info
 **/calibration_data/**
 **/build/
+**/build_dir/
 **/install/
 **/devel/
 **/log/

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+mkdir -p build_dir
+cd build_dir
+cmake ..
+make install
