@@ -1,0 +1,3 @@
+<launch>
+  <node name="user_interface_node" pkg="user_interface" type="user_interface_node.py" args="--visualize" output="screen"/>
+</launch>

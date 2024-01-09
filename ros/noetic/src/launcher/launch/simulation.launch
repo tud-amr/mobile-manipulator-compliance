@@ -1,0 +1,4 @@
+<launch>
+  <node name="control_interface_node" pkg="control_interface" type="control_interface_node.py" args="--simulate" output="screen"/>
+  <node name="user_interface_node" pkg="user_interface" type="user_interface_node.py" args="" output="screen"/>
+</launch>
