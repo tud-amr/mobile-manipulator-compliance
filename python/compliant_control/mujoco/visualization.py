@@ -1,5 +1,6 @@
+from __future__ import annotations
 from typing import Literal
-import importlib.resources as pkg_resources
+import os
 import mujoco.viewer
 from mujoco import MjModel, MjData, mj_name2id, mjtObj
 import compliant_control.mujoco.models as models
@@ -18,7 +19,7 @@ class Visualization:
     """Provides the mujoco visualization of the robot."""
 
     def __init__(self) -> None:
-        xml = str(pkg_resources.files(models) / MODEL)
+        xml = str(os.path.dirname(models.__file__) + "/" + MODEL)
         self.model = MjModel.from_xml_path(xml)
         self.data = MjData(self.model)
         self.define_robots()
@@ -70,13 +71,12 @@ class Visualization:
         """Set the joint position or velocity for kinova arm or dingo base."""
         for n, value in enumerate(values):
             idx = mj_name2id(self.model, mjtObj.mjOBJ_JOINT, f"{robot}_{n}")
-            match prop:
-                case "position":
-                    idpos = self.model.jnt_qposadr[idx]
-                    self.data.qpos[idpos] = value
-                case "velocity":
-                    idvel = self.model.jnt_dofadr[idx]
-                    self.data.qvel[idvel]
+            if prop == "position":
+                idpos = self.model.jnt_qposadr[idx]
+                self.data.qpos[idpos] = value
+            elif prop == "velocity":
+                idvel = self.model.jnt_dofadr[idx]
+                self.data.qvel[idvel]
 
     def start(self) -> None:
         """Start a mujoco simulation."""

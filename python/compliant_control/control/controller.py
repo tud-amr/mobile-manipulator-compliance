@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Literal, TYPE_CHECKING
 import numpy as np
 from threading import Thread
@@ -51,18 +52,17 @@ class Controller:
 
     def toggle(self, name: str) -> None:
         """Toggle controller states."""
-        match name:
-            case "grav":
-                self.comp_grav = not self.comp_grav
-            case "fric":
-                self.comp_fric = not self.comp_fric
-            case "arm":
-                self.imp_arm = not self.imp_arm
-            case "null":
-                self.imp_null = not self.imp_null
-            case "base":
-                self.pref_x = self.state.x.copy()
-                self.imp_base = not self.imp_base
+        if name == "grav":
+            self.comp_grav = not self.comp_grav
+        elif name == "fric":
+            self.comp_fric = not self.comp_fric
+        elif name == "arm":
+            self.imp_arm = not self.imp_arm
+        elif name == "null":
+            self.imp_null = not self.imp_null
+        elif name == "base":
+            self.pref_x = self.state.x.copy()
+            self.imp_base = not self.imp_base
         self.reset()
 
     def reset(self) -> None:

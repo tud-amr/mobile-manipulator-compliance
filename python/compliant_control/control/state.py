@@ -1,4 +1,3 @@
-import importlib.resources as pkg_resources
 import os
 import numpy as np
 import casadi
@@ -106,7 +105,7 @@ class State:
 
     def load_symbolics(self) -> None:
         """Load the symbolics."""
-        input_dir = str(pkg_resources.files(symbolics))
+        input_dir = os.path.dirname(symbolics.__file__)
         current_dir = os.getcwd()
         os.chdir(input_dir)
         for file_name in os.listdir(input_dir):

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import mujoco
 from mujoco import mj_name2id, mjtObj
 import numpy as np
@@ -50,11 +51,10 @@ class Simulation(Visualization):
         prop: Literal["position", "velocity", "torque"],
     ) -> list[float]:
         """Return position, velocity or torque feedback for kinova arm or dingo base."""
-        match robot:
-            case "Kinova":
-                actuators = 6
-            case "Dingo":
-                actuators = 4
+        if robot == "Kinova":
+            actuators = 6
+        elif robot == "Dingo":
+            actuators = 4
 
         feedback = []
         for n in range(actuators):

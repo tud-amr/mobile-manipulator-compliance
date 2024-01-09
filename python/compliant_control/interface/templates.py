@@ -1,3 +1,4 @@
+from __future__ import annotations
 import itertools
 import dearpygui.dearpygui as dpg
 from typing import Callable

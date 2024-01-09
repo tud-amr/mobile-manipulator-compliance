@@ -1,3 +1,4 @@
+from __future__ import annotations
 from threading import Thread, Event
 from typing import Literal
 import numpy as np

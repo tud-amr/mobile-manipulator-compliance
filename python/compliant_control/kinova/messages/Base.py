@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 class ServoingModeInformation:
     """https://github.com/Kinovarobotics/kortex/blob/master/api_python/doc/markdown/messages/Base/ServoingModeInformation.md."""
 

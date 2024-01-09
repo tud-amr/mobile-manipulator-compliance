@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 
 from scipy.signal import savgol_filter
@@ -10,7 +11,7 @@ from compliant_control.control.state import State
 import time
 from threading import Thread
 
-import importlib.resources as pkg_resources
+import os
 import casadi
 import pinocchio
 import compliant_control.mujoco.models as models
@@ -37,7 +38,7 @@ class Calibration:
 
     def load_model(self) -> None:
         """Load the model."""
-        urdf_package = str(pkg_resources.files(models))
+        urdf_package = os.path.dirname(models.__file__)
         urdf = urdf_package + "/GEN3-LITE.urdf"
         self.robot = pinocchio.RobotWrapper.BuildFromURDF(urdf, urdf_package)
         self.robot.data = self.robot.model.createData()

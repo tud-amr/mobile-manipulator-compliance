@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 class Feedback:
     """https://github.com/Kinovarobotics/kortex/blob/master/api_python/doc/markdown/messages/BaseCyclic/Feedback.md."""
 

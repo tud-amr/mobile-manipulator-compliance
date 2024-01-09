@@ -194,11 +194,10 @@ class UserInterface:
 
     def update_bars(self, robot: Literal["Kinova", "Dingo"]) -> None:
         """Update the bar plots."""
-        match robot:
-            case "Kinova":
-                elements = self.joints
-            case "Dingo":
-                elements = self.wheels
+        if robot == "Kinova":
+            elements = self.joints
+        elif robot == "Dingo":
+            elements = self.wheels
         for prop in ["pos", "vel", "eff"]:
             for element in elements:
                 name = getattr(element, "name")
