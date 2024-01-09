@@ -1,6 +1,0 @@
-#!/bin/bash
-xhost +local:docker &> /dev/null
-
-sudo docker run -it --rm --net=host --privileged \
-    -v $(dirname "$0")/..:/home/dingo/compliant-control \
-    ros2_compliant_control_core bash -c "bash;"

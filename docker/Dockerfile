@@ -1,5 +1,6 @@
 #Pull the base image and update cache:
-FROM ros:humble
+ARG ROS
+FROM ros:${ROS}
 RUN apt update 
 
 #Add a user:
@@ -12,17 +13,29 @@ RUN usermod -aG sudo dingo
 RUN mkdir -p /home/dingo/compliant-control
 Run chown dingo /home/dingo
 
-#Install GUI related packages:
-RUN apt install -y ffmpeg libsm6 libxext6 xdotool wmctrl ros-$ROS_DISTRO-plotjuggler-ros libxcb-cursor0
-
 #Install project required packages:
-RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano
+RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano curl
+
+#Install GUI related packages:
+ARG INSTALL
+RUN if [ "$INSTALL" = "full" ]; then \
+        apt install -y ffmpeg libsm6 libxext6 xdotool wmctrl ros-$ROS_DISTRO-plotjuggler-ros libxcb-cursor0; \
+    fi
+
+#Fix for noetic: https://stackoverflow.com/questions/49478573/pip3-install-not-working-no-module-named-pip-vendor-pkg-resources
+ARG ROS
+RUN if [ "$ROS" = "noetic" ]; then \
+        curl -sS https://bootstrap.pypa.io/get-pip.py | sudo python3 \
+        && type pip3 \
+        && hash -r; \
+    fi
 
 #Copy files to workspace:
 ADD python /home/dingo/compliant-control/python
 ADD docker/.bashrc /home/dingo
 ADD docker/kortex_api-2.6.0.post3-py3-none-any.whl /home/dingo
-ADD docker/requirements_docker.txt /home/dingo
+ADD docker/requirements_full.txt /home/dingo
+ADD docker/requirements_core.txt /home/dingo
 ADD docker/requirements_flake8.txt /home/dingo
 WORKDIR /home/dingo
 
@@ -33,10 +46,13 @@ RUN pip install kortex_api-2.6.0.post3-py3-none-any.whl
 RUN pip install -e /home/dingo/compliant-control/python
 
 #Install required pip packages:
-RUN pip install -r requirements_docker.txt
-
-#Install flake8:
-RUN pip install -r requirements_flake8.txt
+ARG INSTALL
+RUN if [ "$INSTALL" = "full" ]; then \
+        pip install -r requirements_full.txt \
+        && pip install -r requirements_flake8.txt; \
+    else \
+        pip install -r requirements_core.txt; \
+    fi
 
 #Generate stubs:
 RUN pip install mypy

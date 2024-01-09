@@ -1,0 +1,42 @@
+#!/bin/bash
+
+HEIGHT=15
+WIDTH=50
+CHOICE_HEIGHT=4
+TITLE="Compliant Control - Build Docker Image"
+MENU="What version would you like to build?"
+
+OPTIONS=("noetic" "ROS1: Noetic"
+         "humble" "ROS2: Humble")
+
+ROS=$(dialog --clear \
+                --title "$TITLE" \
+                --menu "$MENU" \
+                $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                "${OPTIONS[@]}" \
+                2>&1 >/dev/tty)
+
+clear
+
+if [ -z "$ROS" ]; then
+    exit 1
+fi
+
+OPTIONS=("full" "full"
+         "core" "core")
+
+INSTALL=$(dialog --clear \
+                --title "$TITLE" \
+                --menu "$MENU" \
+                $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                "${OPTIONS[@]}" \
+                2>&1 >/dev/tty)
+
+clear
+
+if [ -z "$INSTALL" ]; then
+    exit 1
+fi
+
+cd ..
+sudo docker build -t compliant_control_${ROS}_${INSTALL} -f docker/Dockerfile --build-arg ROS=${ROS} --build-arg INSTALL=${INSTALL} .

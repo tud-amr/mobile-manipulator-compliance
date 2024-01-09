@@ -4,7 +4,7 @@ __pycache__/
 imgui.ini
 *.egg-info
 **/calibration_data/**
-**/build
+**/build/
 **/install
 **/log
 .old/
