@@ -2,14 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-import pandas as pd
 
-import importlib.resources as pkg_resources
-import casadi
-import compliant_control.control.symbolics as symbolics
-
-
-RATIOS = np.array([1.03, 0.31, 1.03, 1.90, 2.09, 1.99])
 L = 0.195
 D = 0.145
 R = 0.315
@@ -20,8 +13,6 @@ class Plotter:
     """Plot the data."""
 
     def __init__(self) -> None:
-        self.load_symbolics()
-
         dir_path = os.path.dirname(os.path.realpath(__file__))
         directory = "2024-01-05/4"
         name = "compliant"
@@ -37,10 +28,6 @@ class Plotter:
 
         df = pd.DataFrame(self.processed_data)
         # df.to_csv("processed.csv", index=False)
-
-    def F(self, q: np.ndarray, torques: np.ndarray) -> np.ndarray:
-        """End-effector force."""
-        return np.reshape(self.casadi_F(q, torques), (3))
 
     def process_data(self) -> None:
         """Process the data."""
@@ -95,6 +82,11 @@ class Plotter:
         plt.plot(x, y, c="orange")
         plt.show()
 
+        goal_force = np.array(error_filtered) * 0.04
+        actual_force = np.array(force_filtered)
+        error = np.absolute(goal_force - actual_force)
+        print(np.mean(error))
+
         self.processed_data["error"] = error_filtered
         self.processed_data["force"] = force_filtered
         self.processed_data["fit_x"] = x
@@ -103,34 +95,15 @@ class Plotter:
 
     def calculate_error(self) -> None:
         """Plot error."""
-        error = self.pos_x - self.pos_t
-        abs_error = np.linalg.norm(error, axis=1)
+        length = np.linalg.norm(self.pos_x[:, :2] - np.array([D, 0]), axis=1)
+        inside = self.pos_x[:, :2][length <= L]
 
-        l = self.pos_t[:, :2] - np.array([0.315, 0])
-        l = np.linalg.norm(l, axis=1)
-        l = np.where(l >= L, 0, None)
+        r_target = np.mean(np.linalg.norm(self.pos_t[:, :2], axis=1))
+        r_actual = np.linalg.norm(inside[:, :2], axis=1)
+        errors = np.absolute(r_actual - r_target)
 
-        inside_error = np.mean(abs_error[l != 0])
-        outside_error = np.mean(abs_error[l == 0])
-        print(inside_error, outside_error)
-
-        self.processed_data["x_x"] = self.pos_x[:, 1]
-        self.processed_data["t_x"] = self.pos_t[:, 1]
-        self.processed_data["x_y"] = self.pos_x[:, 0]
-        self.processed_data["t_y"] = self.pos_t[:, 0]
-        self.processed_data["l"] = l
-
-    def load_symbolics(self) -> None:
-        """Load the symbolics."""
-        input_dir = str(pkg_resources.files(symbolics))
-        current_dir = os.getcwd()
-        os.chdir(input_dir)
-        for file_name in os.listdir(input_dir):
-            if file_name.endswith(".so"):
-                name = file_name.replace(".so", "")
-                f = casadi.external(name, file_name)
-                setattr(self, f"casadi_{name}", f)
-        os.chdir(current_dir)
+        avg_error = np.mean(errors)
+        print(round(avg_error * 1000, 2))
 
 
 Plotter()
