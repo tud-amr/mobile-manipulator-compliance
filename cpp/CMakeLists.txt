@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.4)
+set(CMAKE_CXX_STANDARD 17)
 project(build_dingo_python_driver)
 add_subdirectory(pybind11)
 find_package(Boost COMPONENTS thread REQUIRED)
