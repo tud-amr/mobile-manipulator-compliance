@@ -9,7 +9,7 @@ MENU="What version would you like to build?"
 OPTIONS=("noetic" "ROS1: Noetic"
          "humble" "ROS2: Humble")
 
-ROS=$(dialog --clear \
+ROS=$(whiptail --clear \
                 --title "$TITLE" \
                 --menu "$MENU" \
                 $HEIGHT $WIDTH $CHOICE_HEIGHT \
@@ -25,7 +25,7 @@ fi
 OPTIONS=("full" "full"
          "core" "core")
 
-INSTALL=$(dialog --clear \
+INSTALL=$(whiptail --clear \
                 --title "$TITLE" \
                 --menu "$MENU" \
                 $HEIGHT $WIDTH $CHOICE_HEIGHT \
