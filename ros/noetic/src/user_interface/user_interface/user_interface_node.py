@@ -17,8 +17,6 @@ class UserInterfaceNode:
 
     def __init__(self, args) -> None:
         rospy.init_node("user_interface_node")
-        rospy.Subscriber("/feedback", Ufdbk, self.feedback, queue_size=10)
-        rospy.Subscriber("/state", Ustate, self.state, queue_size=10)
         self.pub_command = rospy.Publisher("/command", Ucmd, queue_size=10)
         self.pub_target = rospy.Publisher("/target", Utarget, queue_size=10)
 
@@ -34,6 +32,8 @@ class UserInterfaceNode:
             target_thread = Thread(target=self.publish_target_loop)
             target_thread.start()
 
+        rospy.Subscriber("/feedback", Ufdbk, self.feedback, queue_size=10)
+        rospy.Subscriber("/state", Ustate, self.state, queue_size=10)
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
 
