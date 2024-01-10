@@ -14,7 +14,13 @@ RUN mkdir -p /home/dingo/compliant-control
 Run chown dingo /home/dingo
 
 #Install project required packages:
-RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano curl
+RUN apt install -y git python3-pip libboost-all-dev iputils-ping nano
+ARG ROS
+
+#For noetic, install curl for fix (see later) and install dependencies for vicon bridge:
+RUN if [ "$ROS" = "noetic" ]; then \
+        apt install -y curl ros-noetic-tf ros-noetic-diagnostic-updater; \
+    fi
 
 #Install GUI related packages:
 ARG INSTALL
