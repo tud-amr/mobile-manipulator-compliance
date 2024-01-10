@@ -5,6 +5,7 @@ import time
 import sys
 
 from user_interface_msg.msg import Ufdbk, Ustate, Ucmd, Utarget
+from geometry_msgs.msg import PoseStamped
 
 from compliant_control.interface.user_interface import UserInterface
 from compliant_control.mujoco.visualization import Visualization
@@ -33,6 +34,7 @@ class UserInterfaceNode:
             target_thread.start()
 
         rospy.Subscriber("/feedback", Ufdbk, self.feedback, queue_size=10)
+        rospy.Subscriber("/vicon", PoseStamped, self.vicon_feedback, queue_size=10)
         rospy.Subscriber("/state", Ustate, self.state, queue_size=10)
         spin_thread = Thread(target=self.start_spin_loop)
         spin_thread.start()
@@ -104,6 +106,14 @@ class UserInterfaceNode:
         self.interface.update_bars("Dingo")
         if self.visualize:
             self.visualization.set_qpos_value("Dingo", "position", msg.dingo_pos)
+
+    def vicon_feedback(self, msg: PoseStamped) -> None:
+        """Process the Vicon feedback."""
+        x = msg.pose.position.x
+        y = msg.pose.position.y
+        rotz = msg.pose.orientation.z
+        if self.visualize:
+            self.visualization.set_world_pos_value(x, y, rotz)
 
     def publish_target_loop(self) -> None:
         """A loop that publishes the target."""

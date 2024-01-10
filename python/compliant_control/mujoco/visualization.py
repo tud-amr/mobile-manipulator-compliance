@@ -24,6 +24,8 @@ class Visualization:
         self.data = MjData(self.model)
         self.define_robots()
 
+        self.x0 = self.y0 = self.rotz0 = None
+
         self.active = True
         self.target_mover = TargetMover(self.get_target, self.update_target)
 
@@ -77,6 +79,17 @@ class Visualization:
             elif prop == "velocity":
                 idvel = self.model.jnt_dofadr[idx]
                 self.data.qvel[idvel]
+
+    def set_world_pos_value(self, x: float, y: float, rotz: float) -> None:
+        """Set the world position or for the dingo base."""
+        self.x0 = x if not self.x0 else self.x0
+        self.y0 = y if not self.y0 else self.y0
+        self.rotz0 = rotz if not self.rotz0 else self.rotz0
+        idx = mj_name2id(self.model, mjtObj.mjOBJ_JOINT, "D_J_B")
+        idpos = self.model.jnt_qposadr[idx]
+        self.data.qpos[idpos] = x - self.x0
+        self.data.qpos[idpos + 1] = y - self.y0
+        self.data.qpos[idpos + 6] = rotz - self.rotz0
 
     def start(self) -> None:
         """Start a mujoco simulation."""
