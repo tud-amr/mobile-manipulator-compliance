@@ -3,7 +3,10 @@ from typing import Literal, TYPE_CHECKING
 import numpy as np
 from threading import Thread
 
-from compliant_control.dingo.utilities import direction_to_wheel_torques
+from compliant_control.dingo.utilities import (
+    direction_to_wheel_torques,
+    rotation_to_wheel_torques,
+)
 from compliant_control.utilities.rate_counter import RateCounter
 from compliant_control.kinova.specifications import Position
 
@@ -34,19 +37,24 @@ class Controller:
         self.rate_counter = RateCounter(1000)
 
         # Cartesian impedance:
+        self.thr_cart_error = 0.001  # m
         self.Kd = np.eye(3) * 40
         self.Dd = np.eye(3) * 3
+        self.error_cart_MAX = 0.1  # m
 
         # Null space:
         self.K_n = np.eye(6) * 0.2
         self.D_n = np.eye(6) * 0.1
 
         # Base
-        self.percentage_max = 0.5
-        self.K = 5
+        self.thr_pos_error = 0.01  # m
+        self.thr_rot_error = np.deg2rad(10)
+        self.K_pos = 3
+        self.gain_pos_MAX = 1
+        self.K_rot = 1
+        self.gain_rot_MAX = 0.3
 
         # General:
-        self.thr_error = 0.02  # m
         self.thr_dynamic = 0.15  # rad/s
         self.fac_joint1 = 0.6
 
@@ -99,7 +107,12 @@ class Controller:
 
     def cartesian_impedance(self) -> np.ndarray:
         """Return the current due to cartesian impedance.."""
-        self.x_e = self.state.target - self.state.x
+        self.x_e = np.zeros(3)
+        error = self.state.target - self.state.x
+        magnitude = np.linalg.norm(error)
+        if magnitude > self.thr_cart_error:
+            vector = error / magnitude
+            self.x_e = vector * min(self.error_cart_MAX, magnitude)
         self.dx_e = self.dx_d - self.state.dx
         force = self.Kd @ self.x_e + self.Dd @ self.dx_e
         torque = self.state.T(force)
@@ -121,7 +134,7 @@ class Controller:
         comp_dir_cur = self.compensate_friction_in_current_direction(current)
         compensation = comp_dir_mov + comp_dir_cur
         # Decrease compensation when close to target:
-        compensation *= min(np.linalg.norm(self.x_e) / self.thr_error, 1)
+        compensation *= min(np.linalg.norm(self.x_e) / self.thr_pos_error, 1)
         # Reduce compensation for second joint, because of high inertia:
         compensation[1] *= self.fac_joint1
         return compensation
@@ -142,20 +155,30 @@ class Controller:
 
     def command_base(self) -> None:
         """Create a command for the base."""
+        self.state.dingo_command.c = np.zeros(WHEELS)
+        # Position:
         error = (self.state.x - self.pref_x)[:-1]
         magnitude = np.linalg.norm(error)
-        if magnitude > self.thr_error:
+        if magnitude > self.thr_pos_error:
             direction = error / magnitude
-            gain = min(magnitude * self.K, self.percentage_max)
-            direction *= gain
-            direction = [-direction[1], direction[0]]
-        else:
-            direction = [0.0, 0.0]
-        self.command_base_direction(direction)
+            gain = min(magnitude * self.K_pos, self.gain_pos_MAX)
+            self.command_base_direction([-direction[1], direction[0]], gain)
+
+        # Rotation:
+        error = -self.state.kinova_feedback.q[0]
+        magnitude = abs(error)
+        if magnitude > self.thr_rot_error:
+            rotation = error
+            gain = min(magnitude * self.K_rot, self.gain_rot_MAX)
+            self.command_base_rotation(rotation, gain)
 
     def command_base_direction(self, direction: list[float], gain: float = 1) -> None:
         """Command the base with a direction."""
-        self.state.dingo_command.c = direction_to_wheel_torques(direction) * gain
+        self.state.dingo_command.c += direction_to_wheel_torques(direction) * gain
+
+    def command_base_rotation(self, rotation: float, gain: float = 1) -> None:
+        """Command the base with a rotation."""
+        self.state.dingo_command.c += rotation_to_wheel_torques(rotation) * gain
 
     def start_control_loop(self) -> None:
         """Start the control loop."""
@@ -166,6 +189,7 @@ class Controller:
     def stop_control_loop(self) -> None:
         """Stop the control loop."""
         self.active = False
+        self.state.dingo_command.c = np.zeros(WHEELS)
 
     def control_loop(self) -> None:
         """Control loop."""

@@ -11,6 +11,11 @@ def direction_to_wheel_torques(direction: list) -> np.ndarray:
     return np.array([torque_A, torque_B, torque_B, torque_A]) * m
 
 
+def rotation_to_wheel_torques(rotation: float) -> np.ndarray:
+    """Calculate the required wheel torques to move in the given direction."""
+    return np.array([1, -1, 1, -1]) * np.sign(rotation)
+
+
 def calculate_torque(angle: float) -> float:
     """Calculate the required wheel torque to match the given moving angle."""
     if angle < -np.pi / 2:
