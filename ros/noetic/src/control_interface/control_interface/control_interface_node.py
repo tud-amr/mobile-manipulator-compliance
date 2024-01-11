@@ -23,7 +23,7 @@ from compliant_control.control.calibration import Calibration
 from user_interface_msg.msg import Ufdbk, Ucmd, Ustate, Utarget, Record, Data
 
 PUBLISH_RATE = 100
-D_MAX_RESET = 0.001
+D_MAX_RESET = 0.01
 
 
 class ControlInterfaceNode:
