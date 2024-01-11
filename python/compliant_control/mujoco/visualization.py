@@ -15,6 +15,29 @@ SYNC_RATE = 60
 MODEL = "arm_and_base.xml"
 
 
+def quat_rot_matrix(w: float, x: float, y: float, z: float) -> None:
+    """The rotation matrix derived from a quaternion."""
+    return np.array(
+        [
+            [
+                w**2 + x**2 - y**2 - z**2,
+                2 * (x * y + w * z),
+                2 * (x * z - w * y),
+            ],
+            [
+                2 * (x * y - w * z),
+                w**2 - x**2 + y**2 - z**2,
+                2 * (w * x + y * z),
+            ],
+            [
+                2 * (w * y + x * z),
+                2 * (y * z - w * x),
+                w**2 - x**2 - y**2 + z**2,
+            ],
+        ]
+    )
+
+
 class Visualization:
     """Provides the mujoco visualization of the robot."""
 
@@ -54,7 +77,13 @@ class Visualization:
     @property
     def relative_target(self) -> np.ndarray:
         """Get the target position in the arm frame."""
-        return self.target - self.origin_arm
+        idx = mj_name2id(self.model, mjtObj.mjOBJ_JOINT, "D_J_B")
+        idpos = self.model.jnt_qposadr[idx]
+
+        w, x, y, z = self.data.qpos[idpos + 3 : idpos + 7]
+
+        pos = self.target - self.origin_arm
+        return quat_rot_matrix(w, x, y, z) @ pos
 
     def get_target(self) -> None:
         """Return the target position."""
@@ -80,16 +109,18 @@ class Visualization:
                 idvel = self.model.jnt_dofadr[idx]
                 self.data.qvel[idvel]
 
-    def set_world_pos_value(self, x: float, y: float, rotz: float) -> None:
+    def set_world_pos_value(
+        self, x: float, y: float, quat_w: float, quat_z: float
+    ) -> None:
         """Set the world position or for the dingo base."""
         self.x0 = x if not self.x0 else self.x0
         self.y0 = y if not self.y0 else self.y0
-        self.rotz0 = rotz if not self.rotz0 else self.rotz0
         idx = mj_name2id(self.model, mjtObj.mjOBJ_JOINT, "D_J_B")
         idpos = self.model.jnt_qposadr[idx]
         self.data.qpos[idpos] = x - self.x0
         self.data.qpos[idpos + 1] = y - self.y0
-        self.data.qpos[idpos + 6] = rotz - self.rotz0
+        self.data.qpos[idpos + 3] = quat_w
+        self.data.qpos[idpos + 6] = quat_z
 
     def start(self) -> None:
         """Start a mujoco simulation."""

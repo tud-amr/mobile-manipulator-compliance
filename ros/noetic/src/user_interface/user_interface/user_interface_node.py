@@ -111,9 +111,10 @@ class UserInterfaceNode:
         """Process the Vicon feedback."""
         x = msg.pose.position.x
         y = msg.pose.position.y
-        rotz = msg.pose.orientation.z
+        quat_w = msg.pose.orientation.w
+        quat_z = msg.pose.orientation.z
         if self.visualize:
-            self.visualization.set_world_pos_value(x, y, rotz)
+            self.visualization.set_world_pos_value(x, y, quat_w, quat_z)
 
     def publish_target_loop(self) -> None:
         """A loop that publishes the target."""
