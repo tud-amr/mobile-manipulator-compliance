@@ -240,13 +240,17 @@ class KortexClient:
             self.state.kinova_feedback.q[n] = self.get_position(n, False)
             self.state.kinova_feedback.dq[n] = self.get_velocity(n, False)
             self.state.kinova_feedback.c[n] = self.get_current(n, False)
+            self.state.kinova_feedback.fault[n] = self.feedback.actuators[n].fault_bank_a
 
     def _refresh_loop(self) -> bool:
         while self.active:
             self._refresh()
             self.update_state()
             if self.mode == "LLC_task":
-                self.set_command(self.state.controller.joint_commands)
+                if not np.any(self.state.kinova_feedback.fault):
+                    self.set_command(self.state.controller.joint_commands)
+                else:
+                    self.state.controller.stop_control_loop()
             self.rate_counter.count()
             if self.simulate:
                 self.rate_counter.sleep()
@@ -256,9 +260,8 @@ class KortexClient:
         if not self.changing_servoing_mode and self.controller_connected:
             try:
                 self.feedback = self.base_cyclic.Refresh(self.command)
-            except KServerException:
-                self.log("Robot control lost.")
-                self.controller_connected = False
+            except Exception as e:
+                self.log(f"Exception: {e}")
         else:
             self.feedback = self.base_cyclic.RefreshFeedback()
 

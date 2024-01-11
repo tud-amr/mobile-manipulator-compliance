@@ -22,6 +22,7 @@ class JointData:
         self.q = np.zeros(self.n)
         self.dq = np.zeros(self.n)
         self.c = np.zeros(self.n)
+        self.fault = np.zeros(self.n)
 
 
 class State:
