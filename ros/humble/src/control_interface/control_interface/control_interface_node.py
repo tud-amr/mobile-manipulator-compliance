@@ -175,6 +175,7 @@ class ControlInterfaceNode(Node):
                 else:
                     self.state.controller.toggle(cmd)
             case "Move Dingo":
+                self.state.controller.reset_base_command()
                 self.state.controller.command_base_direction(msg.args, 0.6)
             case "Calibrate":
                 self.calibration.calibrate_all()

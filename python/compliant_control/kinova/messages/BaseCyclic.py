@@ -21,6 +21,7 @@ class ActuatorFeedback:
         current_motor: float = None,
         temperature_motor: float = None,
         temperature_core: float = None,
+        fault_bank_a: int = 0,
     ) -> None:
         self.position: float = position
         self.velocity: float = velocity
@@ -28,6 +29,7 @@ class ActuatorFeedback:
         self.current_motor: float = current_motor
         self.temperature_motor: float = temperature_motor
         self.temperature_core: float = temperature_core
+        self.fault_bank_a: int = fault_bank_a
 
 
 class Command:

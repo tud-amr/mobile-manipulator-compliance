@@ -155,7 +155,8 @@ class Controller:
 
     def command_base(self) -> None:
         """Create a command for the base."""
-        self.state.dingo_command.c = np.zeros(WHEELS)
+        self.reset_base_command()
+        
         # Position:
         error = (self.state.x - self.pref_x)[:-1]
         magnitude = np.linalg.norm(error)
@@ -171,6 +172,10 @@ class Controller:
             rotation = error
             gain = min(magnitude * self.K_rot, self.gain_rot_MAX)
             self.command_base_rotation(rotation, gain)
+
+    def reset_base_command(self) -> None:
+        """Reset the base command."""
+        self.state.dingo_command.c = np.zeros(WHEELS)
 
     def command_base_direction(self, direction: list[float], gain: float = 1) -> None:
         """Command the base with a direction."""

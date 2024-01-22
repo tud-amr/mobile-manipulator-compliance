@@ -175,6 +175,7 @@ class ControlInterfaceNode:
             else:
                 self.state.controller.toggle(cmd)
         elif cmd == "Move Dingo":
+            self.state.controller.reset_base_command()
             self.state.controller.command_base_direction(msg.args, 0.6)
         elif cmd == "Calibrate":
             self.calibration.calibrate_all()
