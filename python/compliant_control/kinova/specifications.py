@@ -38,4 +38,5 @@ class Position:
 Position.home = Position("home", [0, -16, 75, 0, -60, 0])
 Position.zero = Position("zero", [0, 0, 0, 0, 0, 0])
 Position.retract = Position("retract", [0, 20, 150, -90, -40, -90])
-Position.pref = Position("pref", [0, -20, 100, -90, -60, 0])
+Position.pref = Position("pref", [0, 20, 90, 0, 0, 0])
+# old: [0, -20, 100, -90, -60, 0]
