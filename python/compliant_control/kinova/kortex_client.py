@@ -131,9 +131,9 @@ class KortexClient:
     def connect_LLC(self) -> None:
         """Connect a controller to the LLC of the robot."""
         self.state.controller.start_control_loop()
-        self.copy_feedback_to_command()
         for n in range(self.actuator_count):
             if self.joint_active[n]:
+                self.copy_feedback_to_command()
                 self.base_cyclic.Refresh(self.command)
                 self.set_control_mode(n, "current")
         self.controller_connected = True
@@ -262,6 +262,7 @@ class KortexClient:
                 self.feedback = self.base_cyclic.Refresh(self.command)
             except Exception as e:
                 self.log(f"Exception: {e}")
+                self.controller_connected = False
         else:
             self.feedback = self.base_cyclic.RefreshFeedback()
 
