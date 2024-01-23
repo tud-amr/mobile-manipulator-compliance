@@ -41,22 +41,19 @@ class Controller:
         self.Kd = np.eye(3) * 40
         self.Dd = np.eye(3) * 3
         self.error_cart_MAX = 0.1  # m
+        self.thr_dynamic = 0.3  # rad/s
 
         # Null space:
-        self.K_n = np.eye(6) * 0.2
-        self.D_n = np.eye(6) * 0.1
+        self.K_n = np.eye(6) * 0.125
+        self.D_n = np.eye(6) * 0.025
 
         # Base
         self.thr_pos_error = 0.01  # m
         self.thr_rot_error = np.deg2rad(10)
-        self.K_pos = 3
+        self.K_pos = 4
         self.gain_pos_MAX = 1
-        self.K_rot = 1
-        self.gain_rot_MAX = 0.3
-
-        # General:
-        self.thr_dynamic = 0.15  # rad/s
-        self.fac_joint1 = 0.6
+        self.K_rot = 0.5
+        self.gain_rot_MAX = 0.5
 
     def toggle(self, name: str) -> None:
         """Toggle controller states."""
@@ -85,13 +82,10 @@ class Controller:
         current = np.zeros(JOINTS)
         if self.imp_arm:
             current += self.cartesian_impedance()
-            self.c_compliant = current.copy()
-            if self.imp_null:
-                current += self.null_space_task()
-                self.c_nullspace = current.copy()
             if self.comp_fric:
                 current += self.compensate_friction_in_impedance_mode(current)
-                self.c_compensate = current.copy()
+            if self.imp_null:
+                current += self.null_space_task()
             if self.imp_base:
                 self.command_base()
         else:
@@ -135,8 +129,8 @@ class Controller:
         compensation = comp_dir_mov + comp_dir_cur
         # Decrease compensation when close to target:
         compensation *= min(np.linalg.norm(self.x_e) / self.thr_pos_error, 1)
-        # Reduce compensation for second joint, because of high inertia:
-        compensation[1] *= self.fac_joint1
+        # Reduce compensation exponentially when current is very small compared to friction value:
+        compensation *= np.minimum(1, current**2 / (self.state.frictions * 0.001))
         return compensation
 
     def compensate_friction_in_current_direction(
@@ -156,7 +150,7 @@ class Controller:
     def command_base(self) -> None:
         """Create a command for the base."""
         self.reset_base_command()
-        
+
         # Position:
         error = (self.state.x - self.pref_x)[:-1]
         magnitude = np.linalg.norm(error)
