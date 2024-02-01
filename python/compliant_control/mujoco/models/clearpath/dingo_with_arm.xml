@@ -2,7 +2,7 @@
     <body name="base" pos="0 0 0.02">
         <joint name="D_J_B" type="free" damping="50"/>
         <geom type="mesh" mesh="omni_chassis_collision"/>
-        <body pos="0 0 0.09">
+        <body pos="0.160 0 0.09">
             <include file="kinova/gen3_lite.xml"/>
         </body>
         <body name="left_front_wheel_link" pos="0.35 0.22 0.05" quat="-4.32051e-08 0 0 1">
