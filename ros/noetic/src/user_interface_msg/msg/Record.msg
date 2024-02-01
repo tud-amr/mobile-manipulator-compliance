@@ -1,9 +1,7 @@
 float64[] pos_x
-float64[] pos_t
-
-float64[] cur_comp
-float64[] cur_null
-float64[] cur_fric
-
 float64[] pos_q
-float64[] cur_fb
+float64[] pos_b
+float64[] quat_b
+
+float64[] relative_target
+float64[] absolute_target

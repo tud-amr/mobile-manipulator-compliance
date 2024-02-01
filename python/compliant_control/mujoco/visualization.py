@@ -69,6 +69,13 @@ class Visualization:
         return self.data.xpos[idx]
 
     @property
+    def orientation_arm(self) -> np.ndarray:
+        """Get the orientation of the origin of the kinova arm."""
+        idx = mj_name2id(self.model, mjtObj.mjOBJ_JOINT, "D_J_B")
+        idpos = self.model.jnt_qposadr[idx]
+        return self.data.qpos[idpos + 3 : idpos + 7]
+
+    @property
     def target(self) -> np.ndarray:
         """Get the position of the target mocap body."""
         body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "target")
@@ -77,11 +84,7 @@ class Visualization:
     @property
     def relative_target(self) -> np.ndarray:
         """Get the target position in the arm frame."""
-        idx = mj_name2id(self.model, mjtObj.mjOBJ_JOINT, "D_J_B")
-        idpos = self.model.jnt_qposadr[idx]
-
-        w, x, y, z = self.data.qpos[idpos + 3 : idpos + 7]
-
+        w, x, y, z = self.orientation_arm
         pos = self.target - self.origin_arm
         return quat_rot_matrix(w, x, y, z) @ pos
 

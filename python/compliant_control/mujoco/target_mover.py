@@ -3,7 +3,7 @@ from typing import Callable
 from threading import Thread
 import time
 
-STEP_ANGLE = np.deg2rad(0.2)
+STEP_ANGLE = np.deg2rad(0.1)
 ANGLE_MAX = np.deg2rad(90)
 PAUSE = 2
 
@@ -22,6 +22,8 @@ class TargetMover:
         self.rot_direction = 1
         self.z_direction = 1
 
+        self.back_and_forth = False
+
     def move_target_loop(self) -> None:
         """A loop that moves the target."""
         x, y, z = self.get_target()
@@ -29,13 +31,14 @@ class TargetMover:
         while self.active:
             r = np.linalg.norm(np.sqrt(x**2 + y**2))
             angle = np.arctan2(y, x)
-            if abs(angle) > ANGLE_MAX and self.rot_direction == np.sign(angle):
-                time.sleep(PAUSE)
-                self.rot_direction *= -1
-                at_zero = False
-            if abs(angle) < np.deg2rad(0.2) and not at_zero:
-                time.sleep(PAUSE)
-                at_zero = True
+            if self.back_and_forth:
+                if abs(angle) > ANGLE_MAX and self.rot_direction == np.sign(angle):
+                    time.sleep(PAUSE)
+                    self.rot_direction *= -1
+                    at_zero = False
+                if abs(angle) < np.deg2rad(0.2) and not at_zero:
+                    time.sleep(PAUSE)
+                    at_zero = True
             new_angle = angle + self.rot_direction * STEP_ANGLE
             x = np.cos(new_angle) * r
             y = np.sin(new_angle) * r

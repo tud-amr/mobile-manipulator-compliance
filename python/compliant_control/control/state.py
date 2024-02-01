@@ -36,6 +36,9 @@ class State:
         self.dingo_command = JointData(WHEELS)
 
         self.target = self.x
+        self.absolute_target = self.x
+        self.pos_base = np.zeros(3)
+        self.quat_base = np.zeros(4)
 
         self.controller = Controller(self)
         self.controller.reset()

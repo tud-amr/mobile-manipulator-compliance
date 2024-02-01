@@ -115,12 +115,11 @@ class ControlInterfaceNode:
         """Publish data to record."""
         msg = Record()
         msg.pos_x = list(self.state.x)
-        msg.pos_t = list(self.state.target)
         msg.pos_q = list(self.state.kinova_feedback.q)
-        msg.cur_comp = list(self.state.controller.c_compliant)
-        msg.cur_null = list(self.state.controller.c_nullspace)
-        msg.cur_fric = list(self.state.controller.c_compensate)
-        msg.cur_fb = list(self.state.kinova_feedback.c)
+        msg.pos_b = list(self.state.pos_base)
+        msg.quat_b = list(self.state.quat_base)
+        msg.relative_target = list(self.state.target)
+        msg.absolute_target = list(self.state.absolute_target)
         self.pub_record.publish(msg)
 
     def publish_calibration(self, data: np.ndarray) -> None:
@@ -210,7 +209,10 @@ class ControlInterfaceNode:
 
     def update_target(self, msg: Utarget) -> None:
         """Update the target."""
-        self.state.target = np.array(msg.target)
+        self.state.target = np.array(msg.relative_target)
+        self.state.absolute_target = np.array(msg.absolute_target)
+        self.state.pos_base = np.array(msg.pos_b)
+        self.state.quat_base = np.array(msg.quat_b)
 
     def toggle_automove_target(self) -> None:
         """Toggle automove of target."""

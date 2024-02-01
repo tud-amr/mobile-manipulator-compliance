@@ -11,3 +11,5 @@ imgui.ini
 **/log/
 .old/
 **/*.so
+ws_plotjuggler
+/recordings/2024-01-25/

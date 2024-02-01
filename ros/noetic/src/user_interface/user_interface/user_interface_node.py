@@ -127,7 +127,10 @@ class UserInterfaceNode:
     def publish_target(self) -> None:
         """Publish the target."""
         msg = Utarget()
-        msg.target = list(self.visualization.relative_target)
+        msg.relative_target = list(self.visualization.relative_target)
+        msg.absolute_target = list(self.visualization.target)
+        msg.pos_b = list(self.visualization.origin_arm)
+        msg.quat_b = list(self.visualization.orientation_arm)
         self.pub_target.publish(msg)
 
     def start_spin_loop(self) -> None:
