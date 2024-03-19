@@ -1,6 +1,6 @@
 # Mobile Manipulator Compliance
 
-This repo contains the code accompanying the paper "Current-Based Impedance Control for Interacting with Mobile Manipulators" to control a mobile manipulator. We implement a current-based impedance controller on the arm and present two operational modes for interacting with the whole mobile manipulator.
+This repo contains the code accompanying the paper "Current-Based Impedance Control for Interacting with Mobile Manipulators" to achieve compliant control on mobile manipulators using off-the-shelf components. Specifically we considered the Clearpath Dingo-O base and the Kinova Gen 3 lite arm. We implement a current-based impedance controller on the arm and present two operational modes for interacting with the whole mobile manipulator.
 
 ## Summary
 
@@ -13,7 +13,7 @@ As robots transition from industrial settings to human-centered spaces, integrat
 We leverage the direct correlation between the actuator current and the resulting joint torque, overcoming the typical reliance of impedance control on torque sensors. Additionally, this paper presents two operational modes for interacting with the mobile manipulator: one for guiding the robot around the workspace through interacting with the arm and another for executing a tracking task, both maintaining compliance to external forces.
 
 ## Installation
-We use a docker container to allow to quickly and reliably run the code. Detailed installation instructions can be found [here](/docs/installation.md).
+We use a docker container allowing to quickly and reliably run the code. Detailed installation instructions can be found [here](/docs/installation.md).
 
 ## Simulation
 ![alt text](assets/images/simulation_window.png "simulation window")
@@ -36,7 +36,8 @@ To close the simulation window, press esc when the window is selected.
 ## Application on the Robot
 Instructions are provided [here](/docs/application_on_robot.md).
 
-## Kinova's estimated current/torque ratios.
+## Calibration
+Select Calibrate in the visualization tool. Joints = [0, 5] specifies which joints should be calibrated for (a) lag, (b) ratio friction, (c) friction.
 
 Kinova provides current feedback and an estimated torque feedback. Measurements show they used these current/torque ratios:
 
@@ -49,27 +50,6 @@ Joint: | Size: | Ratio:
 | 3 | S | 1.75
 | 4 | S | 1.75
 | 5 | S | 1.75
-
-
-## INTERACTING WITH THE SIMULATION
-To start the simulation (if not done already)
-```bash
-roslaunch launcher simulation.launch
-```
-To escale simulation, <esc>.
-
-1. Click refresh at first, to send message to the robot to get the state. 
-2. Press <Start-llc>, press <Start-llc-task>, now it is in current mode, and it is only compensating gravity. To stop <stop llc>
-3. To interact with the robot, <ctr, right-click mouse> and drag the robot to a desired pose.  
-4. To stop <stop llc-task>, <stop llc>
-5. To go to a desired position again: press <pref> and select a position that you would like.
-
-
-Other comments:
-
-- If you would like to remove the toolbox automatically from your screen: settings, appearance, auto-hide the dock.
-- If you would like to calibrate, press <calibrate>, but it will take some time. 
-
 
 
 ## Troubleshooting
