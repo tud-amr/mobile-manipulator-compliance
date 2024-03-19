@@ -1,8 +1,13 @@
 # Mobile Manipulator Compliance
 
-This repo contains the code accompanying the paper "Current-Based Impedance Control for Interacting with Mobile Manipulators" to control a mobile manipulator using current-based impedance control on the arm and presents two operational modes for interacting with whole mobile manipulator.
+This repo contains the code accompanying the paper "Current-Based Impedance Control for Interacting with Mobile Manipulators" to control a mobile manipulator. We implement a current-based impedance controller on the arm and present two operational modes for interacting with the whole mobile manipulator.
 
 ## Summary
+
+Guidance Mode        |  Tracking Mode
+:-------------------------:|:-------------------------:
+![](assets/videos/guide.gif)  |  ![](assets/videos/track.gif)
+
 As robots transition from industrial settings to human-centered spaces, integrating mobile manipulation and compliant control becomes vital for efficient and safe task execution. Compliance is commonly achieved through indirect force control methods such as admittance and impedance control. However, these methods require contact information that are typically derived from measurements of the joint torques or from a force/torque sensor mounted at the end-effector. Such equipment can be expensive, and off-the-shelf robots might not come equipped with them. Further challenges arise based on the control mode supported by the robot. For instance, while admittance control can be applied to position/velocity-controlled robots, compliance is only achieved concerning the measured forces. On the other hand, impedance control is exclusive to torque-controlled robots, yet it effectively achieves compliance to all forces interacting with the robot. Therefore, implementing compliant control on a mobile manipulator poses significant challenges. 
 
 We leverage the direct correlation between the actuator current and the resulting joint torque, overcoming the typical reliance of impedance control on torque sensors. Additionally, this paper presents two operational modes for interacting with the mobile manipulator: one for guiding the robot around the workspace through interacting with the arm and another for executing a tracking task, both maintaining compliance to external forces.
