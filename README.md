@@ -1,7 +1,35 @@
-# Kinova Compliant Control
+# Mobile Manipulator Compliance
 
-This package contains the software to control the Kinova Gen3 Lite using impedance control.
+This repo contains the code accompanying the paper "Current-Based Impedance Control for Interacting with Mobile Manipulators" to control a mobile manipulator using current-based impedance control on the arm and presents two operational modes for interacting with whole mobile manipulator.
 
+## Summary
+As robots transition from industrial settings to human-centered spaces, integrating mobile manipulation and compliant control becomes vital for efficient and safe task execution. Compliance is commonly achieved through indirect force control methods such as admittance and impedance control. However, these methods require contact information that are typically derived from measurements of the joint torques or from a force/torque sensor mounted at the end-effector. Such equipment can be expensive, and off-the-shelf robots might not come equipped with them. Further challenges arise based on the control mode supported by the robot. For instance, while admittance control can be applied to position/velocity-controlled robots, compliance is only achieved concerning the measured forces. On the other hand, impedance control is exclusive to torque-controlled robots, yet it effectively achieves compliance to all forces interacting with the robot. Therefore, implementing compliant control on a mobile manipulator poses significant challenges. 
+
+We leverage the direct correlation between the actuator current and the resulting joint torque, overcoming the typical reliance of impedance control on torque sensors. Additionally, this paper presents two operational modes for interacting with the mobile manipulator: one for guiding the robot around the workspace through interacting with the arm and another for executing a tracking task, both maintaining compliance to external forces.
+
+## Installation
+We use a docker container to allow to quickly and reliably run the code. Detailed installation instructions can be found [here](/docs/installation.md).
+
+## Simulation
+![alt text](assets/images/simulation_window.png "simulation window")
+
+We use Mujoco to simulate the mobile manipulator. To start the simulation run (for ROS1):
+```bash
+roslaunch launcher simulation.launch
+```
+
+1. Click `<Refresh>` to get the robot's state. 
+2. Press `<Start-LLC>`, press `<Start-LLC-Task>` to switch to lower level control. Note, that the mode changed from POS to CUR. The robot is now in current mode, and gravity compensation is turned on. It is possible to also turn on friction compansation but note that the used parameters were identified for the real platform and might not reperesent the simulated environment.
+3. In Mujoco it is possible to interact with the robot by e.g. applying a force. To do so, double click on the desired robot link, then press `<ctr, right-click mouse>` and drag the robot to a desired pose.
+Additional keys for Mujoco, can be found online. If you do <tab> you get all the infopannels, or <f1> to get an overview of some commands that you can do. 
+4. To stop low level control press `<Stop LLC-Task>`, `<Stop LLC>`
+5. High level control can be used to go to the zero possition, `<Zero>`, preferred position `<Pref>`, retracted position `<Retract>`.
+6. The blue dot can be used to control the base, cllick and drag the point to do so.
+
+To close the simulation window, press esc when the window is selected.
+
+## Application on the Robot
+Instructions are provided [here](/docs/application_on_robot.md).
 
 ## Kinova's estimated current/torque ratios.
 
@@ -17,53 +45,6 @@ Joint: | Size: | Ratio:
 | 4 | S | 1.75
 | 5 | S | 1.75
 
-## Installation steps:
-Check for nvidia-gpu:
-nvidia-smi
-sudo docker run --rm --gpus all ubuntu nvidia-smi
-git clone ... --recurse-submodules  (???)
-If you already cloned it without submodules, you have to do this:
-git submodule update --init
-
-To pull newer version (which already should have the submodules downloaded via the method above): git pull --recurse-submodules
-
-Install docker:
--- add links
-
-Go to the folder, compliance control, docker. BUILD DOCKER:
-``` bash
-bash build
-```
-To open the docker container:
-```
-bash run
-```
-
-So we are missing the dingo-driver, which is not required, but included. To build dingo-driver (cpp dependencies): 
-```bash
-cd cpp
-bash build
-```
-
-You still need to build some c++ files that are needed for symbolic definitions:
-```bash
-cd python/compliance_control/control/symbolics
-bash compile
-```
-
-Build ros container, and run simulation on laptop from ros-folder:
-```bash
-cd ros
-bash build
-```
-
-
-either source workspace (<source devel/setup.zsh>) or ctr+d to get out of the docker, and <bash run> in the docker folder:
-```bash
-cd docker
-bash run
-roslaunch launcher simulation.launch #to test if it works, start the simulation
-```
 
 ## INTERACTING WITH THE SIMULATION
 To start the simulation (if not done already)
@@ -80,12 +61,16 @@ To escale simulation, <esc>.
 
 
 Other comments:
-- The keys for Mujoco, can be found online. If you do <tab> you get all the infopannels, or <f1> to get an overview of some commands that you can do. 
+
 - If you would like to remove the toolbox automatically from your screen: settings, appearance, auto-hide the dock.
 - If you would like to calibrate, press <calibrate>, but it will take some time. 
 
 
 
+## Troubleshooting
 
+If you run into problems of any kind, do not hesitate to open an issue on this repository.
+
+Solutions to common issues are presented [here](docs/troubleshooting.md)
 
 
