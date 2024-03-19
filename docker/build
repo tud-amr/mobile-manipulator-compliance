@@ -39,4 +39,4 @@ if [ -z "$INSTALL" ]; then
 fi
 
 cd ..
-sudo docker build -t compliant_control_${ROS}_${INSTALL} -f docker/Dockerfile --build-arg ROS=${ROS} --build-arg INSTALL=${INSTALL} .
+sudo docker build --no-cache -t compliant_control_${ROS}_${INSTALL} -f docker/Dockerfile --build-arg ROS=${ROS} --build-arg INSTALL=${INSTALL} --privileged .
