@@ -1,6 +1,6 @@
 # Mobile Manipulator Compliance
 
-This repo contains the code accompanying the paper "Current-Based Impedance Control for Interacting with Mobile Manipulators" to achieve compliant control on mobile manipulators using off-the-shelf components. Specifically we considered the Clearpath Dingo-O base and the Kinova Gen 3 lite arm. We implement a current-based impedance controller on the arm and present two operational modes for interacting with the whole mobile manipulator.
+This repo contains the code accompanying the paper [Current-Based Impedance Control for Interacting with Mobile Manipulators](https://arxiv.org/abs/2403.13079) to achieve compliant control on mobile manipulators using off-the-shelf components. Specifically we considered the Clearpath Dingo-O base and the Kinova Gen 3 lite arm. We implement a current-based impedance controller on the arm and present two operational modes for interacting with the whole mobile manipulator.
 
 ## Summary
 
