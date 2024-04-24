@@ -1,0 +1,21 @@
+<launch>
+  <arg name="robot_name" default="dingo2"/> 
+
+  <!-- Launch the Vicon bridge to get pose readings.
+       Since there may be many robots around, we forward objects individually.
+       If you want to add an additional objectd (e.g. an obstacle), you need
+       to add a new element to each of the arrays below.
+
+       See also https://github.com/tud-amr/vicon-bridge for more information.
+       
+       Possible arguments for robot_name are: "dingo1" or "dingo2"
+  -->
+  <include file="$(find vicon_bridge)/launch/vicon.launch">
+    <arg name="object_names" default="[$(arg robot_name)]"/>
+    <arg name="object_msg_types" default="[geometry_msgs/PoseStamped]"/>
+    <arg name="object_frame_ids" default="[map]"/>
+    <arg name="object_publish_topics" default="[/vicon]"/>
+    <arg name="object_frequency_divider" default="[1]"/>
+  </include>
+
+</launch>
