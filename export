@@ -6,7 +6,7 @@ DEVICE_IP=""
 IPs=$(hostname -I)
 for IP in $IPs
 do
-    if [[ $IP == *"192.168.0."* ]]; then
+    if [[ $IP == *"192.168."* ]]; then
         DEVICE_IP=$IP;
         break;
     fi
@@ -15,7 +15,7 @@ done
 if [ -z "$DEVICE_IP" ]; then
     echo Device is not in expected newtork.;
 else
-    export ROS_MASTER_URI=http://192.168.0.121:11311;
+    export ROS_MASTER_URI=http://192.168.0.122:11311;
     export ROS_IP="${DEVICE_IP}";
     echo ROS_MASTER_URI: ${ROS_MASTER_URI}
     echo ROS_IP: ${ROS_IP}
