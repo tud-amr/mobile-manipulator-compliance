@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Literal, TYPE_CHECKING
 import numpy as np
 from threading import Thread
-
+from scipy.spatial.transform import Rotation as R
 from compliant_control.dingo.utilities import (
     direction_to_wheel_torques,
     rotation_to_wheel_torques,
@@ -26,9 +26,12 @@ class Controller:
         self.comp_grav = True
         self.comp_fric = False
         self.imp_arm = False
+        self.imp_arm_joint = False
         self.imp_null = False
         self.imp_base = False
+        self.error_quat = False
         self.mode: Literal["position", "velocity", "current"] = "current"
+        self.emergency_switch_pressed = False
 
         self.joint_commands = np.zeros(JOINTS)
         self.c_compliant = np.zeros(JOINTS)
@@ -38,10 +41,13 @@ class Controller:
 
         # Cartesian impedance:
         self.thr_cart_error = 0.001  # m
-        self.Kd = np.eye(3) * 40
-        self.Dd = np.eye(3) * 3
+        self.Kd = np.eye(3) * 0.000000001
+        self.Dd = np.eye(3) * 0.000000001
+        self.Kq = np.eye(6) * 0.1
+        self.Dq = np.eye(6) * 0.
         self.error_cart_MAX = 0.1  # m
         self.thr_dynamic = 0.3  # rad/s
+        self.dq_d = np.zeros(6)
 
         # Null space:
         self.K_n = np.eye(6) * 0.125
@@ -55,6 +61,21 @@ class Controller:
         self.K_rot = 0.5
         self.gain_rot_MAX = 0.5
 
+        # joint limits
+        self.joint_limits_upper = np.deg2rad([154.1, 120.0, 150.1, 149, 145, 149]) 
+        self.joint_limits_lower = -1 * self.joint_limits_upper
+        
+    def reset_param_cartesian_impedance(self, Kd: np.ndarray, Dd: np.ndarray) -> None:
+        self.Kd = Kd
+        self.Dd = Dd
+
+    def reset_param_joints_impedance(self, Kq: np.ndarray, Dq: np.ndarray) -> None:
+        self.Kq = Kq
+        self.Dq = Dq
+        
+    def return_emergency_switched_pressed(self, emergency_switch_pressed) -> None:
+        self.emergency_switch_pressed = emergency_switch_pressed
+
     def toggle(self, name: str) -> None:
         """Toggle controller states."""
         if name == "grav":
@@ -63,6 +84,8 @@ class Controller:
             self.comp_fric = not self.comp_fric
         elif name == "arm":
             self.imp_arm = not self.imp_arm
+        elif name == "arm_joint":
+            self.imp_arm_joint = not self.imp_arm_joint
         elif name == "null":
             self.imp_null = not self.imp_null
         elif name == "base":
@@ -80,8 +103,13 @@ class Controller:
     def update_command(self) -> None:
         """Update the command of the robot."""
         current = np.zeros(JOINTS)
-        if self.imp_arm:
-            current += self.cartesian_impedance()
+        if self.imp_arm or self.imp_arm_joint:
+            if self.imp_arm_joint:
+                impedance_torque = self.joint_impedance()
+            else:
+                impedance_torque = self.cartesian_impedance()
+            limit_torque = self.joint_limit_repulsion()
+            current += (impedance_torque + limit_torque) * self.state.ratios
             if self.comp_fric:
                 current += self.compensate_friction_in_impedance_mode(current)
             if self.imp_null:
@@ -95,22 +123,60 @@ class Controller:
             current += self.compensate_gravity()
             self.joint_commands = current
 
+
     def compensate_gravity(self) -> np.ndarray:
         """Return the current due to gravity compensation."""
         return self.state.g * self.state.ratios
 
+    def quat_product(self, p, q):
+        # Ensure inputs are numpy arrays
+        p = np.array(p, dtype=np.float64)
+        q = np.array(q, dtype=np.float64)
+        p_w = p[3]
+        q_w = q[3]
+        p_v = p[0:3]
+        q_v = q[0:3]
+
+        if isinstance(p, np.ndarray):
+            pq_w = p_w*q_w - np.matmul(p_v, q_v)
+            pq_v = p_w*q_v + q_w*p_v + np.cross(p_v, q_v)
+            pq = np.append(pq_v, pq_w)
+        else:
+            print("no matching type found in quat_product")
+        return pq
+    
     def cartesian_impedance(self) -> np.ndarray:
         """Return the current due to cartesian impedance.."""
-        self.x_e = np.zeros(3)
-        error = self.state.target - self.state.x
-        magnitude = np.linalg.norm(error)
-        if magnitude > self.thr_cart_error:
-            vector = error / magnitude
-            self.x_e = vector * min(self.error_cart_MAX, magnitude)
+        self.x_e = np.array(self.state.target) - np.array(self.state.x)
         self.dx_e = self.dx_d - self.state.dx
         force = self.Kd @ self.x_e + self.Dd @ self.dx_e
+        force = np.clip(force, np.ones(3) * -20, np.ones(3) * 20)
         torque = self.state.T(force)
-        return torque * self.state.ratios
+        return torque
+    
+    def joint_impedance(self) -> np.ndarray:
+        """Return the current due to joint impedance."""
+        self.q_e = self.state.target_q - self.state.kinova_feedback.q
+        self.dq_e = self.dq_d - self.state.kinova_feedback.dq
+        force = self.Kq @ self.q_e 
+        force = force + self.Dq @ self.dq_e
+        force = np.clip(force, np.ones(6) * -20, np.ones(6) * 20)
+        torque = force
+        return torque
+
+    def joint_limit_repulsion(self) -> np.ndarray:
+        repulsive_torque = np.zeros(6)
+        magnitude = 1
+        threshold = 0.2
+        steepness = 0.1
+        for i, q_i in enumerate(self.state.kinova_feedback.q):
+            upper_bound = self.joint_limits_upper[i] - threshold
+            lower_bound = self.joint_limits_lower[i] + threshold
+            if q_i > upper_bound:
+                repulsive_torque[i] = -magnitude * (np.exp((q_i - upper_bound)/steepness) - 1)
+            elif q_i < lower_bound:
+                repulsive_torque[i] = magnitude * (np.exp((lower_bound - q_i)/steepness) - 1)
+        return repulsive_torque
 
     def null_space_task(self) -> None:
         """Return the current due to the null space task."""
@@ -157,6 +223,8 @@ class Controller:
         if magnitude > self.thr_pos_error:
             direction = error / magnitude
             gain = min(magnitude * self.K_pos, self.gain_pos_MAX)
+            if self.emergency_switch_pressed:
+                gain = 0.
             self.command_base_direction([-direction[1], direction[0]], gain)
 
         # Rotation:
@@ -165,6 +233,8 @@ class Controller:
         if magnitude > self.thr_rot_error:
             rotation = error
             gain = min(magnitude * self.K_rot, self.gain_rot_MAX)
+            if self.emergency_switch_pressed:
+                gain = 0.
             self.command_base_rotation(rotation, gain)
 
     def reset_base_command(self) -> None:

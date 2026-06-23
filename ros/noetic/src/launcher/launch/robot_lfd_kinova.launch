@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Velodyne lidar -->
+    <arg name="lidar" default="false"/>
+    <arg name="root_link" default="arm_base_link"/>
+    <arg name="end_link" default="arm_tool_frame"/>
+    <arg name="robot_type" default="kinova"/>
+    
+    <group ns="$(env ROBOT_NAME)">
+        <param name="lidar" value="$(arg lidar)" />
+        <param name="root_link" value="$(arg root_link)" />
+        <param name="end_link" value="$(arg end_link)" />
+        <param name="robot_type" value="$(arg robot_type)" />
+
+        <!-- Compliant control (use argument base to also enable base compliance)-->
+        <node name="control_interface_node" pkg="control_interface" type="control_interface_node.py" args="--base_on" output="screen"/>
+
+        <!-- Teleoperation via joystick and rviz interactive markers -->
+        <include file="$(find dinova_control)/launch/dingo_teleop.launch" />
+
+        <!-- Battery checking -->
+        <node pkg="dinova_bringup" type="battery_checker" name="battery_checker"/>
+
+        <!-- Forward kinematics via dinova bringup files -->        
+        <rosparam command="load" file="$(find dinova_control)/config/config.yaml" />
+        <param name="dinova_fk_description" textfile="$(find dinova_control)/config/$(env ROBOT_NAME)_dinova.urdf"/>
+        <param name="fk_library" value="libfk_$(env ROBOT_NAME)_kinova.so" />
+        <!-- Forward kinematics symbolic -->
+        <node name="fk_node" pkg="control_interface" type="fk_node.py" args="" output="screen"/>
+
+        <!-- make controller compliant and set higher stiffness -->
+        <!-- <node name="position_compliant" pkg="control_interface" type="position_compliant.py" args="" output="screen"/> -->
+        <!-- make controller compliant and set higher stiffness -->
+        <node name="make_compliant_node" pkg="control_interface" type="make_compliant_node.py" args="" output="screen"/>
+    </group>
+</launch>

@@ -1,5 +1,6 @@
 import importlib.resources as pkg_resources
 import os
+import sys
 import numpy as np
 import casadi
 import pinocchio
@@ -10,8 +11,8 @@ import compliant_control.control.symbolics as symbolics
 
 def load_robot() -> pinocchio.RobotWrapper:
     """Load the pinocchio robot."""
-    urdf_package = str(pkg_resources.files(models))
-    urdf = urdf_package + "/GEN3-LITE.urdf"
+    urdf = os.path.abspath(sys.argv[1])
+    urdf_package = os.path.dirname(urdf)
     robot = pinocchio.RobotWrapper.BuildFromURDF(urdf, urdf_package)
     frame_id = robot.model.getFrameId("GRIPPER_FRAME")
     joint_id = robot.model.getJointId("5")
@@ -47,6 +48,12 @@ def define_matrices(robot: pinocchio.RobotWrapper) -> None:
     frame_id = robot.model.getFrameId("END_EFFECTOR")
     cpin.framesForwardKinematics(model, data, q)
     x = data.oMf[frame_id].translation
+    # rotation as quaternion
+    rot_matrix = data.oMf[frame_id].rotation
+
+
+
+
 
     J = cpin.getFrameJacobian(
         model,
@@ -84,6 +91,7 @@ def define_matrices(robot: pinocchio.RobotWrapper) -> None:
     functions: list[casadi.Function] = [
         casadi.Function("g", [q], [g]),
         casadi.Function("x", [q], [x]),
+        casadi.Function("rot", [q], [rot_matrix]),
         casadi.Function("dx", [q, dq], [dx]),
         casadi.Function("J", [q], [J]),
         casadi.Function("JT", [q], [J.T]),
@@ -97,7 +105,7 @@ def define_matrices(robot: pinocchio.RobotWrapper) -> None:
     ]
 
     current_dir = os.getcwd()
-    output_dir = str(pkg_resources.files(symbolics))
+    output_dir = "."
     os.chdir(output_dir)
 
     for function in functions:
@@ -108,6 +116,9 @@ def define_matrices(robot: pinocchio.RobotWrapper) -> None:
 
 def main() -> None:
     """Generate symbolics."""
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} <path/to/urdf>")
+        return
     robot = load_robot()
     define_matrices(robot)
 

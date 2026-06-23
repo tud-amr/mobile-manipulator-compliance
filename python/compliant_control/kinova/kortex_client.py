@@ -4,7 +4,7 @@ from typing import Literal
 import numpy as np
 
 from kortex_api.RouterClient import RouterClient
-from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient
+from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient, BaseFunctionUid
 from kortex_api.autogen.client_stubs.BaseCyclicClientRpc import BaseCyclicClient
 from kortex_api.autogen.client_stubs.ActuatorConfigClientRpc import ActuatorConfigClient
 from kortex_api.autogen.messages import Base_pb2, BaseCyclic_pb2, ActuatorConfig_pb2
@@ -41,10 +41,12 @@ class KortexClient:
         self.log = lambda msg: print(msg)
 
         self.state = state
+        self.router = router
+        self.real_time_router = router
 
         self.simulate = simulate
         self.actuator_count = self.base.GetActuatorCount().count
-        self.joint_active = [True, True, True, True, True, False]
+        self.joint_active = [True, True, True, True, True, True]
 
         self.calibrating = False
         self.changing_servoing_mode = False
@@ -58,6 +60,7 @@ class KortexClient:
         self._set_servoing_mode(Base_pb2.SINGLE_LEVEL_SERVOING)
         self._refresh()
         self._initialize_command()
+        self._desired_gripper_position = 50
 
     def get_mode(self) -> str:
         """Get the general mode."""
@@ -116,6 +119,9 @@ class KortexClient:
     def start_LLC(self) -> None:
         """Start low_level control."""
         self.copy_feedback_to_command()
+        current_gripper_position = self.feedback.interconnect.gripper_feedback.motor[0].position
+        self.gripper_command.position = current_gripper_position
+        self._desired_gripper_position = current_gripper_position
         for n in range(self.actuator_count):
             self.set_control_mode(n, "position")
         self._set_servoing_mode(Base_pb2.LOW_LEVEL_SERVOING)
@@ -244,9 +250,15 @@ class KortexClient:
 
     def _refresh_loop(self) -> bool:
         while self.active:
+
             self._refresh()
             self.update_state()
             if self.mode == "LLC_task":
+                current_gripper_position = self.feedback.interconnect.gripper_feedback.motor[0].position
+                position_error = self._desired_gripper_position - current_gripper_position
+                clipped_position_error = np.clip(position_error, -5.0, 5.0)
+                set_gripper_position = current_gripper_position + clipped_position_error
+                self.gripper_command.position = current_gripper_position + clipped_position_error
                 if not np.any(self.state.kinova_feedback.fault):
                     self.set_command(self.state.controller.joint_commands)
                 else:
@@ -292,6 +304,11 @@ class KortexClient:
             actuator_command.position = self.feedback.actuators[n].position
             actuator_command.velocity = self.feedback.actuators[n].velocity
             self.command.actuators.extend([actuator_command])
+        self.gripper_command = self.command.interconnect.gripper_command.motor_cmd.add()
+        self.command.interconnect.command_id.identifier = 0
+        self.command.interconnect.gripper_command.command_id.identifier = 6
+        self.gripper_command.velocity = 0.0
+        self.gripper_command.force = 5
 
     def _high_level_move(self, position: Position) -> None:
         """Perform a high level move."""
@@ -307,16 +324,27 @@ class KortexClient:
         return self._execute_action(action)
 
     def _move_gripper(self, close: bool) -> None:
-        gripper_command = Base_pb2.GripperCommand()
-        gripper_command.mode = Base_pb2.GRIPPER_POSITION
-        finger = gripper_command.gripper.finger.add()
-        finger.finger_identifier = 1
-        pos = self.get_gripper_position()
-        if close:
-            finger.value = min(1, pos + 0.1)
-        else:
-            finger.value = max(0, pos - 0.1)
-        self.base.SendGripperCommand(gripper_command)
+        if self.mode == 'HLC':
+          gripper_command = Base_pb2.GripperCommand()
+          gripper_command.mode = Base_pb2.GRIPPER_POSITION
+          finger = gripper_command.gripper.finger.add()
+          finger.finger_identifier = 1
+          pos = self.get_gripper_position()
+          if close:
+              finger.value = min(1, pos + 0.1)
+          else:
+              finger.value = max(0, pos - 0.1)
+
+          self.base.SendGripperCommand(gripper_command)
+        elif self.mode == 'LLC_task':
+          if close:
+            self.move_gripper_to_position(90)
+          else:
+            self.move_gripper_to_position(10)
+
+    def move_gripper_to_position(self, position: float):
+        self._desired_gripper_position = position
+        
 
     def _high_level_tracking(self) -> None:
         self.mode = "HLT"

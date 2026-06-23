@@ -9,3 +9,4 @@ float64[] dingo_tor
 int32 dingo_rate
 
 int32 controller_rate
+string mode

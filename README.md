@@ -1,6 +1,7 @@
-# Mobile Manipulator Compliance
+# Dingo + Kinova Compliance
 
-This repo contains the code accompanying the paper [Current-Based Impedance Control for Interacting with Mobile Manipulators](https://arxiv.org/abs/2403.13079) to achieve compliant control on mobile manipulators using off-the-shelf components. Specifically we considered the Clearpath Dingo-O base and the Kinova Gen 3 lite arm. We implement a current-based impedance controller on the arm and present two operational modes for interacting with the whole mobile manipulator.
+This repo contains a framework for performing demonstrations and playing them back on the dingo + kinova robot. 
+This repo is based on the code accompanying the paper [Current-Based Impedance Control for Interacting with Mobile Manipulators](https://arxiv.org/abs/2403.13079) to achieve compliant control on mobile manipulators using off-the-shelf components.
 
 ## Summary
 
@@ -12,29 +13,13 @@ As robots transition from industrial settings to human-centered spaces, integrat
 
 We leverage the direct correlation between the actuator current and the resulting joint torque, overcoming the typical reliance of impedance control on torque sensors. Additionally, this paper presents two operational modes for interacting with the mobile manipulator: one for guiding the robot around the workspace through interacting with the arm and another for executing a tracking task, both maintaining compliance to external forces.
 
-## Installation
-We use a docker container allowing to quickly and reliably run the code. Detailed installation instructions can be found [here](/docs/installation.md).
-
-## Simulation
-![alt text](assets/images/simulation_window.png "simulation window")
-
-We use Mujoco to simulate the mobile manipulator. To start the simulation run (for ROS1):
-```bash
-roslaunch launcher simulation.launch
-```
-
-1. Click `<Refresh>` to get the robot's state. 
-2. Press `<Start-LLC>`, press `<Start-LLC-Task>` to switch to lower level control. Note, that the mode changed from POS to CUR. The robot is now in current mode, and gravity compensation is turned on. It is possible to also turn on friction compansation but note that the used parameters were identified for the real platform and might not reperesent the simulated environment.
-3. In Mujoco it is possible to interact with the robot by e.g. applying a force. To do so, double click on the desired robot link, then press `<ctr, right-click mouse>` and drag the robot to a desired pose.
-Additional keys for Mujoco, can be found online. If you do <tab> you get all the infopannels, or <f1> to get an overview of some commands that you can do. 
-4. To stop low level control press `<Stop LLC-Task>`, `<Stop LLC>`
-5. High level control can be used to go to the zero possition, `<Zero>`, preferred position `<Pref>`, retracted position `<Retract>`.
-6. The blue dot can be used to control the base, cllick and drag the point to do so.
-
-To close the simulation window, press esc when the window is selected.
-
 ## Application on the Robot
 Instructions are provided [here](/docs/application_on_robot.md).
+
+If you would like to run the controller in docker: check out the original repository: [here](https://github.com/tud-amr/mobile-manipulator-compliance)
+
+## Helpful commands
+Instructions are provided [here](/docs/helpful_commands.md)
 
 ## Calibration
 Select Calibrate in the visualization tool. Joints = [0, 5] specifies which joints should be calibrated for (a) lag, (b) ratio friction, (c) friction.

@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Dingo params: Dont change! -->
+    <arg name="motor_params" default="$(optenv DINGO_MOTOR_PARAMS base)" />
+    <arg name="config" default="$(optenv DINGO_CONFIG base)" />
+    <arg name="root_link" default="base_link"/>
+    <arg name="end_link" default="arm_tool_frame"/>
+    <arg name="robot_type" default="dinova"/>
+    
+
+    <!-- Velodyne lidar -->
+    <arg name="lidar" default="false"/>
+
+     <!-- Vicon -->
+    <arg name="vicon" default="true" />
+    <arg name="vicon_config_file" default="$(find dinova_bringup)/config/vicon_$(env ROBOT_NAME).yaml"/>
+    
+    <group ns="$(env ROBOT_NAME)">
+        <param name="lidar" value="$(arg lidar)" />        
+        <param name="root_link" value="$(arg root_link)" />
+        <param name="end_link" value="$(arg end_link)" />
+        <param name="robot_type" value="$(arg robot_type)" />
+        <param name="vicon/use_vicon" type="bool" value="$(arg vicon)" />
+        <param name="vicon/dingo_topic" type="string" value="/vicon/$(env ROBOT_NAME)" />
+
+        <!-- Robot model -->
+        <param name="robot_description" command="$(find xacro)/xacro '$(find dinova_description)/urdf/real_dingo-o.urdf.xacro' 
+                                                    lidar:=$(arg lidar)"/>
+        <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+            <param name="tf_prefix" value="$(env ROBOT_NAME)"/>
+        </node>
+
+        <!-- DINGO Nodes -->
+
+        <node pkg="rosserial_python" type="message_info_service.py" name="rosserial_message_info" />
+
+        <node pkg="dingo_base" type="dingo_node" name="dingo_node" output="screen">
+            <param name="dingo_omni" type="bool" value="$(optenv DINGO_OMNI 0)" />
+            <rosparam command="load" file="$(find dingo_base)/config/$(arg motor_params).yaml" />
+            <param name="wireless_interface" value="$(optenv DINGO_WIRELESS_INTERFACE wlp2s0)" />
+            <remap from="/imu/data_raw" to="imu/data_raw" />
+            <remap from="/diagnostics" to="diagnostics" />
+        </node>
+
+        <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter">
+            <rosparam file="$(eval optenv('DINGO_MAG_CONFIG', find('dingo_base')+'/config/mag_config_default.yaml'))" />
+            <rosparam>
+                gain: 0.1
+                zeta: 0.001
+                publish_tf: false
+                use_magnetic_field_msg: true
+            </rosparam>
+        </node>
+
+        <!-- Differential controller and basic localization -->
+        <include file="$(find dinova_control)/launch/dingo_control.launch" />
+
+        <!-- Teleoperation via joystick and rviz interactive markers -->
+        <include file="$(find dinova_control)/launch/dingo_teleop.launch" />
+
+        <!-- Diagnostic Aggregator for robot monitor usage -->
+        <group if="$(optenv DINGO_OMNI 0)">
+            <node pkg="diagnostic_aggregator" type="aggregator_node" name="diagnostic_aggregator">
+                <rosparam command="load" file="$(find dingo_base)/config/diagnostic_analyzers_common.yaml" />
+                <rosparam command="load" file="$(find dingo_base)/config/diagnostic_analyzers_omni.yaml" />
+                <remap from="/diagnostics" to="diagnostics" />
+                <remap from="/diagnostics_agg" to="diagnostics_agg" />
+                <remap from="/diagnostics_toplevel_state" to="diagnostics_toplevel_state" />
+            </node>
+        </group>
+        <group unless="$(optenv DINGO_OMNI 0)">
+            <node pkg="diagnostic_aggregator" type="aggregator_node" name="diagnostic_aggregator">
+                <rosparam command="load" file="$(find dingo_base)/config/diagnostic_analyzers_common.yaml" />
+                <rosparam command="load" file="$(find dingo_base)/config/diagnostic_analyzers_diff.yaml" />
+                <remap from="/diagnostics" to="diagnostics" />
+                <remap from="/diagnostics_agg" to="diagnostics_agg" />
+                <remap from="/diagnostics_toplevel_state" to="diagnostics_toplevel_state" />
+            </node>
+        </group>
+
+        <!-- Battery checking -->
+        <node pkg="dinova_bringup" type="battery_checker" name="battery_checker"/>
+
+        <!-- Vicon Nodes -->
+        <group if="$(arg vicon)">
+            <rosparam ns="vicon/object_specific" command="load" file="$(arg vicon_config_file)"/>
+            <include file="$(find dinova_bringup)/launch/vicon.launch"/>
+            <node pkg="tf" type="static_transform_publisher" name="$(env ROBOT_NAME)_static_tf" args="0 0 0 0 0 0 $(env ROBOT_NAME) $(env ROBOT_NAME)/base_link 0.1" />
+        </group>
+
+        <!-- Compliant control -->
+        <node name="control_interface_node" pkg="control_interface" type="control_interface_node.py" args="--base --base_on" output="screen"/>
+
+        <!-- Vicon Publish robot pose to omni_states_vicon -->
+        <rosparam command="load" file="$(find dinova_control)/config/config.yaml" />
+        <node name="dinova_state_publisher" pkg="dinova_control" type="dinova_state_publisher.py" args="" output="screen"/>
+        <!-- <node name="dinova_state_publisher" pkg="dinova_control" type="dingo_state_publisher.py" args="" output="screen"/> -->
+
+        <!-- Forward kinematics via dinova bringup files -->        
+        <rosparam command="load" file="$(find dinova_control)/config/config.yaml" />
+        <param name="dinova_fk_description" textfile="$(find dinova_control)/config/$(env ROBOT_NAME)_dinova.urdf"/>
+        <param name="fk_library" value="libfk_$(env ROBOT_NAME)_kinova.so" />
+        <!-- Forward kinematics symbolic -->
+        <node name="fk_node" pkg="control_interface" type="fk_node.py" args="" output="screen"/>
+
+    </group>
+</launch>

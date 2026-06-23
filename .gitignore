@@ -13,3 +13,4 @@ imgui.ini
 **/*.so
 ws_plotjuggler
 /recordings/
+*.swp
